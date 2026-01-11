@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SafeChat connection </title>
+    <title>SafeChat Enterprise | iOS 18 Edition</title>
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -275,10 +275,8 @@
     </div>
 
     <script>
-        const API = "https://safe-chat-60ot.onrender.com";
-        const socket = io(API, {
-    transports: ['websocket', 'polling'], // Renderda websocket barqaror ishlashi uchun
-    withCredentials: true
+        const API = "http://localhost:5001";
+        const socket = io(API);
         let currentUser = null;
         let activeChat = null;
         let deferredPrompt;
@@ -429,21 +427,45 @@
         }
 
         socket.on('receive_message', (data) => {
-            if((data.sender === activeChat && data.receiver === currentUser) || (data.sender === currentUser && data.receiver === activeChat)) {
-                const box = document.getElementById('msgBox');
-                const div = document.createElement('div');
-                div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
-                
-                if(data.type === 'image') div.innerHTML = `<img src="${API}${data.content}" class="media-content">`;
-                else if(data.type === 'video') div.innerHTML = `<video src="${API}${data.content}" controls class="media-content"></video>`;
-                else if(data.type === 'file') div.innerHTML = `<a href="${API}${data.content}" target="_blank" class="flex items-center gap-2 underline text-xs"><i class="fa-solid fa-file-arrow-down"></i> Faylni yuklash</a>`;
-                else if(data.type === 'location') div.innerHTML = `<a href="${data.content}" target="_blank" class="underline flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> Joylashuv</a>`;
-                else div.innerText = data.content;
 
-                box.appendChild(div);
-                box.scrollTop = box.scrollHeight;
-            }
-        });
+    // Only show messages related to active chat
+    if (
+        (data.sender === activeChat && data.receiver === currentUser) ||
+        (data.sender === currentUser && data.receiver === activeChat)
+    ) {
+
+        const box = document.getElementById('msgBox');
+
+        const div = document.createElement('div');
+        div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
+
+        // Render message type
+        switch (data.type) {
+            case 'image':
+                div.innerHTML = `<img src="${API}${data.content}" class="media-content">`;
+                break;
+
+            case 'video':
+                div.innerHTML = `<video src="${API}${data.content}" controls class="media-content"></video>`;
+                break;
+
+            case 'file':
+                div.innerHTML = `<a href="${API}${data.content}" target="_blank" class="flex items-center gap-2 underline text-xs"><i class="fa-solid fa-file-arrow-down"></i> Faylni yuklash</a>`;
+                break;
+
+            case 'location':
+                div.innerHTML = `<a href="${data.content}" target="_blank" class="underline flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> Joylashuv</a>`;
+                break;
+
+            default:
+                div.innerText = data.content;
+        }
+
+        box.appendChild(div);
+        box.scrollTop = box.scrollHeight;
+    }
+});
+
 
         // Profile Logic
         function previewAvatar(input) {
