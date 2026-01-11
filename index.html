@@ -276,7 +276,9 @@
 
     <script>
         const API = "https://safe-chat-60ot.onrender.com";
-        const socket = io(API);
+        const socket = io(API, {
+    transports: ['websocket', 'polling'], // Renderda websocket barqaror ishlashi uchun
+    withCredentials: true
         let currentUser = null;
         let activeChat = null;
         let deferredPrompt;
