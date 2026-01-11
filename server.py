@@ -164,7 +164,7 @@ def handle_msg(data):
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
         # Xabarni qabul qiluvchining xonasiga yuboramiz
-        emit('receive_message', data, room=receiver)
+        emit('receive_message', data, room=user_rooms[receiver])
         
         # Xabarni yuboruvchining o'ziga ham (boshqa qurilmalarida ko'rinishi uchun) yuboramiz
         emit('receive_message', data, room=sender)
@@ -176,6 +176,5 @@ def handle_msg(data):
         print(f"Socket xatoligi: {str(e)}")
 
 if __name__ == '__main__':
-    # Render avtomatik taqdim etadigan portni oladi, bo'lmasa 5001 ni ishlatadi
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)
