@@ -20,7 +20,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'avatars'), exist_ok=True)
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
 
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 CORS(app)
 
 # --- MA'LUMOTLAR BAZASI MODELLARI ---
@@ -138,19 +138,42 @@ def on_join(data):
 
 @socketio.on('send_message')
 def handle_msg(data):
-    # Xabarni bazaga saqlash
-    new_msg = Message(
-        sender=data['sender'],
-        receiver=data['receiver'],
-        content=data['content'],
-        msg_type=data.get('type', 'text')
-    )
-    db.session.add(new_msg)
-    db.session.commit()
-    
-    # Xabarni suhbatdoshga va o'ziga yuborish
-    emit('receive_message', data, room=data['receiver'])
-    emit('receive_message', data, room=data['sender'])
+    try:
+        # 1. Ma'lumotlarni tekshirish (Validatsiya)
+        sender = data.get('sender')
+        receiver = data.get('receiver')
+        content = data.get('content')
+        msg_type = data.get('type', 'text')
+
+        if not sender or not receiver or not content:
+            print(f"Xatolik: Ma'lumotlar to'liq emas! {data}")
+            return
+
+        # 2. Xabarni bazaga saqlash
+        new_msg = Message(
+            sender=sender,
+            receiver=receiver,
+            content=content,
+            msg_type=msg_type
+        )
+        db.session.add(new_msg)
+        db.session.commit()
+        
+        # 3. Real-vaqtda xabarni yuborish
+        # Xabarga server vaqtini ham qo'shamiz (mijozda to'g'ri ko'rinishi uchun)
+        data['timestamp'] = datetime.utcnow().strftime('%H:%M')
+        
+        # Xabarni qabul qiluvchining xonasiga yuboramiz
+        emit('receive_message', data, room=receiver)
+        
+        # Xabarni yuboruvchining o'ziga ham (boshqa qurilmalarida ko'rinishi uchun) yuboramiz
+        emit('receive_message', data, room=sender)
+        
+        print(f"Xabar yuborildi: {sender} -> {receiver} [{msg_type}]")
+
+    except Exception as e:
+        db.session.rollback() # Xatolik bo'lsa bazani orqaga qaytarish
+        print(f"Socket xatoligi: {str(e)}")
 
 if __name__ == '__main__':
     # Render avtomatik taqdim etadigan portni oladi, bo'lmasa 5001 ni ishlatadi
