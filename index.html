@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SafeChat Enterprise | iOS 18 Edition</title>
+    
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-accent: #007aff;
+            --glass: rgba(255, 255, 255, 0.85);
+            --radius-xl: 32px;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
+        body { background-color: var(--ios-bg); height: 100dvh; overflow: hidden; margin: 0; position: relative; }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(35px) saturate(180%);
+            -webkit-backdrop-filter: blur(35px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .ios-sheet {
+            position: fixed; bottom: -100%; left: 0; width: 100%; height: 94%;
+            background: var(--ios-bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            z-index: 1000; transition: bottom 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15); overflow-y: auto;
+        }
+        .ios-sheet.active { bottom: 0; }
+        .sheet-handle { width: 36px; height: 5px; background: #c7c7cc; border-radius: 3px; margin: 12px auto; }
+
+        .sheet-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            z-index: 999; display: none; backdrop-filter: blur(2px);
+        }
+        .sheet-overlay.active { display: block; }
+
+        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 16px; position: relative; margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; }
+        .bubble.sent { background: var(--ios-accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; shadow: 0 2px 5px rgba(0,122,255,0.2); }
+        .bubble.received { background: #e9e9eb; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+        
+        .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; cursor: pointer; display: block; }
+        
+        #adminPanel {
+            display: none; background: #000; color: #0f0; font-family: monospace;
+            position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto;
+        }
+
+        .install-banner {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px; z-index: 10000; transition: 0.5s;
+        }
+        .install-banner.active { top: 20px; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .social-btn { transition: 0.3s; cursor: pointer; }
+        .social-btn:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div id="installBanner" class="install-banner glass-panel p-4 rounded-3xl shadow-2xl flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-download"></i></div>
+            <div>
+                <p class="text-sm font-bold">SafeChat App</p>
+                <p class="text-xs text-gray-500">Ilovani o'rnatishni tavsiya qilamiz</p>
+            </div>
+        </div>
+        <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold">O'rnatish</button>
+    </div>
+
+    <div id="authScreen" class="fixed inset-0 z-[5000] flex items-center justify-center p-6 bg-[#f2f2f7]">
+        <div class="glass-panel w-full max-w-[420px] p-8 rounded-[40px] shadow-2xl">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            
+            <div id="loginView">
+                <h1 class="text-3xl font-bold text-center mb-2">Kirish</h1>
+                <p class="text-gray-500 text-center mb-8">Tizimga qaytish</p>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="username">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+                    </div>
+                    <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Parol">
+                    <button onclick="login()" class="w-full py-4 bg-blue-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Tizimga kirish</button>
+                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz yo'qmi? <span onclick="toggleAuth(true)" class="text-blue-600 font-bold cursor-pointer">Ro'yxatdan o'tish</span></p>
+                </div>
+            </div>
+
+            <div id="registerView" class="hidden">
+                <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
+                <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
+                <div class="space-y-4">
+                    <input type="email" id="reg_email" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Email manzilingiz">
+                    <div class="relative">
+                        <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="username">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+                    </div>
+                    <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Murakkab parol yarating">
+                    <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
+                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer">Kirish</span></p>
+                </div>
+            </div>
+            <p onclick="showAdminLogin()" class="text-center text-[10px] text-gray-400 mt-8 uppercase tracking-widest cursor-pointer hover:text-blue-500">CEO & ADMIN ACCESS ONLY</p>
+        </div>
+    </div>
+
+    <div id="sheetOverlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
+
+    <div id="mainApp" class="hidden h-full flex overflow-hidden">
+        <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-[#f2f2f7]">
+            <header class="p-6 pt-14 pb-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-3xl font-extrabold">Chatlar</h2>
+                    <img id="myAvatar" src="https://ui-avatars.com/api/?name=U" onclick="openSheet('settingsSheet')" class="w-10 h-10 rounded-full border-2 border-blue-600 cursor-pointer object-cover">
+                </div>
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-3 pl-12 bg-gray-200 rounded-xl outline-none focus:bg-white" placeholder="Qidiruv (.connect.uz)">
+                </div>
+            </header>
+            <div id="chatList" class="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+        </aside>
+
+        <main id="chatArea" class="hidden md:flex flex-1 flex-col bg-white relative">
+            <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
+                <div class="flex items-center gap-3">
+                    <button class="md:hidden text-blue-600 mr-2" onclick="closeChatArea()"><i class="fa-solid fa-chevron-left text-xl"></i></button>
+                    <img id="activeChatImg" src="https://ui-avatars.com/api/?name=?" class="w-11 h-11 rounded-full object-cover">
+                    <div>
+                        <h4 id="activeName" class="font-bold text-[17px]">Suhbatdosh</h4>
+                        <p class="text-xs text-blue-500">online</p>
+                    </div>
+                </div>
+                <div class="flex gap-5 text-blue-600 text-xl">
+                    <i class="fa-solid fa-share-nodes cursor-pointer" onclick="openShare()"></i>
+                    <i class="fa-solid fa-circle-info cursor-pointer" onclick="openSheet('ceoSheet')"></i>
+                    <i class="fa-solid fa-circle-xmark cursor-pointer opacity-30 hover:opacity-100" onclick="closeChatArea()"></i>
+                </div>
+            </header>
+
+            <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col no-scrollbar"></div>
+
+            <footer class="p-4 pb-10 flex items-center gap-3 glass-panel">
+                <i class="fa-solid fa-plus text-blue-600 text-2xl cursor-pointer" onclick="openSheet('mediaSheet')"></i>
+                <input type="text" id="msgInp" placeholder="Xabar yozing..." class="flex-1 p-3 bg-gray-100 rounded-[24px] outline-none">
+                <button onclick="sendMsg()" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
+            </footer>
+        </main>
+    </div>
+
+    <div id="settingsSheet" class="ios-sheet">
+        <div class="sheet-handle"></div>
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-extrabold">Sozlamalar</h2>
+                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 flex flex-col items-center mb-6 shadow-sm">
+                <div class="relative w-28 h-28 mb-4">
+                    <img id="settingsPic" src="https://ui-avatars.com/api/?name=U" class="w-full h-full rounded-full border-4 border-gray-50 object-cover">
+                    <label class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg">
+                        <i class="fa fa-camera text-sm"></i>
+                        <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewAvatar(this)">
+                    </label>
+                </div>
+                <h3 id="display_u" class="text-xl font-bold text-gray-800">username.connect.uz</h3>
+            </div>
+
+            <div class="bg-white rounded-2xl overflow-hidden mb-6">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <span class="text-gray-500">Yangi Username</span>
+                    <input type="text" id="new_u" class="text-right outline-none text-blue-600 font-medium" placeholder="o'zgartirish">
+                </div>
+                <div class="p-4 flex justify-between items-center">
+                    <span class="text-gray-500">Yangi Parol</span>
+                    <input type="password" id="new_p" class="text-right outline-none text-blue-600 font-medium" placeholder="••••••••">
+                </div>
+            </div>
+
+            <h3 class="px-4 mb-2 text-xs text-gray-400 uppercase tracking-widest font-bold">Ijtimoiy Tarmoqlar</h3>
+            <div class="bg-white rounded-2xl p-6 grid grid-cols-4 gap-6 mb-6">
+                <i class="fab fa-telegram text-3xl text-blue-400 social-btn" onclick="openLink('https://t.me/serinaqu')"></i>
+                <i class="fab fa-instagram text-3xl text-pink-500 social-btn" onclick="openLink('#')"></i>
+                <i class="fab fa-youtube text-3xl text-red-600 social-btn" onclick="openLink('#')"></i>
+                <i class="fa-solid fa-globe text-3xl text-gray-600 social-btn" onclick="openLink('#')"></i>
+            </div>
+
+            <button onclick="saveProfile()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition">O'zgarishlarni saqlash</button>
+            <button onclick="location.reload()" class="w-full py-4 bg-white text-red-500 rounded-2xl font-bold border border-red-100 active:scale-95 transition">Hisobdan chiqish</button>
+
+            <div class="mt-12 text-center pb-10">
+                <p class="text-[11px] text-gray-400 uppercase tracking-widest">© 2026 SafeChat Enterprise</p>
+                <p class="text-[14px] text-gray-700 font-bold mt-1">Jasurbek Jo'lanboyev G'ayrat o'g'li</p>
+                <a href="tel:+998958883851" class="text-blue-500 font-black text-sm block mt-1">+998-95-888-38-51</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="mediaSheet" class="ios-sheet h-[45%]">
+        <div class="sheet-handle"></div>
+        <div class="p-8 grid grid-cols-4 gap-6 text-center">
+            <div onclick="triggerUpload('image')" class="flex flex-col items-center gap-2 cursor-pointer">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center text-3xl"><i class="fa-solid fa-image"></i></div>
+                <span class="text-xs font-bold text-gray-600">Foto</span>
+            </div>
+            <div onclick="triggerUpload('video')" class="flex flex-col items-center gap-2 cursor-pointer">
+                <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-3xl flex items-center justify-center text-3xl"><i class="fa-solid fa-video"></i></div>
+                <span class="text-xs font-bold text-gray-600">Video</span>
+            </div>
+            <div onclick="triggerUpload('file')" class="flex flex-col items-center gap-2 cursor-pointer">
+                <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-3xl flex items-center justify-center text-3xl"><i class="fa-solid fa-file"></i></div>
+                <span class="text-xs font-bold text-gray-600">Fayl</span>
+            </div>
+            <div onclick="sendLocation()" class="flex flex-col items-center gap-2 cursor-pointer">
+                <div class="w-16 h-16 bg-green-100 text-green-600 rounded-3xl flex items-center justify-center text-3xl"><i class="fa-solid fa-location-dot"></i></div>
+                <span class="text-xs font-bold text-gray-600">Joylashuv</span>
+            </div>
+        </div>
+        <input type="file" id="mediaInp" hidden onchange="handleFile(this)">
+    </div>
+
+    <div id="ceoSheet" class="ios-sheet">
+        <div class="sheet-handle"></div>
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-10">
+                <h2 class="text-3xl font-black">CEO & Founders</h2>
+                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('ceoSheet')"></i>
+            </div>
+            
+            <div class="bg-white rounded-[35px] p-8 text-center shadow-sm mb-8">
+                <div class="w-24 h-24 bg-blue-600 rounded-[30px] mx-auto mb-6 flex items-center justify-center text-white text-4xl font-black shadow-xl">JJ</div>
+                <h3 class="text-2xl font-black">Jasurbek Jo'lanboyev</h3>
+                <p class="text-gray-500 mb-4 italic">G'ayrat o'g'li | SafeChat CEO</p>
+                <div class="h-[1px] bg-gray-100 w-full mb-6"></div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-8">SafeChat - bu kiberxavfsizlikning eng yuqori standartlari asosida qurilgan maxfiy muloqot tizimi.</p>
+                <div class="flex justify-center gap-6">
+                    <a href="tel:+998958883851" class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-phone"></i></a>
+                    <a href="https://t.me/serinaqu" class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl shadow-sm"><i class="fa-brands fa-telegram"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminPanel">
+        <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
+            <h2 class="text-xl font-bold tracking-tighter">SAFECHAT_CORE_v1.0</h2>
+            <button onclick="closeAdmin()" class="bg-red-900 text-white px-4 py-1 rounded text-xs">EXIT_ROOT</button>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">SYS_LOAD: <span id="load">0.4ms</span></div>
+            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">USERS_DB: <span id="userCount">0</span></div>
+            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">NETWORK: <span class="text-white">ENCRYPTED</span></div>
+            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">ROOT: <span class="text-white">Jasurbek</span></div>
+        </div>
+        <table class="w-full text-left">
+            <thead class="bg-green-900 text-black text-[10px] uppercase">
+                <tr><th class="p-2">User</th><th class="p-2">IP</th><th class="p-2">Status</th><th class="p-2">Manage</th></tr>
+            </thead>
+            <tbody id="adminTable" class="text-xs"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API = "http://localhost:5001";
+        const socket = io(API);
+        let currentUser = null;
+        let activeChat = null;
+        let deferredPrompt;
+        let currentUploadType = 'file';
+
+        // PWA & Banner
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.add('active');
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                document.getElementById('installBanner').classList.remove('active');
+            }
+        }
+
+        // Sheet Logic
+        function openSheet(id) {
+            document.getElementById(id).classList.add('active');
+            document.getElementById('sheetOverlay').classList.add('active');
+        }
+
+        function closeSheet(id) {
+            document.getElementById(id).classList.remove('active');
+            if (!document.querySelector('.ios-sheet.active')) {
+                document.getElementById('sheetOverlay').classList.remove('active');
+            }
+        }
+
+        function closeAllSheets() {
+            document.querySelectorAll('.ios-sheet').forEach(s => s.classList.remove('active'));
+            document.getElementById('sheetOverlay').classList.remove('active');
+        }
+
+        function toggleAuth(isReg) {
+            document.getElementById('loginView').classList.toggle('hidden', isReg);
+            document.getElementById('registerView').classList.toggle('hidden', !isReg);
+        }
+
+        // AUTH Logic
+        async function register() {
+            const email = document.getElementById('reg_email').value;
+            const u = document.getElementById('reg_u').value;
+            const p = document.getElementById('reg_p').value;
+            if(!email || !u || !p) return alert("Hamma joyni to'ldiring!");
+
+            const res = await fetch(`${API}/api/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u + ".connect.uz", password: p, email: email})
+            });
+            if(res.ok) {
+                alert("Muvaffaqiyatli! Endi kirishingiz mumkin.");
+                toggleAuth(false);
+            } else {
+                const d = await res.json();
+                alert(d.message || "Xatolik!");
+            }
+        }
+
+        async function login() {
+            const u = document.getElementById('login_u').value;
+            const p = document.getElementById('login_p').value;
+            const res = await fetch(`${API}/api/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: u + ".connect.uz", password: p, email: "login@user.com"})
+            });
+            if(res.ok) {
+                currentUser = u + ".connect.uz";
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('display_u').innerText = currentUser;
+                document.getElementById('myAvatar').src = `https://ui-avatars.com/api/?name=${u}&background=007aff&color=fff`;
+                socket.emit('join', {username: currentUser});
+            } else {
+                alert("Ma'lumotlar noto'g'ri!");
+            }
+        }
+
+        // Chat & Search
+        async function liveSearch(val) {
+            if(val.length < 2) return;
+            const res = await fetch(`${API}/api/admin/users`);
+            const users = await res.json();
+            const found = users.filter(u => u.username.includes(val) && u.username !== currentUser);
+            
+            const list = document.getElementById('chatList');
+            list.innerHTML = "";
+            found.forEach(u => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 active:scale-95 transition";
+                div.innerHTML = `<img src="https://ui-avatars.com/api/?name=${u.username}" class="w-12 h-12 rounded-full shadow-sm">
+                                <div><h5 class="font-bold text-sm">${u.username}</h5><p class="text-xs text-blue-500">bog'lanish uchun bosing</p></div>`;
+                div.onclick = () => openChat(u.username);
+                list.appendChild(div);
+            });
+        }
+
+        function openChat(username) {
+            activeChat = username;
+            document.getElementById('chatArea').classList.remove('hidden');
+            document.getElementById('chatArea').classList.add('flex');
+            document.getElementById('activeName').innerText = username;
+            document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${username}&background=random`;
+            document.getElementById('msgBox').innerHTML = "";
+        }
+
+        function closeChatArea() {
+            document.getElementById('chatArea').classList.add('hidden');
+        }
+
+        // Messaging & Media
+        function sendMsg(type = 'text', content = null) {
+            const inp = document.getElementById('msgInp');
+            const val = content || inp.value;
+            if(!val || !activeChat) return;
+            socket.emit('send_message', {sender: currentUser, receiver: activeChat, content: val, type: type});
+            inp.value = "";
+            closeAllSheets();
+        }
+
+        function triggerUpload(type) {
+            currentUploadType = type;
+            document.getElementById('mediaInp').click();
+        }
+
+        async function handleFile(input) {
+            if(!input.files[0]) return;
+            const fd = new FormData();
+            fd.append('file', input.files[0]);
+            
+            const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
+            const data = await res.json();
+            sendMsg(currentUploadType, data.url);
+        }
+
+        function sendLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(p => {
+                    const url = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
+                    sendMsg('location', url);
+                });
+            }
+        }
+
+        socket.on('receive_message', (data) => {
+            if((data.sender === activeChat && data.receiver === currentUser) || (data.sender === currentUser && data.receiver === activeChat)) {
+                const box = document.getElementById('msgBox');
+                const div = document.createElement('div');
+                div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
+                
+                if(data.type === 'image') div.innerHTML = `<img src="${API}${data.content}" class="media-content">`;
+                else if(data.type === 'video') div.innerHTML = `<video src="${API}${data.content}" controls class="media-content"></video>`;
+                else if(data.type === 'file') div.innerHTML = `<a href="${API}${data.content}" target="_blank" class="flex items-center gap-2 underline text-xs"><i class="fa-solid fa-file-arrow-down"></i> Faylni yuklash</a>`;
+                else if(data.type === 'location') div.innerHTML = `<a href="${data.content}" target="_blank" class="underline flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> Joylashuv</a>`;
+                else div.innerText = data.content;
+
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        });
+
+        // Profile Logic
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('settingsPic').src = e.target.result;
+                    document.getElementById('myAvatar').src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function saveProfile() {
+            const newU = document.getElementById('new_u').value;
+            const newP = document.getElementById('new_p').value;
+            const res = await fetch(`${API}/api/profile/update`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ current_username: currentUser, new_username: newU, new_password: newP })
+            });
+            if(res.ok) {
+                alert("O'zgarishlar saqlandi!");
+                if(newU) currentUser = newU + ".connect.uz";
+                closeSheet('settingsSheet');
+            }
+        }
+
+        function openShare() {
+            const link = `https://safechat.uz/u/${currentUser}`;
+            navigator.clipboard.writeText(link);
+            alert("Sizning profilingiz nusxalandi: " + link);
+        }
+
+        function openLink(url) { if(url !== '#') window.open(url, '_blank'); }
+
+        // Admin Logic
+        function showAdminLogin() {
+            const code = prompt("SAFECHAT_ROOT_KEY:");
+            if(code === 'serinaqu') {
+                document.getElementById('adminPanel').style.display = 'block';
+                loadAdmin();
+            }
+        }
+        async function loadAdmin() {
+            const res = await fetch(`${API}/api/admin/users`);
+            const users = await res.json();
+            document.getElementById('userCount').innerText = users.length;
+            document.getElementById('adminTable').innerHTML = users.map(u => `
+                <tr class="border-b border-green-900/30">
+                    <td class="p-2">${u.username}</td>
+                    <td class="p-2">${u.ip || '0.0.0.0'}</td>
+                    <td class="p-2 ${u.is_blocked ? 'text-red-500' : 'text-green-500'}">${u.is_blocked ? 'BLOCKED' : 'ACTIVE'}</td>
+                    <td class="p-2"><button class="text-red-500">BAN</button></td>
+                </tr>
+            `).join('');
+        }
+        function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
+    </script>
+</body>
+</html>
