@@ -319,152 +319,247 @@
             document.getElementById('registerView').classList.toggle('hidden', !isReg);
         }
 
-        // AUTH Logic
-        async function register() {
-            const email = document.getElementById('reg_email').value;
-            const u = document.getElementById('reg_u').value;
-            const p = document.getElementById('reg_p').value;
-            if(!email || !u || !p) return alert("Hamma joyni to'ldiring!");
+// AUTH Logic – TO'LIQ YANGILANGAN
+async function register() {
+    const email = document.getElementById('reg_email').value.trim();
+    const u = document.getElementById('reg_u').value.trim();
+    const p = document.getElementById('reg_p').value.trim();
 
-            const res = await fetch(`${API}/api/login`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: u + ".connect.uz", password: p, email: email})
-            });
-            if(res.ok) {
-                alert("Muvaffaqiyatli! Endi kirishingiz mumkin.");
-                toggleAuth(false);
-            } else {
-                const d = await res.json();
-                alert(d.message || "Xatolik!");
-            }
+    if (!email || !u || !p) {
+        return alert("Hamma joyni to'ldiring!");
+    }
+
+    try {
+        const res = await fetch(`${API}/api/register`, {  // <-- endpoint o'zgardi
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u + ".connect.uz", password: p, email: email })
+        });
+
+        if (res.ok) {
+            alert("Muvaffaqiyatli! Endi kirishingiz mumkin.");
+            toggleAuth(false); // Kirish ekraniga o'tkazadi
+        } else {
+            const d = await res.json();
+            alert(d.message || "Xatolik ro'y berdi!");
         }
+    } catch (err) {
+        console.error(err);
+        alert("Server bilan bog'lanishda xatolik yuz berdi!");
+    }
+}
 
-        async function login() {
-            const u = document.getElementById('login_u').value;
-            const p = document.getElementById('login_p').value;
-            const res = await fetch(`${API}/api/login`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username: u + ".connect.uz", password: p, email: "login@user.com"})
-            });
-            if(res.ok) {
-                currentUser = u + ".connect.uz";
-                document.getElementById('authScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('display_u').innerText = currentUser;
-                document.getElementById('myAvatar').src = `https://ui-avatars.com/api/?name=${u}&background=007aff&color=fff`;
-                socket.emit('join', {username: currentUser});
-            } else {
-                alert("Ma'lumotlar noto'g'ri!");
-            }
+async function login() {
+    const u = document.getElementById('login_u').value.trim();
+    const p = document.getElementById('login_p').value.trim();
+
+    if (!u || !p) {
+        return alert("Username va parolni kiriting!");
+    }
+
+    try {
+        const res = await fetch(`${API}/api/login`, {  // <-- endpoint to'g'ri
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: u + ".connect.uz", password: p })  // email olib tashlandi
+        });
+
+        if (res.ok) {
+            currentUser = u + ".connect.uz";
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('display_u').innerText = currentUser;
+            document.getElementById('myAvatar').src = `https://ui-avatars.com/api/?name=${u}&background=007aff&color=fff`;
+
+            // Socket.io orqali userni join qilamiz
+            socket.emit('join', { username: currentUser });
+        } else {
+            const d = await res.json();
+            alert(d.message || "Ma'lumotlar noto'g'ri!");
         }
+    } catch (err) {
+        console.error(err);
+        alert("Server bilan bog'lanishda xatolik yuz berdi!");
+    }
+}
 
-        // Chat & Search
-        async function liveSearch(val) {
-            if(val.length < 2) return;
-            const res = await fetch(`${API}/api/admin/users`);
-            const users = await res.json();
-            const found = users.filter(u => u.username.includes(val) && u.username !== currentUser);
-            
-            const list = document.getElementById('chatList');
-            list.innerHTML = "";
-            found.forEach(u => {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 active:scale-95 transition";
-                div.innerHTML = `<img src="https://ui-avatars.com/api/?name=${u.username}" class="w-12 h-12 rounded-full shadow-sm">
-                                <div><h5 class="font-bold text-sm">${u.username}</h5><p class="text-xs text-blue-500">bog'lanish uchun bosing</p></div>`;
-                div.onclick = () => openChat(u.username);
-                list.appendChild(div);
-            });
-        }
+// ==========================
+// Chat & Search + Oldingi Xabarlar
+// ==========================
 
-        function openChat(username) {
-            activeChat = username;
-            document.getElementById('chatArea').classList.remove('hidden');
-            document.getElementById('chatArea').classList.add('flex');
-            document.getElementById('activeName').innerText = username;
-            document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${username}&background=random`;
-            document.getElementById('msgBox').innerHTML = "";
-        }
+async function liveSearch(val) {
+    if (val.length < 2) return;
 
-        function closeChatArea() {
-            document.getElementById('chatArea').classList.add('hidden');
-        }
+    try {
+        const res = await fetch(`${API}/api/admin/users`);
+        if (!res.ok) throw new Error("Foydalanuvchilarni olishda xatolik");
+        const users = await res.json();
 
-        // Messaging & Media
-        function sendMsg(type = 'text', content = null) {
-            const inp = document.getElementById('msgInp');
-            const val = content || inp.value;
-            if(!val || !activeChat) return;
-            socket.emit('send_message', {sender: currentUser, receiver: activeChat, content: val, type: type});
-            inp.value = "";
-            closeAllSheets();
-        }
+        const found = users.filter(u => 
+            u.username.toLowerCase().includes(val.toLowerCase()) && u.username !== currentUser
+        );
 
-        function triggerUpload(type) {
-            currentUploadType = type;
-            document.getElementById('mediaInp').click();
-        }
+        const list = document.getElementById('chatList');
+        list.innerHTML = "";
 
-        async function handleFile(input) {
-            if(!input.files[0]) return;
-            const fd = new FormData();
-            fd.append('file', input.files[0]);
-            
-            const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
-            const data = await res.json();
-            sendMsg(currentUploadType, data.url);
-        }
+        found.forEach(u => {
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 active:scale-95 transition";
+            div.innerHTML = `
+                <img src="https://ui-avatars.com/api/?name=${u.username}&background=random&color=fff" class="w-12 h-12 rounded-full shadow-sm">
+                <div>
+                    <h5 class="font-bold text-sm">${u.username}</h5>
+                    <p class="text-xs text-blue-500">Bog'lanish uchun bosing</p>
+                </div>
+            `;
+            div.onclick = () => openChat(u.username);
+            list.appendChild(div);
+        });
+    } catch (err) {
+        console.error(err);
+        alert("Foydalanuvchilarni olishda xatolik yuz berdi!");
+    }
+}
 
-        function sendLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(p => {
-                    const url = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-                    sendMsg('location', url);
-                });
-            }
-        }
+async function openChat(username) {
+    activeChat = username;
+    const chatArea = document.getElementById('chatArea');
+    chatArea.classList.remove('hidden');
+    chatArea.classList.add('flex');
 
-        socket.on('receive_message', (data) => {
+    document.getElementById('activeName').innerText = username;
+    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${username}&background=random`;
+    const box = document.getElementById('msgBox');
+    box.innerHTML = "";
 
-    // Only show messages related to active chat
+    // ======================
+    // Oldingi xabarlarni yuklash
+    // ======================
+    try {
+        const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${username}`);
+        if (!res.ok) throw new Error("Xabarlarni olishda xatolik");
+        const messages = await res.json();
+
+        messages.forEach(data => {
+            appendMessage(data);
+        });
+
+        // Scroll pastga
+        box.scrollTop = box.scrollHeight;
+
+    } catch (err) {
+        console.error(err);
+        alert("Oldingi xabarlarni yuklashda xatolik yuz berdi!");
+    }
+}
+
+function closeChatArea() {
+    document.getElementById('chatArea').classList.add('hidden');
+}
+
+// ==========================
+// Messaging & Media
+// ==========================
+
+function sendMsg(type = 'text', content = null) {
+    const inp = document.getElementById('msgInp');
+    const val = content || inp.value.trim();
+    if (!val || !activeChat) return;
+
+    const msgObj = {
+        sender: currentUser,
+        receiver: activeChat,
+        content: val,
+        type: type
+    };
+
+    socket.emit('send_message', msgObj);
+    appendMessage(msgObj);
+    inp.value = "";
+    closeAllSheets();
+}
+
+function triggerUpload(type) {
+    currentUploadType = type;
+    document.getElementById('mediaInp').click();
+}
+
+async function handleFile(input) {
+    if (!input.files[0]) return;
+
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+
+    try {
+        const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (res.ok) sendMsg(currentUploadType, data.url);
+        else alert(data.message || "Faylni yuklashda xatolik");
+    } catch (err) {
+        console.error(err);
+        alert("Faylni yuklashda xatolik");
+    }
+}
+
+function sendLocation() {
+    if (!navigator.geolocation) return alert("Geolocation qo'llab-quvvatlanmaydi");
+    
+    navigator.geolocation.getCurrentPosition(
+        p => {
+            const url = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
+            sendMsg('location', url);
+        },
+        err => alert("Joylashuvni olishda xatolik: " + err.message)
+    );
+}
+
+// ==========================
+// Socket.io – Live Messaging
+// ==========================
+
+socket.on('receive_message', (data) => {
     if (
         (data.sender === activeChat && data.receiver === currentUser) ||
         (data.sender === currentUser && data.receiver === activeChat)
     ) {
-
-        const box = document.getElementById('msgBox');
-
-        const div = document.createElement('div');
-        div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
-
-        // Render message type
-        switch (data.type) {
-            case 'image':
-                div.innerHTML = `<img src="${API}${data.content}" class="media-content">`;
-                break;
-
-            case 'video':
-                div.innerHTML = `<video src="${API}${data.content}" controls class="media-content"></video>`;
-                break;
-
-            case 'file':
-                div.innerHTML = `<a href="${API}${data.content}" target="_blank" class="flex items-center gap-2 underline text-xs"><i class="fa-solid fa-file-arrow-down"></i> Faylni yuklash</a>`;
-                break;
-
-            case 'location':
-                div.innerHTML = `<a href="${data.content}" target="_blank" class="underline flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> Joylashuv</a>`;
-                break;
-
-            default:
-                div.innerText = data.content;
-        }
-
-        box.appendChild(div);
-        box.scrollTop = box.scrollHeight;
+        appendMessage(data);
     }
 });
+
+// ==========================
+// Helper: appendMessage
+// ==========================
+
+function appendMessage(data) {
+    const box = document.getElementById('msgBox');
+    const div = document.createElement('div');
+    div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
+
+    switch (data.type) {
+        case 'image':
+            div.innerHTML = `<img src="${data.content}" class="media-content rounded-lg max-w-xs">`;
+            break;
+        case 'video':
+            div.innerHTML = `<video src="${data.content}" controls class="media-content rounded-lg max-w-xs"></video>`;
+            break;
+        case 'file':
+            div.innerHTML = `<a href="${data.content}" target="_blank" class="flex items-center gap-2 underline text-xs">
+                                <i class="fa-solid fa-file-arrow-down"></i> Faylni yuklash
+                             </a>`;
+            break;
+        case 'location':
+            div.innerHTML = `<a href="${data.content}" target="_blank" class="underline flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot"></i> Joylashuv
+                             </a>`;
+            break;
+        default:
+            div.innerText = data.content;
+    }
+
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
 
 
         // Profile Logic
