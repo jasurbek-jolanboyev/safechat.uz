@@ -131,15 +131,25 @@ def get_users():
     } for u in users])
 
 # --- SOCKET.IO (REAL-TIME CHAT) ---
+user_rooms = {}
 
 @socketio.on('join')
 def on_join(data):
-    join_room(data['username'])
+    username = data.get('username')
+    if not username:
+        return
+
+    # Foydalanuvchi username → SID xaritasiga yoziladi
+    user_rooms[username] = request.sid
+
+    # Socketni foydalanuvchi username xonasiga qo‘shish
+    join_room(username)
+
+    print(f"{username} ulandi! SID: {request.sid}")
 
 @socketio.on('send_message')
 def handle_msg(data):
     try:
-        # 1. Ma'lumotlarni tekshirish (Validatsiya)
         sender = data.get('sender')
         receiver = data.get('receiver')
         content = data.get('content')
@@ -149,7 +159,7 @@ def handle_msg(data):
             print(f"Xatolik: Ma'lumotlar to'liq emas! {data}")
             return
 
-        # 2. Xabarni bazaga saqlash
+        # Bazaga saqlash
         new_msg = Message(
             sender=sender,
             receiver=receiver,
@@ -158,23 +168,23 @@ def handle_msg(data):
         )
         db.session.add(new_msg)
         db.session.commit()
-        
-        # 3. Real-vaqtda xabarni yuborish
-        # Xabarga server vaqtini ham qo'shamiz (mijozda to'g'ri ko'rinishi uchun)
+
+        # Server vaqtini qo‘shish
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
-        
-        # Xabarni qabul qiluvchining xonasiga yuboramiz
-        emit('receive_message', data, room=user_rooms[receiver])
-        
-        # Xabarni yuboruvchining o'ziga ham (boshqa qurilmalarida ko'rinishi uchun) yuboramiz
-        emit('receive_message', data, room=sender)
-        
+
+        # Xabarni yuborish
+        emit('receive_message', data, room=receiver)  # receiver username room
+        emit('receive_message', data, room=sender)    # sender username room
+
         print(f"Xabar yuborildi: {sender} -> {receiver} [{msg_type}]")
 
     except Exception as e:
-        db.session.rollback() # Xatolik bo'lsa bazani orqaga qaytarish
+        db.session.rollback()
         print(f"Socket xatoligi: {str(e)}")
+
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)
+
