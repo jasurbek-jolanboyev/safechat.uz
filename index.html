@@ -27,6 +27,7 @@
             border: 1px solid rgba(255,255,255,0.3);
         }
 
+        /* iOS Sheets & Bottom Nav */
         .ios-sheet {
             position: fixed; bottom: -100%; left: 0; width: 100%; height: 94%;
             background: var(--ios-bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -35,33 +36,32 @@
         }
         .ios-sheet.active { bottom: 0; }
         .sheet-handle { width: 36px; height: 5px; background: #c7c7cc; border-radius: 3px; margin: 12px auto; }
-
-        .sheet-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-            z-index: 999; display: none; backdrop-filter: blur(2px);
-        }
+        .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 999; display: none; backdrop-filter: blur(2px); }
         .sheet-overlay.active { display: block; }
 
-        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 16px; position: relative; margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; }
+        /* Bubbles & Animation */
+        .bubble { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 16px; position: relative; margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; transition: transform 0.1s; cursor: pointer; }
         .bubble.sent { background: var(--ios-accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 2px 5px rgba(0,122,255,0.1); }
         .bubble.received { background: #e9e9eb; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
-        
+        .bubble:active { transform: scale(0.97); }
+
+        /* Context Menu */
+        .context-menu { position: fixed; background: white; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; z-index: 3000; overflow: hidden; min-width: 180px; }
+        .context-menu button { width: 100%; padding: 12px 16px; text-align: left; font-size: 15px; display: flex; align-items: center; gap: 12px; transition: 0.2s; }
+        .context-menu button:active { background: #f2f2f7; }
+        .btn-delete { color: #ff3b30; border-top: 0.5px solid #f2f2f7; }
+
+        /* Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 85px; background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding-top: 10px; z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #8e8e93; font-size: 11px; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: var(--ios-accent); }
+        .nav-item i { font-size: 24px; margin-bottom: 4px; }
+
         .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; cursor: pointer; display: block; }
-        
-        #adminPanel {
-            display: none; background: #000; color: #0f0; font-family: monospace;
-            position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto;
-        }
-
-        .install-banner {
-            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; z-index: 10000; transition: 0.5s;
-        }
+        #adminPanel { display: none; background: #000; color: #0f0; font-family: monospace; position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto; }
+        .install-banner { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 10000; transition: 0.5s; }
         .install-banner.active { top: 20px; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .social-btn { transition: 0.3s; cursor: pointer; }
-        .social-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -69,10 +69,7 @@
     <div id="installBanner" class="install-banner glass-panel p-4 rounded-3xl shadow-2xl flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-download"></i></div>
-            <div>
-                <p class="text-sm font-bold">SafeChat App</p>
-                <p class="text-xs text-gray-500">Ilovani o'rnatishni tavsiya qilamiz</p>
-            </div>
+            <div><p class="text-sm font-bold">SafeChat App</p><p class="text-xs text-gray-500">Ilovani o'rnatishni tavsiya qilamiz</p></div>
         </div>
         <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold">O'rnatish</button>
     </div>
@@ -84,14 +81,14 @@
             </div>
             
             <div id="loginView">
-                <h1 class="text-3xl font-bold text-center mb-2">Kirish</h1>
-                <p class="text-gray-500 text-center mb-8">Tizimga qaytish</p>
+                <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Kirish</h1>
+                <p class="text-gray-500 text-center mb-8">SafeChat Tizimiga qaytish</p>
                 <div class="space-y-4">
                     <div class="relative">
-                        <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="username">
+                        <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
                         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
                     </div>
-                    <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Parol">
+                    <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
                     <button onclick="login()" class="w-full py-4 bg-blue-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Tizimga kirish</button>
                     <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz yo'qmi? <span onclick="toggleAuth(true)" class="text-blue-600 font-bold cursor-pointer">Ro'yxatdan o'tish</span></p>
                 </div>
@@ -101,12 +98,12 @@
                 <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
                 <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
                 <div class="space-y-4">
-                    <input type="email" id="reg_email" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Email manzilingiz">
+                    <input type="email" id="reg_email" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Email manzilingiz">
                     <div class="relative">
-                        <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="username">
+                        <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
                         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
                     </div>
-                    <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-blue-500" placeholder="Murakkab parol yarating">
+                    <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Murakkab parol yarating">
                     <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
                     <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer">Kirish</span></p>
                 </div>
@@ -115,81 +112,81 @@
         </div>
     </div>
 
-    <div id="sheetOverlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
-
-    <div id="mainApp" class="hidden h-full flex overflow-hidden">
-        <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-[#f2f2f7]">
+    <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
+        
+        <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-[#f2f2f7] pb-[85px] md:pb-0">
             <header class="p-6 pt-14 pb-4">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-3xl font-extrabold">Chatlar</h2>
-                    <img id="myAvatar" src="https://ui-avatars.com/api/?name=U" onclick="openSheet('settingsSheet')" class="w-10 h-10 rounded-full border-2 border-blue-600 cursor-pointer object-cover">
+                    <h2 id="tabTitle" class="text-3xl font-extrabold text-gray-900">Chatlar</h2>
+                    <div class="flex gap-4">
+                        <i class="fa-solid fa-plus-circle text-2xl text-blue-600 cursor-pointer" onclick="openSheet('createEntitySheet')"></i>
+                        <img id="myAvatar" src="https://ui-avatars.com/api/?name=U" onclick="openSheet('settingsSheet')" class="w-10 h-10 rounded-full border-2 border-blue-600 cursor-pointer object-cover shadow-sm">
+                    </div>
                 </div>
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-3 pl-12 bg-gray-200 rounded-xl outline-none focus:bg-white" placeholder="Qidiruv (.connect.uz)">
+                    <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-3 pl-12 bg-gray-200 rounded-xl outline-none focus:bg-white transition-all" placeholder="Qidiruv...">
                 </div>
             </header>
-            <div id="chatList" class="flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+
+            <div id="chatsTab" class="tab-content active flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
+                <div id="chatList" class="space-y-2"></div>
+            </div>
+            <div id="groupsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+            <div id="channelsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+
+            <nav class="bottom-nav">
+                <div onclick="switchTab('chats')" id="nav-chats" class="nav-item active"><i class="fa-solid fa-message"></i><span>Chatlar</span></div>
+                <div onclick="switchTab('groups')" id="nav-groups" class="nav-item"><i class="fa-solid fa-users-viewfinder"></i><span>Guruhlar</span></div>
+                <div onclick="switchTab('channels')" id="nav-channels" class="nav-item"><i class="fa-solid fa-bullhorn"></i><span>Kanallar</span></div>
+            </nav>
         </aside>
 
         <main id="chatArea" class="hidden md:flex flex-1 flex-col bg-white relative">
             <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button class="md:hidden text-blue-600 mr-2" onclick="closeChatArea()"><i class="fa-solid fa-chevron-left text-xl"></i></button>
-                    <img id="activeChatImg" src="https://ui-avatars.com/api/?name=?" class="w-11 h-11 rounded-full object-cover">
-                    <div>
+                    <img id="activeChatImg" src="" class="w-11 h-11 rounded-full object-cover">
+                    <div onclick="openUserMenu()">
                         <h4 id="activeName" class="font-bold text-[17px]">Suhbatdosh</h4>
                         <p class="text-xs text-blue-500">online</p>
                     </div>
                 </div>
                 <div class="flex gap-5 text-blue-600 text-xl">
-                    <i class="fa-solid fa-share-nodes cursor-pointer" onclick="openShare()"></i>
+                    <i class="fa-solid fa-phone cursor-pointer" onclick="initiateCall('audio')"></i>
+                    <i class="fa-solid fa-video cursor-pointer" onclick="initiateCall('video')"></i>
                     <i class="fa-solid fa-circle-info cursor-pointer" onclick="openSheet('ceoSheet')"></i>
-                    <i class="fa-solid fa-circle-xmark cursor-pointer opacity-30 hover:opacity-100" onclick="closeChatArea()"></i>
                 </div>
             </header>
 
-            <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col no-scrollbar"></div>
+            <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col no-scrollbar bg-[#f2f2f7]"></div>
 
-            <footer class="p-4 pb-10 flex items-center gap-3 glass-panel">
+            <footer id="chatFooter" class="p-4 pb-10 flex items-center gap-3 glass-panel">
                 <i class="fa-solid fa-plus text-blue-600 text-2xl cursor-pointer" onclick="openSheet('mediaSheet')"></i>
-                <input type="text" id="msgInp" onkeypress="handleEnter(event)" placeholder="Xabar yozing..." class="flex-1 p-3 bg-gray-100 rounded-[24px] outline-none">
-                <button onclick="sendMsg()" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90">
-                    <i class="fa-solid fa-arrow-up"></i>
+                <input type="text" id="msgInp" onkeypress="handleEnter(event)" placeholder="Xabar yozing..." class="flex-1 p-3 bg-gray-100 rounded-[24px] outline-none border-0 focus:ring-2 focus:ring-blue-100 transition">
+                <button onclick="sendMsg()" id="sendBtn" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">
+                    <i id="sendBtnIcon" class="fa-solid fa-arrow-up"></i>
                 </button>
             </footer>
         </main>
     </div>
 
-    <div id="settingsSheet" class="ios-sheet">
+    <div id="msgContextMenu" class="context-menu">
+        <button onclick="copyMsg()"><i class="fa-solid fa-copy"></i> Nusxalash</button>
+        <button onclick="startEditMsg()"><i class="fa-solid fa-pen"></i> Tahrirlash</button>
+        <button onclick="deleteMsgServer()" class="btn-delete"><i class="fa-solid fa-trash"></i> O'chirish</button>
+    </div>
+
+    <div id="createEntitySheet" class="ios-sheet h-[60%]">
         <div class="sheet-handle"></div>
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-extrabold">Sozlamalar</h2>
-                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
+        <div class="p-8">
+            <h2 class="text-3xl font-black mb-6 text-gray-800">Yangi yaratish</h2>
+            <div class="flex bg-gray-200 p-1 rounded-2xl mb-6">
+                <button id="btnTypeGroup" onclick="setEntityType('group')" class="flex-1 py-3 rounded-xl bg-white shadow-sm font-bold text-gray-800">Guruh</button>
+                <button id="btnTypeChannel" onclick="setEntityType('channel')" class="flex-1 py-3 rounded-xl font-bold text-gray-500">Kanal</button>
             </div>
-            <div class="bg-white rounded-3xl p-6 flex flex-col items-center mb-6 shadow-sm">
-                <div class="relative w-28 h-28 mb-4">
-                    <img id="settingsPic" src="https://ui-avatars.com/api/?name=U" class="w-full h-full rounded-full border-4 border-gray-50 object-cover">
-                    <label class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg">
-                        <i class="fa fa-camera text-sm"></i>
-                        <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewAvatar(this)">
-                    </label>
-                </div>
-                <h3 id="display_u" class="text-xl font-bold text-gray-800">username.connect.uz</h3>
-            </div>
-            <div class="bg-white rounded-2xl overflow-hidden mb-6">
-                <div class="p-4 border-b flex justify-between items-center">
-                    <span class="text-gray-500">Yangi Username</span>
-                    <input type="text" id="new_u" class="text-right outline-none text-blue-600 font-medium" placeholder="o'zgartirish">
-                </div>
-                <div class="p-4 flex justify-between items-center">
-                    <span class="text-gray-500">Yangi Parol</span>
-                    <input type="password" id="new_p" class="text-right outline-none text-blue-600 font-medium" placeholder="••••••••">
-                </div>
-            </div>
-            <button onclick="saveProfile()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition">O'zgarishlarni saqlash</button>
-            <button onclick="logout()" class="w-full py-4 bg-white text-red-500 rounded-2xl font-bold border border-red-100 active:scale-95 transition">Hisobdan chiqish</button>
+            <input type="text" id="entityName" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none mb-4" placeholder="Nomi">
+            <button onclick="submitNewEntity()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">Tasdiqlash</button>
         </div>
     </div>
 
@@ -216,22 +213,39 @@
         <input type="file" id="mediaInp" hidden onchange="handleFile(this)">
     </div>
 
+    <div id="settingsSheet" class="ios-sheet">
+        <div class="sheet-handle"></div>
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-extrabold">Sozlamalar</h2>
+                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
+            </div>
+            <div class="bg-white rounded-3xl p-6 flex flex-col items-center mb-6 shadow-sm">
+                <div class="relative w-28 h-28 mb-4">
+                    <img id="settingsPic" src="https://ui-avatars.com/api/?name=U" class="w-full h-full rounded-full border-4 border-gray-50 object-cover">
+                    <label class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg">
+                        <i class="fa fa-camera text-sm"></i>
+                        <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewAvatar(this)">
+                    </label>
+                </div>
+                <h3 id="display_u" class="text-xl font-bold text-gray-800">username.connect.uz</h3>
+            </div>
+            <button onclick="saveProfile()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition">Saqlash</button>
+            <button onclick="logout()" class="w-full py-4 bg-white text-red-500 rounded-2xl font-bold border border-red-100 active:scale-95 transition">Chiqish</button>
+        </div>
+    </div>
+
     <div id="ceoSheet" class="ios-sheet">
         <div class="sheet-handle"></div>
         <div class="p-8">
-            <div class="flex justify-between items-center mb-10">
-                <h2 class="text-3xl font-black">CEO & Founders</h2>
-                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('ceoSheet')"></i>
-            </div>
-            <div class="bg-white rounded-[35px] p-8 text-center shadow-sm mb-8">
+            <div class="flex justify-between items-center mb-10"><h2 class="text-3xl font-black">CEO & Founders</h2><i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('ceoSheet')"></i></div>
+            <div class="bg-white rounded-[35px] p-8 text-center shadow-sm">
                 <div class="w-24 h-24 bg-blue-600 rounded-[30px] mx-auto mb-6 flex items-center justify-center text-white text-4xl font-black shadow-xl">JJ</div>
-                <h3 class="text-2xl font-black">Jasurbek Jo'lanboyev</h3>
+                <h3 class="text-2xl font-black text-gray-800">Jasurbek Jo'lanboyev</h3>
                 <p class="text-gray-500 mb-4 italic">G'ayrat o'g'li | SafeChat CEO</p>
-                <div class="h-[1px] bg-gray-100 w-full mb-6"></div>
-                <p class="text-gray-600 text-sm leading-relaxed mb-8">SafeChat - bu kiberxavfsizlikning eng yuqori standartlari asosida qurilgan maxfiy muloqot tizimi.</p>
-                <div class="flex justify-center gap-6">
-                    <a href="tel:+998958883851" class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl shadow-sm"><i class="fa-solid fa-phone"></i></a>
-                    <a href="https://t.me/serinaqu" class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl shadow-sm"><i class="fa-brands fa-telegram"></i></a>
+                <div class="flex justify-center gap-6 mt-6">
+                    <a href="tel:+998958883851" class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-phone"></i></a>
+                    <a href="https://t.me/serinaqu" class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl"><i class="fa-brands fa-telegram"></i></a>
                 </div>
             </div>
         </div>
@@ -239,88 +253,55 @@
 
     <div id="adminPanel">
         <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
-            <h2 class="text-xl font-bold tracking-tighter">SAFECHAT_CORE_v1.0</h2>
+            <h2 class="text-xl font-bold tracking-tighter text-green-500">SAFECHAT_CORE_v2.0</h2>
             <button onclick="closeAdmin()" class="bg-red-900 text-white px-4 py-1 rounded text-xs">EXIT_ROOT</button>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">SYS_LOAD: <span id="load">0.4ms</span></div>
-            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">USERS_DB: <span id="userCount">0</span></div>
-            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">NETWORK: <span class="text-white">ENCRYPTED</span></div>
-            <div class="border border-green-800 p-4 bg-green-950/20 text-xs">ROOT: <span class="text-white">Jasurbek</span></div>
+        <div id="adminTableContent" class="overflow-x-auto text-xs">
+             <table class="w-full text-left">
+                <thead class="bg-green-900 text-black uppercase"><tr><th class="p-2">User</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead>
+                <tbody id="adminTable"></tbody>
+            </table>
         </div>
-        <table class="w-full text-left">
-            <thead class="bg-green-900 text-black text-[10px] uppercase">
-                <tr><th class="p-2">User</th><th class="p-2">IP Address</th><th class="p-2">Status</th><th class="p-2">Action</th></tr>
-            </thead>
-            <tbody id="adminTable" class="text-xs"></tbody>
-        </table>
     </div>
+
+    <div id="sheetOverlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
 
     <script>
         const API = "https://safe-chat-60ot.onrender.com";
         const socket = io(API);
         let currentUser = null;
         let activeChat = null;
-        let deferredPrompt;
+        let currentEntityType = 'group';
+        let selectedMsgId = null;
+        let isEditing = false;
         let currentUploadType = 'file';
 
-        // --- CORE UI ---
-        function openSheet(id) {
-            document.getElementById(id).classList.add('active');
-            document.getElementById('sheetOverlay').classList.add('active');
-        }
-        function closeSheet(id) {
-            document.getElementById(id).classList.remove('active');
-            if (!document.querySelector('.ios-sheet.active')) {
-                document.getElementById('sheetOverlay').classList.remove('active');
-            }
-        }
-        function closeAllSheets() {
-            document.querySelectorAll('.ios-sheet').forEach(s => s.classList.remove('active'));
-            document.getElementById('sheetOverlay').classList.remove('active');
-        }
+        // --- AUTH & CORE ---
         function toggleAuth(isReg) {
             document.getElementById('loginView').classList.toggle('hidden', isReg);
             document.getElementById('registerView').classList.toggle('hidden', !isReg);
         }
-        function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
 
-        // --- PWA ---
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('installBanner').classList.add('active');
-        });
-        function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                document.getElementById('installBanner').classList.remove('active');
-            }
-        }
-
-        // --- AUTH ---
         async function register() {
             const email = document.getElementById('reg_email').value.trim();
             const u = document.getElementById('reg_u').value.trim();
             const p = document.getElementById('reg_p').value.trim();
-            if(!email || !u || !p) return alert("Barcha maydonlarni to'ldiring!");
-
+            if(!email || !u || !p) return alert("To'liq to'ldiring!");
             try {
                 const res = await fetch(`${API}/api/register`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ email, username: u + ".connect.uz", password: p })
                 });
-                if(res.ok) { alert("Ro'yxatdan o'tdingiz!"); toggleAuth(false); }
+                if(res.ok) { alert("Muvaffaqiyatli!"); toggleAuth(false); }
                 else { const d = await res.json(); alert(d.message); }
-            } catch(e) { alert("Server xatosi!"); }
+            } catch(e) { alert("Xato!"); }
         }
 
         async function login() {
             const u = document.getElementById('login_u').value.trim();
             const p = document.getElementById('login_p').value.trim();
-            if(!u || !p) return alert("Username va parolni kiriting!");
-
+            if(!u || !p) return alert("Ma'lumotlarni kiriting!");
             try {
                 const res = await fetch(`${API}/api/login`, {
                     method: 'POST',
@@ -335,41 +316,54 @@
                     document.getElementById('display_u').innerText = currentUser;
                     document.getElementById('myAvatar').src = `https://ui-avatars.com/api/?name=${u}&background=007aff&color=fff`;
                     socket.emit('join', { username: currentUser });
+                    switchTab('chats');
                 } else alert(d.message);
-            } catch(e) { alert("Ulanish xatosi!"); }
+            } catch(e) { alert("Server bilan ulanishda xato!"); }
         }
 
-        function logout() { location.reload(); }
+        // --- NAVIGATION & TABS ---
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            document.getElementById(`${tab}Tab`).classList.remove('hidden');
+            document.getElementById('tabTitle').innerText = tab === 'chats' ? 'Chatlar' : (tab === 'groups' ? 'Guruhlar' : 'Kanallar');
+            loadList(tab);
+        }
 
-        // --- MESSAGING ---
-        async function liveSearch(val) {
-            if(val.length < 2) return;
-            const res = await fetch(`${API}/api/admin/users`);
-            const users = await res.json();
-            const list = document.getElementById('chatList');
+        function loadList(tab) {
+            const list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById(`${tab}Tab`);
             list.innerHTML = "";
-            users.filter(u => u.username.includes(val) && u.username !== currentUser).forEach(u => {
+            const sampleData = {
+                chats: ['Jasurbek', 'Ali', 'Dildora'],
+                groups: ['SafeChat Developers', 'News Group'],
+                channels: ['IT News', 'SafeChat Channel']
+            };
+            sampleData[tab].forEach(name => {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 active:scale-95 transition shadow-sm";
-                div.innerHTML = `<img src="https://ui-avatars.com/api/?name=${u.username}" class="w-12 h-12 rounded-full"><div><h5 class="font-bold text-sm">${u.username}</h5><p class="text-xs text-blue-500">Online</p></div>`;
-                div.onclick = () => openChat(u.username);
+                div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm active:scale-95";
+                div.innerHTML = `<img src="https://ui-avatars.com/api/?name=${name}&background=random" class="w-12 h-12 rounded-full">
+                                <div><h5 class="font-bold text-sm">${name}</h5><p class="text-xs text-gray-500">Oxirgi xabar...</p></div>`;
+                div.onclick = () => openChat(name);
                 list.appendChild(div);
             });
         }
 
-        async function openChat(username) {
-            activeChat = username;
+        // --- CHAT SYSTEM ---
+        async function openChat(name) {
+            activeChat = name;
             document.getElementById('chatArea').classList.remove('hidden');
             document.getElementById('chatArea').classList.add('flex');
-            document.getElementById('activeName').innerText = username;
-            document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${username}`;
-            const box = document.getElementById('msgBox');
-            box.innerHTML = "";
-
-            const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${username}`);
-            const msgs = await res.json();
-            msgs.forEach(appendMessage);
-            box.scrollTop = box.scrollHeight;
+            document.getElementById('activeName').innerText = name;
+            document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}`;
+            document.getElementById('msgBox').innerHTML = "";
+            
+            // Xabarlarni API'dan yuklash (misol tariqasida)
+            try {
+                const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${name}`);
+                const msgs = await res.json();
+                msgs.forEach(appendMessage);
+            } catch(e) { console.log("Xabarlar yuklanmadi"); }
             if(window.innerWidth < 768) closeAllSheets();
         }
 
@@ -378,37 +372,71 @@
             const val = content || inp.value.trim();
             if(!val || !activeChat) return;
 
-            const data = { sender: currentUser, receiver: activeChat, content: val, type: type };
-            socket.emit('send_message', data);
-            appendMessage({...data, timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})});
-            if(!content) inp.value = "";
-            closeAllSheets();
-        }
-
-        socket.on('receive_message', (data) => {
-            if(data.sender === activeChat || data.sender === currentUser) {
+            if(isEditing) {
+                socket.emit('edit_message', { id: selectedMsgId, content: val, receiver: activeChat });
+                isEditing = false;
+                document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
+            } else {
+                const data = { id: Date.now(), sender: currentUser, receiver: activeChat, content: val, type: type };
+                socket.emit('send_message', data);
                 appendMessage(data);
             }
-        });
+            inp.value = "";
+        }
 
         function appendMessage(data) {
             const box = document.getElementById('msgBox');
             const div = document.createElement('div');
             div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
+            div.id = `msg-${data.id}`;
             
             if(data.type === 'image') div.innerHTML = `<img src="${data.content}" class="media-content" onclick="window.open('${data.content}')">`;
             else if(data.type === 'video') div.innerHTML = `<video src="${data.content}" controls class="media-content"></video>`;
             else if(data.type === 'file') div.innerHTML = `<a href="${data.content}" target="_blank" class="text-xs underline flex items-center gap-2"><i class="fa fa-file"></i> Hujjatni ochish</a>`;
-            else if(data.type === 'location') div.innerHTML = `<a href="${data.content}" target="_blank" class="text-xs underline flex items-center gap-2"><i class="fa fa-map-pin"></i> Joylashuvni ko'rish</a>`;
             else div.innerText = data.content;
+
+            // Context Menu triggers
+            div.oncontextmenu = (e) => { e.preventDefault(); showContextMenu(e, data.id); };
+            let timer;
+            div.ontouchstart = (e) => { timer = setTimeout(() => showContextMenu(e.touches[0], data.id), 600); };
+            div.ontouchend = () => clearTimeout(timer);
 
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
         }
 
-        function closeChatArea() { document.getElementById('chatArea').classList.add('hidden'); }
+        // --- CONTEXT MENU ACTIONS ---
+        function showContextMenu(e, msgId) {
+            selectedMsgId = msgId;
+            const menu = document.getElementById('msgContextMenu');
+            menu.style.display = 'block';
+            menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+            menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
+            document.getElementById('sheetOverlay').classList.add('active');
+        }
 
-        // --- MEDIA ---
+        function copyMsg() {
+            const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
+            navigator.clipboard.writeText(txt);
+            closeAllSheets();
+        }
+
+        function startEditMsg() {
+            isEditing = true;
+            const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
+            document.getElementById('msgInp').value = txt;
+            document.getElementById('msgInp').focus();
+            document.getElementById('sendBtnIcon').className = "fa-solid fa-check";
+            closeAllSheets();
+        }
+
+        function deleteMsgServer() {
+            socket.emit('delete_message', { id: selectedMsgId, receiver: activeChat });
+            document.getElementById(`msg-${selectedMsgId}`).remove();
+            closeAllSheets();
+        }
+
+        // --- MEDIA & TOOLS ---
         function triggerUpload(type) { currentUploadType = type; document.getElementById('mediaInp').click(); }
         async function handleFile(input) {
             if(!input.files[0]) return;
@@ -418,67 +446,64 @@
                 const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
                 const d = await res.json();
                 sendMsg(currentUploadType, d.url);
-            } catch(e) { alert("Fayl yuklanmadi!"); }
+            } catch(e) { alert("Fayl yuklashda xato!"); }
         }
+
         function sendLocation() {
             navigator.geolocation.getCurrentPosition(p => {
                 const url = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-                sendMsg('location', url);
-            }, () => alert("Joylashuv ruxsati berilmadi!"));
+                sendMsg('text', "Mening joylashuvim: " + url);
+            }, () => alert("Ruxsat berilmadi"));
         }
 
-        // --- PROFILE ---
-        function previewAvatar(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    document.getElementById('settingsPic').src = e.target.result;
-                    document.getElementById('myAvatar').src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
+        function setEntityType(type) {
+            currentEntityType = type;
+            document.getElementById('btnTypeGroup').classList.toggle('bg-white', type === 'group');
+            document.getElementById('btnTypeChannel').classList.toggle('bg-white', type === 'channel');
         }
-        async function saveProfile() {
-            const newU = document.getElementById('new_u').value;
-            const newP = document.getElementById('new_p').value;
-            const res = await fetch(`${API}/api/profile/update`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ current_username: currentUser, new_username: newU, new_password: newP })
-            });
-            if(res.ok) {
-                alert("Saqlandi!");
-                if(newU) currentUser = newU + ".connect.uz";
-                closeSheet('settingsSheet');
-            }
-        }
-        function openShare() {
-            const link = `SafeChat: ${currentUser}`;
-            navigator.clipboard.writeText(link);
-            alert("Username nusxalandi!");
-        }
-        function openLink(url) { if(url !== '#') window.open(url, '_blank'); }
 
-        // --- ADMIN ---
-        function showAdminLogin() {
-            if(prompt("SAFECHAT_ROOT_KEY:") === 'serinaqu') {
-                document.getElementById('adminPanel').style.display = 'block';
-                loadAdmin();
-            }
+        function submitNewEntity() {
+            const name = document.getElementById('entityName').value;
+            socket.emit('create_entity', { type: currentEntityType, name, creator: currentUser });
+            alert(name + " yaratildi!");
+            closeAllSheets();
         }
-        async function loadAdmin() {
-            const res = await fetch(`${API}/api/admin/users`);
-            const users = await res.json();
-            document.getElementById('userCount').innerText = users.length;
-            document.getElementById('adminTable').innerHTML = users.map(u => `
-                <tr class="border-b border-green-900/30">
-                    <td class="p-2">${u.username}</td>
-                    <td class="p-2 text-gray-500">${u.ip || 'HIDDEN'}</td>
-                    <td class="p-2 ${u.is_blocked ? 'text-red-500':'text-green-500'}">${u.is_blocked ? 'BLOCKED':'ACTIVE'}</td>
-                    <td class="p-2"><button class="text-red-500 hover:underline">BAN</button></td>
-                </tr>
-            `).join('');
+
+        function openUserMenu() {
+            const block = confirm(activeChat + " foydalanuvchini bloklash?");
+            if(block) socket.emit('block_user', { target: activeChat });
         }
+
+        function initiateCall(type) {
+            alert(type + " qo'ng'iroq signali yuborilmoqda...");
+            socket.emit('call_signal', { to: activeChat, type: type });
+        }
+
+        // --- UI HELPERS ---
+        function openSheet(id) { document.getElementById(id).classList.add('active'); document.getElementById('sheetOverlay').classList.add('active'); }
+        function closeSheet(id) { document.getElementById(id).classList.remove('active'); document.getElementById('sheetOverlay').classList.remove('active'); }
+        function closeAllSheets() {
+            document.querySelectorAll('.ios-sheet').forEach(s => s.classList.remove('active'));
+            document.getElementById('sheetOverlay').classList.remove('active');
+            document.getElementById('msgContextMenu').style.display = 'none';
+        }
+        function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
+        function closeChatArea() { document.getElementById('chatArea').classList.add('hidden'); }
+        function logout() { location.reload(); }
+
+        // --- SOCKET REAL-TIME ---
+        socket.on('receive_message', (data) => { if(data.sender === activeChat) appendMessage(data); });
+        socket.on('message_edited', (data) => {
+            const el = document.getElementById(`msg-${data.id}`);
+            if(el) el.innerText = data.content;
+        });
+        socket.on('message_deleted', (id) => {
+            const el = document.getElementById(`msg-${id}`);
+            if(el) el.remove();
+        });
+
+        // Admin Access
+        function showAdminLogin() { if(prompt("ROOT_KEY:") === 'serinaqu') document.getElementById('adminPanel').style.display = 'block'; }
         function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
     </script>
 </body>
