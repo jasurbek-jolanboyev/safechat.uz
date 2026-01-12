@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()  # ENG TEPADA VA ALOHIDA QATORDA BO'LISHI SHART!
+
 import os
 import secrets
 from datetime import datetime
@@ -11,7 +14,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # --- KONFIGURATSIYA ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'safechat_ultra_secure_2026_key'
-# Renderda baza o'chib ketmasligi uchun imkon bo'lsa DATABASE_URL ishlating
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///safechat_v2.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -20,7 +22,6 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
 
 db = SQLAlchemy(app)
-# Renderda barqaror ishlashi uchun eventlet va polling muhim
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 CORS(app)
 
@@ -47,14 +48,19 @@ with app.app_context():
 
 # --- API ENDPOINTLAR ---
 
-# 1. Registration (Frontend: register() funksiyasi uchun)
+# 0. Home Route (Render "Live" bo'lishi va 404 xatosi chiqmasligi uchun)
+@app.route('/')
+def index():
+    return "SafeChat Server ishlayapti! API ulanishga tayyor."
+
+# 1. Registration
 @app.route('/api/register', methods=['POST'])
 def register_api():
     data = request.json
     if User.query.filter_by(username=data['username']).first():
         return jsonify({"message": "Bu username allaqachon band!"}), 400
     
-    hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
+    hashed_pw = generate_password_hash(data['password'])
     new_user = User(
         email=data['email'],
         username=data['username'],
@@ -65,7 +71,7 @@ def register_api():
     db.session.commit()
     return jsonify({"status": "success"}), 201
 
-# 2. Login (Frontend: login() funksiyasi uchun)
+# 2. Login
 @app.route('/api/login', methods=['POST'])
 def login_api():
     data = request.json
@@ -80,7 +86,7 @@ def login_api():
     
     return jsonify({"message": "Username yoki parol xato!"}), 401
 
-# 3. Xabarlar tarixi (Frontend: openChat() funksiyasi uchun)
+# 3. Xabarlar tarixi
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
@@ -98,7 +104,7 @@ def get_messages():
         "timestamp": m.timestamp.strftime('%H:%M')
     } for m in msgs])
 
-# 4. Foydalanuvchilar ro'yxati (Frontend: liveSearch() va loadAdmin() uchun)
+# 4. Foydalanuvchilar ro'yxati
 @app.route('/api/admin/users', methods=['GET'])
 def admin_users():
     users = User.query.all()
@@ -108,7 +114,7 @@ def admin_users():
         "is_blocked": u.is_blocked
     } for u in users])
 
-# 5. Profilni yangilash (Frontend: saveProfile() uchun)
+# 5. Profilni yangilash
 @app.route('/api/profile/update', methods=['POST'])
 def update_profile():
     data = request.json
@@ -122,12 +128,12 @@ def update_profile():
         user.username = new_u
 
     if data.get('new_password'):
-        user.password = generate_password_hash(data['new_password'], method='pbkdf2:sha256')
+        user.password = generate_password_hash(data['new_password'])
 
     db.session.commit()
     return jsonify({"status": "updated"})
 
-# 6. Fayl yuklash (Frontend: handleFile() uchun)
+# 6. Fayl yuklash
 @app.route('/api/upload_avatar', methods=['POST'])
 def upload_file_api():
     if 'file' not in request.files: return jsonify({"message": "Fayl topilmadi"}), 400
@@ -135,21 +141,18 @@ def upload_file_api():
     filename = secure_filename(f"{secrets.token_hex(4)}_{file.filename}")
     save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'media', filename)
     file.save(save_path)
-    # To'liq URL qaytarish (Render hosti bilan)
     return jsonify({"url": f"{request.host_url.rstrip('/')}/uploads/media/{filename}"})
 
-# Statik fayllar servisi
 @app.route('/uploads/<path:type>/<path:filename>')
 def serve_files(type, filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], type), filename)
 
-# --- SOCKET.IO (REAL-TIME) ---
+# --- SOCKET.IO ---
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
     if username:
         join_room(username)
-        print(f"DEBUG: {username} ulandi")
 
 @socketio.on('send_message')
 def handle_send(data):
@@ -162,14 +165,11 @@ def handle_send(data):
         )
         db.session.add(new_msg)
         db.session.commit()
-
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
-        # Xabarni faqat suhbatlashayotgan ikki kishiga yuborish
         emit('receive_message', data, room=data['receiver'])
         emit('receive_message', data, room=data['sender'])
     except Exception as e:
         db.session.rollback()
-        print(f"ERROR: {e}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
