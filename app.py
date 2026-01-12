@@ -8,28 +8,30 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# --- KONFIGURATSIYA ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'safechat_ultra_secure_2026_key'
-# Renderda DATABASE_URL bo'lsa shuni oladi, bo'lmasa sqlite ishlatadi
+# Renderda baza o'chib ketmasligi uchun imkon bo'lsa DATABASE_URL ishlating
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///safechat_v2.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Papkalar yaratish
+# Papkalarni yaratish
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
 
 db = SQLAlchemy(app)
-# Renderda WebSocket barqaror ishlashi uchun eventlet va polling sozlamalari
+# Renderda barqaror ishlashi uchun eventlet va polling muhim
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 CORS(app)
 
-# --- MODELLAR ---
+# --- MA'LUMOTLAR BAZASI ---
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     ip_address = db.Column(db.String(50))
+    is_blocked = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Message(db.Model):
@@ -43,33 +45,42 @@ class Message(db.Model):
 with app.app_context():
     db.create_all()
 
-# --- API ---
+# --- API ENDPOINTLAR ---
 
-@app.route('/api/login', methods=['POST'])
-def auth():
+# 1. Registration (Frontend: register() funksiyasi uchun)
+@app.route('/api/register', methods=['POST'])
+def register_api():
     data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    email = data.get('email') # Registratsiya uchun kerak
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({"message": "Bu username allaqachon band!"}), 400
+    
+    hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
+    new_user = User(
+        email=data['email'],
+        username=data['username'],
+        password=hashed_pw,
+        ip_address=request.remote_addr
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"status": "success"}), 201
 
-    user = User.query.filter_by(username=username).first()
-
-    if not user:
-        # Registratsiya qismi
-        if not email:
-            return jsonify({"message": "Ro'yxatdan o'tish uchun email kerak"}), 400
-        hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
-        new_user = User(email=email, username=username, password=hashed_pw, ip_address=request.remote_addr)
-        db.session.add(new_user)
+# 2. Login (Frontend: login() funksiyasi uchun)
+@app.route('/api/login', methods=['POST'])
+def login_api():
+    data = request.json
+    user = User.query.filter_by(username=data['username']).first()
+    
+    if user and check_password_hash(user.password, data['password']):
+        if user.is_blocked:
+            return jsonify({"message": "Siz bloklangansiz!"}), 403
+        user.ip_address = request.remote_addr
         db.session.commit()
-        return jsonify({"status": "created", "username": username}), 201
-
-    if check_password_hash(user.password, password):
         return jsonify({"status": "success", "username": user.username}), 200
     
-    return jsonify({"message": "Parol noto'g'ri!"}), 401
+    return jsonify({"message": "Username yoki parol xato!"}), 401
 
-# Yangi endpoint: Xabarlar tarixini olish
+# 3. Xabarlar tarixi (Frontend: openChat() funksiyasi uchun)
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
@@ -87,36 +98,61 @@ def get_messages():
         "timestamp": m.timestamp.strftime('%H:%M')
     } for m in msgs])
 
-# Foydalanuvchilarni qidirish (Xavfsiz variant)
+# 4. Foydalanuvchilar ro'yxati (Frontend: liveSearch() va loadAdmin() uchun)
 @app.route('/api/admin/users', methods=['GET'])
-def list_users():
+def admin_users():
     users = User.query.all()
-    return jsonify([{"username": u.username} for u in users])
+    return jsonify([{
+        "username": u.username,
+        "ip": u.ip_address,
+        "is_blocked": u.is_blocked
+    } for u in users])
 
+# 5. Profilni yangilash (Frontend: saveProfile() uchun)
+@app.route('/api/profile/update', methods=['POST'])
+def update_profile():
+    data = request.json
+    user = User.query.filter_by(username=data.get('current_username')).first()
+    if not user: return jsonify({"message": "Foydalanuvchi topilmadi"}), 404
+
+    if data.get('new_username'):
+        new_u = data['new_username'] + ".connect.uz"
+        if User.query.filter_by(username=new_u).first():
+            return jsonify({"message": "Bu username band!"}), 400
+        user.username = new_u
+
+    if data.get('new_password'):
+        user.password = generate_password_hash(data['new_password'], method='pbkdf2:sha256')
+
+    db.session.commit()
+    return jsonify({"status": "updated"})
+
+# 6. Fayl yuklash (Frontend: handleFile() uchun)
 @app.route('/api/upload_avatar', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files: return "Fayl yo'q", 400
+def upload_file_api():
+    if 'file' not in request.files: return jsonify({"message": "Fayl topilmadi"}), 400
     file = request.files['file']
-    filename = secure_filename(f"{secrets.token_hex(8)}_{file.filename}")
+    filename = secure_filename(f"{secrets.token_hex(4)}_{file.filename}")
     save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'media', filename)
     file.save(save_path)
-    return jsonify({"url": f"{request.host_url}uploads/media/{filename}"})
+    # To'liq URL qaytarish (Render hosti bilan)
+    return jsonify({"url": f"{request.host_url.rstrip('/')}/uploads/media/{filename}"})
 
+# Statik fayllar servisi
 @app.route('/uploads/<path:type>/<path:filename>')
 def serve_files(type, filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], type), filename)
 
-# --- SOCKET ---
-
+# --- SOCKET.IO (REAL-TIME) ---
 @socketio.on('join')
-def on_join(data):
+def handle_join(data):
     username = data.get('username')
     if username:
         join_room(username)
-        print(f"DEBUG: {username} xonaga kirdi")
+        print(f"DEBUG: {username} ulandi")
 
 @socketio.on('send_message')
-def handle_msg(data):
+def handle_send(data):
     try:
         new_msg = Message(
             sender=data['sender'],
@@ -126,11 +162,13 @@ def handle_msg(data):
         )
         db.session.add(new_msg)
         db.session.commit()
-        
+
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
+        # Xabarni faqat suhbatlashayotgan ikki kishiga yuborish
         emit('receive_message', data, room=data['receiver'])
         emit('receive_message', data, room=data['sender'])
     except Exception as e:
+        db.session.rollback()
         print(f"ERROR: {e}")
 
 if __name__ == '__main__':
