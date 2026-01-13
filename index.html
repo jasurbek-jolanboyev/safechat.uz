@@ -395,7 +395,7 @@
 
             try {
                 // Serverdan haqiqiy foydalanuvchilarni olish
-                const res = await fetch(`${API}/api/admin/users`);
+                const res = await fetch(`${API}/api/users/search`); 
                 const users = await res.json();
                 
                 // Qidiruvga mos keladigan foydalanuvchilarni filtrlaymiz
