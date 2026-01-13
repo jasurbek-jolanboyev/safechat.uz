@@ -57,14 +57,53 @@
         .nav-item.active { color: var(--ios-accent); }
         .nav-item i { font-size: 24px; margin-bottom: 4px; }
 
-        /* Chat ochilganda navigatsiyani yashirish */
+/* 1. Chat oynasi - navigatsiya va barcha asosiy kontentni yopib turadi */
 #chatArea {
-    z-index: 1000 !important; /* Navigatsiyadan balandroq bo'lishi kerak */
     position: fixed;
-    background: #F2F2F7;
     inset: 0;
+    background: #F2F2F7;
+    /* Navigatsiya (odatda 50-100) dan baland bo'lishi kerak */
+    z-index: 5000 !important; 
+    display: none; /* Faqat openChat() funksiyasi chaqirilganda 'flex' bo'ladi */
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
 }
 
+/* 2. Fonni qoraytirish (Overlay) - Sheet ochilganda chatni xiralashtiradi */
+#sheetOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    /* ChatArea (5000) dan baland bo'lishi kerak */
+    z-index: 5500; 
+    display: none;
+    backdrop-filter: blur(2px); /* iOS uslubidagi effekt */
+}
+
+#sheetOverlay.active {
+    display: block;
+}
+
+/* 3. Media Menyusi (iOS Action Sheet) */
+.ios-sheet {
+    position: fixed;
+    bottom: -100%; /* Dastlab ekran ostida yashirin */
+    left: 0;
+    right: 0;
+    background: white;
+    /* Overlay (5500) dan ham baland, eng yuqori qatlam */
+    z-index: 6000 !important; 
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 24px 24px 0 0;
+    padding-bottom: env(safe-area-inset-bottom); /* Zamonaviy smartfonlar uchun */
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+}
+
+/* Sheet faol holatga kelganda ko'tariladi */
+.ios-sheet.active {
+    bottom: 0;
+}
 /* Navigatsiya elementlari uchun animatsiya */
 .nav-item {
     color: #8E8E93;
@@ -533,26 +572,57 @@ async function openChat(name) {
             closeAllSheets();
         }
 
-        // --- MEDIA & TOOLS ---
-        function triggerUpload(type) { currentUploadType = type; document.getElementById('mediaInp').click(); }
+// --- MEDIA & TOOLS ---
+
+        // 1. Fayl tanlash oynasini ochish
+        function triggerUpload(type) { 
+            currentUploadType = type; 
+            document.getElementById('mediaInp').click(); 
+        }
+
+        // 2. Fayl tanlangandan keyin uni serverga yuklash va yuborish
         async function handleFile(input) {
             if(!input.files[0]) return;
             const fd = new FormData();
             fd.append('file', input.files[0]);
+            
             try {
+                // Faylni serverga yuklash
                 const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
                 const d = await res.json();
+                
+                // Xabarni chatga yuborish (rasm, video yoki fayl sifatida)
                 sendMsg(currentUploadType, d.url);
-            } catch(e) { alert("Fayl yuklashda xato!"); }
+                
+                // --- MUHIM: Media menyusini (sheet) yopish ---
+                closeAllSheets(); 
+                input.value = ""; // Tanlangan faylni tozalash (keyingi safar yana tanlash uchun)
+            } catch(e) { 
+                alert("Fayl yuklashda xato yuz berdi!"); 
+            }
         }
 
+        // 3. Geografik joylashuvni aniqlash va yuborish
         function sendLocation() {
-            navigator.geolocation.getCurrentPosition(p => {
-                const url = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-                sendMsg('text', "Mening joylashuvim: " + url);
-            }, () => alert("Ruxsat berilmadi"));
-        }
+            if (!navigator.geolocation) {
+                return alert("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi");
+            }
 
+            navigator.geolocation.getCurrentPosition(p => {
+                const lat = p.coords.latitude;
+                const lon = p.coords.longitude;
+                // Google Maps havolasini yaratish
+                const url = `https://www.google.com/maps?q=${lat},${lon}`;
+                
+                sendMsg('text', "📍 Mening joylashuvim: " + url);
+                
+                // --- MUHIM: Media menyusini (sheet) yopish ---
+                closeAllSheets();
+            }, (err) => {
+                alert("Joylashuvni aniqlashga ruxsat berilmadi yoki xato yuz berdi.");
+            });
+        }
+        
         function setEntityType(type) {
             currentEntityType = type;
             document.getElementById('btnTypeGroup').classList.toggle('bg-white', type === 'group');
@@ -710,7 +780,15 @@ function createEntity() {
             alert("Profil ma'lumotlari muvaffaqiyatli saqlandi!");
             closeSheet('settingsSheet');
         }
-
+        // Foydalanuvchi login qilgandan keyin bu ishga tushadi
+        function onUserLoggedIn() {
+            currentUser = localStorage.getItem('chat_user'); // Agar saqlangan bo'lsa
+            if(currentUser) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                switchTab('chats'); // Birinchi bo'lib chatlar bo'limi ochiladi
+            }
+        }
         // --- SOCKET REAL-TIME ---
         socket.on('receive_message', (data) => { if(data.sender === activeChat) appendMessage(data); });
         socket.on('message_edited', (data) => {
