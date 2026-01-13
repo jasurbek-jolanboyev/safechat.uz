@@ -24,7 +24,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- MA'LUMOTLAR BAZASI MODELLARI ---
 
