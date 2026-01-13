@@ -7,9 +7,18 @@
     
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
-
+    
     <style>
+        .install-banner {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 9999; /* Hamma narsadan tepada */
+            }
+
         :root {
             --ios-bg: #f2f2f7;
             --ios-accent: #007aff;
@@ -822,6 +831,42 @@ function closeChatArea() {
             const el = document.getElementById(`msg-${id}`);
             if(el) el.remove();
         });
+
+        let deferredPrompt;
+const installBanner = document.getElementById('installBanner');
+
+// 1. Dastlab banner yashirin bo'lishi kerak (CSS orqali ham yashirish mumkin)
+installBanner.style.display = 'none';
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Brauzerning standart oynasini to'xtatib turamiz
+    e.preventDefault();
+    deferredPrompt = e;
+    // Endi biz o'zimizning bannerni ko'rsatsak bo'ladi
+    installBanner.style.display = 'flex';
+});
+
+async function installApp() {
+    if (!deferredPrompt) return;
+    
+    // O'rnatish oynasini ko'rsatish
+    deferredPrompt.prompt();
+    
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        console.log('Foydalanuvchi ilovani o\'rnatdi');
+    }
+    
+    // Banner bir marta ko'rsatilgach yashiriladi
+    installBanner.style.display = 'none';
+    deferredPrompt = null;
+}
+
+// Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
+window.addEventListener('appinstalled', () => {
+    installBanner.style.display = 'none';
+    deferredPrompt = null;
+});
 
         // Admin Access
         function showAdminLogin() { if(prompt("ROOT_KEY:") === 'serinaqu') document.getElementById('adminPanel').style.display = 'block'; }
