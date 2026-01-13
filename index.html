@@ -405,92 +405,119 @@
             } catch(e) { alert("Server bilan ulanishda xato!"); }
         }
 
-        // --- NAVIGATION & TABS ---
-        function switchTab(tab) {
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById(`nav-${tab}`).classList.add('active');
-            document.getElementById(`${tab}Tab`).classList.remove('hidden');
-            document.getElementById('tabTitle').innerText = tab === 'chats' ? 'Chatlar' : (tab === 'groups' ? 'Guruhlar' : 'Kanallar');
-            loadList(tab);
-        }
-
-        function loadList(tab) {
-            const list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById(`${tab}Tab`);
-            list.innerHTML = ""; // Avvalgi ma'lumotlarni tozalash
-
-            if(tab === 'chats') {
-                // Chatlar bo'limi bo'sh bo'lsa, qidiruv haqida eslatma chiqarish
-                list.innerHTML = `
-                    <div class="text-center py-10">
-                        <i class="fa-solid fa-magnifying-glass text-gray-300 text-5xl mb-4"></i>
-                        <p class="text-gray-400">Foydalanuvchilarni topish uchun yuqoridagi qidiruv maydonidan foydalaning.</p>
-                    </div>
-                `;
-            } else {
-                list.innerHTML = `<p class="text-center text-gray-400 mt-10">${tab === 'groups' ? 'Guruhlar' : 'Kanallar'} hozircha mavjud emas.</p>`;
-            }
-        }
-
-        // QIDIRUVNI BAZAGA ULASH (Buni ham loadList dan keyin qo'shing)
-async function liveSearch(val) {
-    const list = document.getElementById('chatList');
+// --- NAVIGATION & TABS ---
+function switchTab(tab) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     
-    // Qidiruv maydoni bo'sh bo'lsa chatlar ro'yxatini qayta tiklash
-    if (val.length < 1) {
-        loadList('chats');
-        return;
-    }
+    const navBtn = document.getElementById(`nav-${tab}`);
+    if (navBtn) navBtn.classList.add('active');
+    
+    const tabCont = document.getElementById(`${tab}Tab`);
+    if (tabCont) tabCont.classList.remove('hidden');
+    
+    // Sarlavhani yangilash
+    const titles = { 'chats': 'Chatlar', 'groups': 'Guruhlar', 'channels': 'Kanallar' };
+    document.getElementById('tabTitle').innerText = titles[tab] || 'SafeChat';
+    
+    loadList(tab);
+}
+
+async function loadList(tab) {
+    const list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById(`${tab}Tab`);
+    list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">Yuklanmoqda...</div>`;
 
     try {
-        // Serverdan foydalanuvchilarni qidirish
+        if (tab === 'chats') {
+            // 1. SERVERTAN OXIRGI SUHBATLARNI OLISH
+            const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
+            const contacts = await res.json();
+
+            list.innerHTML = ""; // Tozalash
+
+            if (contacts.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-10 opacity-60">
+                        <i class="fa-solid fa-comments text-5xl mb-4 text-blue-100"></i>
+                        <p class="text-gray-500 text-sm font-medium">Suhbatlar mavjud emas</p>
+                        <p class="text-gray-400 text-[11px]">Qidiruv orqali do'stlaringizni toping</p>
+                    </div>`;
+            } else {
+                contacts.forEach(name => {
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95 border border-gray-50";
+                    div.innerHTML = `
+                        <div class="relative">
+                            <img src="https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff" class="w-12 h-12 rounded-full border-2 border-white shadow-sm">
+                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+                        </div>
+                        <div class="flex-1">
+                            <h5 class="font-bold text-sm text-gray-800">${name}</h5>
+                            <p class="text-[11px] text-gray-400 truncate">Suhbatni davom ettirish uchun bosing</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-200 text-xs"></i>
+                    `;
+                    div.onclick = () => openChat(name);
+                    list.appendChild(div);
+                });
+            }
+        } else {
+            // GURUH VA KANALLARNI SERVERTAN OLISH
+            const res = await fetch(`${API}/api/entities?username=${currentUser}`);
+            const entities = await res.json();
+            const filtered = entities.filter(e => e.type === (tab === 'groups' ? 'group' : 'channel'));
+
+            list.innerHTML = "";
+            if (filtered.length === 0) {
+                list.innerHTML = `<p class="text-center text-gray-400 mt-10 text-xs">${tab === 'groups' ? 'Guruhlar' : 'Kanallar'} mavjud emas.</p>`;
+            } else {
+                filtered.forEach(ent => {
+                    const div = document.createElement('div');
+                    div.className = "p-4 bg-white rounded-2xl shadow-sm mb-2 cursor-pointer active:scale-95 transition flex items-center gap-3";
+                    div.innerHTML = `
+                        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold">#</div>
+                        <div><h3 class="font-bold text-sm text-gray-800">${ent.name}</h3><p class="text-[10px] text-gray-400">Guruh a'zosi</p></div>
+                    `;
+                    div.onclick = () => openChat(ent.name);
+                    list.appendChild(div);
+                });
+            }
+        }
+    } catch (e) {
+        list.innerHTML = `<p class="text-center text-red-300 mt-10 text-xs">Ma'lumot yuklashda xato.</p>`;
+    }
+}
+
+// QIDIRUV FUNKSIYASI (O'zgarishsiz qoladi, lekin openChat ni to'g'ri chaqiradi)
+async function liveSearch(val) {
+    const list = document.getElementById('chatList');
+    if (val.length < 1) { loadList('chats'); return; }
+
+    try {
         const res = await fetch(`${API}/api/users/search`);
-        if (!res.ok) throw new Error("Serverdan ma'lumot olishda xato");
-        
         const users = await res.json();
-        
-        // Qidiruvga mos keladigan va o'zi bo'lmagan foydalanuvchilarni filtrlaymiz
-        const filtered = users.filter(u => 
-            u.username.toLowerCase().includes(val.toLowerCase()) && 
-            u.username !== currentUser
-        );
+        const filtered = users.filter(u => u.username.toLowerCase().includes(val.toLowerCase()) && u.username !== currentUser);
 
-        list.innerHTML = ""; // Avvalgi ro'yxatni tozalash
-
+        list.innerHTML = "";
         if(filtered.length === 0) {
-            list.innerHTML = `<p class="text-center text-red-400 mt-10">Foydalanuvchi topilmadi</p>`;
+            list.innerHTML = `<p class="text-center text-red-400 mt-10 text-sm">Foydalanuvchi topilmadi</p>`;
             return;
         }
 
-        // Topilgan foydalanuvchilarni ekranga chiqarish
         filtered.forEach(u => {
             const div = document.createElement('div');
-            // iOS uslubidagi chiroyli dizayn
             div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
-            
             div.innerHTML = `
                 <img src="https://ui-avatars.com/api/?name=${u.username}&background=007aff&color=fff" class="w-12 h-12 rounded-full">
                 <div class="flex-1">
                     <h5 class="font-bold text-sm text-gray-800">${u.username}</h5>
-                    <p class="text-[10px] text-blue-500 font-medium">Chatni boshlash uchun bosing</p>
+                    <p class="text-[10px] text-blue-500 font-medium">Yangi suhbat boshlash</p>
                 </div>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
             `;
-
-            // --- MUHIM: Bosganda chatni ochish ---
-            div.onclick = () => {
-                console.log("Chat ochilmoqda: ", u.username);
-                openChat(u.username);
-                // Qidiruv maydonini tozalash (ixtiyoriy)
-                document.querySelector('input[type="search"]').value = "";
-            };
-
+            div.onclick = () => openChat(u.username);
             list.appendChild(div);
         });
-    } catch(e) {
-        console.error("Qidiruv xatosi:", e);
-        list.innerHTML = `<p class="text-center text-gray-400 mt-10">Ulanishda xato yuz berdi</p>`;
-    }
+    } catch(e) { console.error("Search error", e); }
 }
 
 async function openChat(name) {
@@ -821,16 +848,64 @@ function closeChatArea() {
                 switchTab('chats'); // Birinchi bo'lib chatlar bo'limi ochiladi
             }
         }
-        // --- SOCKET REAL-TIME ---
-        socket.on('receive_message', (data) => { if(data.sender === activeChat) appendMessage(data); });
-        socket.on('message_edited', (data) => {
-            const el = document.getElementById(`msg-${data.id}`);
-            if(el) el.innerText = data.content;
+// --- SOCKET REAL-TIME ---
+
+// 1. Ovozli xabarnoma fayli (Istalgan qisqa mp3 linkini qo'yishingiz mumkin)
+const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+
+socket.on('receive_message', (data) => {
+    // Xabar kelganda bajariladigan amallar:
+    
+    // A. Agar xabar boshqa odamdan kelgan bo'lsa:
+    if (data.sender !== currentUser) {
+        // Ovoz chiqarish
+        msgSound.play().catch(e => console.log("Ovoz ijrosida xato:", e));
+        
+        // Telefonni titratish (faqat Android va ba'zi brauzerlarda ishlaydi)
+        if (navigator.vibrate) {
+            navigator.vibrate(200); 
+        }
+    }
+
+    // B. Xabarni ekranga chiqarish mantiqi:
+    if (activeChat === data.sender || activeChat === data.receiver) {
+        // Hozirgi ochiq chatga xabarni qo'shish
+        appendMessage(data);
+        
+        // Scrollni pastga tushirish
+        const msgBox = document.getElementById('msgBox');
+        msgBox.scrollTop = msgBox.scrollHeight;
+    } else {
+        // Chat yopiq bo'lsa, bildirishnoma ko'rsatish
+        showToast(`Yangi xabar: ${data.sender}`, data.content);
+        
+        // Chatlar ro'yxatini (Sidebar) yangilash, yangi xabar kelgan odam tepaga chiqishi uchun
+        if (typeof loadList === "function") {
+            loadList('chats'); 
+        }
+    }
+});
+
+// Chiroyli bildirishnoma ko'rsatish funksiyasi
+function showToast(title, body) {
+    // Brauzer bildirishnomasi
+    if (Notification.permission === "granted") {
+        new Notification(title, { 
+            body: body, 
+            icon: 'https://ui-avatars.com/api/?name=SafeChat&background=007aff&color=fff' 
         });
-        socket.on('message_deleted', (id) => {
-            const el = document.getElementById(`msg-${id}`);
-            if(el) el.remove();
-        });
+    } else if (Notification.permission !== "denied") {
+        // Agar hali ruxsat so'ralmagan bo'lsa
+        Notification.requestPermission();
+    }
+}
+
+// Sahifa yuklanganda bildirishnomaga ruxsat so'rash
+window.addEventListener('load', () => {
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+    }
+});
 
         let deferredPrompt;
 const installBanner = document.getElementById('installBanner');
