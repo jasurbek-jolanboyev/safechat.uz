@@ -58,6 +58,8 @@
             -webkit-user-select: none;   /* Safari */
             user-select: none;           /* Matn tanlanishini o'chirish */
             touch-action: manipulation;
+            touch-action: pan-y; /* Faqat vertikal skrolga ruxsat, uzoq bosishni to'smaslik uchun */
+             cursor: pointer;
             }
 
             .msg-bubble {
@@ -1395,6 +1397,40 @@ function handleForward() {
         alert("Yuborildi!");
     }
     closeMenu();
+}
+function bindContextEvents(element, data) {
+    let pressTimer;
+    const isMe = data.sender === currentUser;
+
+    // --- DESKTOP: O'NG TUGMA ---
+    element.oncontextmenu = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showMenu(e, data.id, data.content, isMe);
+        return false;
+    };
+
+    // --- MOBILE: UZOQ BOSIB TURISH ---
+    element.addEventListener('touchstart', function(e) {
+        // Agar tanlash (select) rejimida bo'lsak, menyu chiqmasin
+        if (isSelectionMode) return;
+
+        pressTimer = setTimeout(() => {
+            if (navigator.vibrate) navigator.vibrate(50); // Vibratsiya
+            
+            // Sensor nuqtasini olish
+            const touch = e.touches[0];
+            showMenu(touch, data.id, data.content, isMe);
+        }, 600); // 600ms - uzoq bosish vaqti
+    }, { passive: true });
+
+    element.addEventListener('touchend', function() {
+        clearTimeout(pressTimer);
+    });
+
+    element.addEventListener('touchmove', function() {
+        clearTimeout(pressTimer); // Skrol qilinganda menyuni chiqarmaslik
+    });
 }
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
 window.addEventListener('appinstalled', () => {
