@@ -186,6 +186,7 @@
     display: block;
 }
 
+#chatFooter { padding-bottom: env(safe-area-inset-bottom); }
 /* 3. Media Menyusi (iOS Action Sheet) */
 .ios-sheet {
     position: fixed;
@@ -319,7 +320,7 @@
         </aside>
 
         <main id="chatArea" class="flex flex-1 flex-col bg-white relative md:flex">
-            <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
+            <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel position: relative; top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button class="md:hidden text-blue-600 mr-2" onclick="closeChatArea()"><i class="fa-solid fa-chevron-left text-xl"></i></button>
                     <img id="activeChatImg" src="" class="w-11 h-11 rounded-full object-cover">
@@ -396,7 +397,7 @@
     <div id="mediaSheet" class="ios-sheet h-[45%]">
         <div class="sheet-handle"></div>
         <div class="p-8 grid grid-cols-4 gap-6 text-center">
-            <div onclick="triggerUpload('image')" class="flex flex-col items-center gap-2 cursor-pointer">
+            <div onclick="triggerMediaUpload('image')" class="flex flex-col items-center gap-2 cursor-pointer">
                 <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center text-3xl"><i class="fa-solid fa-image"></i></div>
                 <span class="text-xs font-bold text-gray-600">Foto</span>
             </div>
@@ -546,6 +547,17 @@
             } catch(e) { alert("Server bilan ulanishda xato!"); }
         }
 
+        let initialHeight = window.innerHeight;
+        window.addEventListener('resize', () => {
+        const newHeight = window.innerHeight;
+        if (newHeight < initialHeight * 0.8) { // klaviatura ochiq deb hisobla
+            document.getElementById('chatFooter').style.paddingBottom = 'env(keyboard-inset-height, 0px)';
+            document.getElementById('msgBox').style.paddingBottom = '150px'; // inputni ko'rinadigan qil
+        } else {
+            document.getElementById('chatFooter').style.paddingBottom = '10px';
+            document.getElementById('msgBox').style.paddingBottom = '6px';
+        }
+        });
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -775,6 +787,17 @@ function sendMsg(type = 'text', content = null) {
     }
 }
 
+        function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        pendingFileData = e.target.result;
+        pendingFileType = file.type.startsWith('image') ? 'image' : file.type.startsWith('video') ? 'video' : 'file';
+        showMediaPreview(pendingFileData, pendingFileType);
+    };
+    reader.readAsDataURL(file);
+    }
 function appendMessage(data) {
     const box = document.getElementById('msgBox');
     const isMe = data.sender === currentUser;
@@ -1352,17 +1375,12 @@ setTimeout(() => {
 
 // closeMenu funksiyasini ham moslashtiramiz
 function closeMenu() {
-    const menu = document.getElementById('msgContextMenu');
-    const msgBox = document.getElementById('msgBox');
-    
-    // 1. Menyuni yashirish
-    menu.style.display = 'none';
-    menu.classList.add('hidden');
-    
-    msgBox.style.filter = "none"; 
-    msgBox.classList.remove('blur-sm'); 
-    
-    document.removeEventListener('click', closeMenu);
+  const menu = document.getElementById('msgContextMenu');
+  const msgBox = document.getElementById('msgBox');
+  menu.style.display = 'none';
+  menu.classList.add('hidden');
+  msgBox.style.filter = 'none';
+  msgBox.style.transition = 'none';
 }
 
 function closeMenu() {
