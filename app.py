@@ -69,6 +69,47 @@ def user_is_blocked_by(target_username, sender_username):
 
 # --- API ENDPOINTLAR ---
 
+# ... mavjud importlar ...
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory(os.getcwd(), 'manifest.json')
+
+@app.route('/logo.png')
+def serve_logo():
+    return send_from_directory(os.getcwd(), 'logo.png')
+
+# Agarda sw.js (Service Worker) ham yaratgan bo'lsangiz:
+@app.route('/sw.js')
+def serve_sw():
+    return send_from_directory(os.getcwd(), 'sw.js')
+
+# ... qolgan barcha endpointlar (register, login, etc.) ...
+
+@app.route('/api/recent_chats', methods=['GET'])
+def get_recent_chats():
+    username = request.args.get('username')
+    if not username:
+        return jsonify([]), 400
+
+    # Foydalanuvchi ishtirok etgan barcha xabarlarni vaqt bo'yicha teskari tartibda olish
+    msgs = Message.query.filter(
+        (Message.sender == username) | (Message.receiver == username)
+    ).order_by(Message.timestamp.desc()).all()
+    
+    contacts = []
+    seen = set()
+    
+    for m in msgs:
+        # Suhbatdosh kimligini aniqlaymiz
+        other_user = m.sender if m.sender != username else m.receiver
+        
+        if other_user not in seen:
+            contacts.append(other_user)
+            seen.add(other_user)
+    
+    return jsonify(contacts)
+
 @app.route('/')
 def index():
     return "SafeChat V3 Server is Running!"
@@ -154,6 +195,21 @@ def upload_file_api():
 @app.route('/uploads/<path:type>/<path:filename>')
 def serve_files(type, filename):
     return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], type), filename)
+
+@app.route('/api/entities', methods=['GET'])
+def get_entities():
+    username = request.args.get('username')
+    # Foydalanuvchi a'zo bo'lgan barcha guruh va kanallarni topish
+    entities = Entity.query.filter(Entity.members.contains(username)).all()
+    
+    result = []
+    for e in entities:
+        result.append({
+            "name": e.name,
+            "type": e.entity_type,
+            "creator": e.creator
+        })
+    return jsonify(result)
 
 # --- SOCKET.IO REAL-TIME ---
 
