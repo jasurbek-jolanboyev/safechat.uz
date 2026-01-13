@@ -25,22 +25,28 @@
                 display: block;
             }
 
-            /* Surish (Swipe) effekti uchun */
-            .msg-bubble {
-                transition: transform 0.2s ease-out;
-                position: relative;
-                user-select: none;
-                touch-action: pan-y;
-            }
-
             .swipe-indicator {
                 position: absolute;
-                right: -40px;
+                left: -40px; /* ENDI: O'ng tomondan emas, chap tomondan chiqadi */
                 top: 50%;
                 transform: translateY(-50%);
                 opacity: 0;
                 color: #007aff;
                 transition: opacity 0.2s;
+            }
+
+            /* Xabar bloki uchun cursor va transition */
+            .msg-bubble {
+            -webkit-touch-callout: none; /* iOS Safari standart menyusini o'chirish */
+            -webkit-user-select: none;   /* Safari */
+            user-select: none;           /* Matn tanlanishini o'chirish */
+            touch-action: manipulation;
+            }
+
+            .msg-bubble {
+                position: relative;
+                will-change: transform;
+                cursor: grab;
             }
         .install-banner {
             position: fixed;
@@ -66,6 +72,42 @@
             -webkit-backdrop-filter: blur(35px) saturate(180%);
             border: 1px solid rgba(255,255,255,0.3);
         }
+
+        #msgContextMenu {
+    position: fixed;
+    z-index: 10000;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px); /* Oyna effekti */
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    padding: 8px;
+    min-width: 170px;
+    transform: scale(0.9);
+    animation: menuAppear 0.15s forwards ease-out;
+}
+
+@keyframes menuAppear {
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.context-menu button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.context-menu button:active {
+    background: rgba(0, 0, 0, 0.05);
+}
 
         /* iOS Sheets & Bottom Nav */
         .ios-sheet {
@@ -286,14 +328,19 @@
         </main>
     </div>
 
-        <div id="msgContextMenu" class="context-menu">
-            <button onclick="handleReply()"><i class="fa-solid fa-reply"></i> Javob berish</button>
-            <button id="editBtn" onclick="startEditMsg()"><i class="fa-solid fa-pen"></i> Tahrirlash</button>
-            <button onclick="copyMsg()"><i class="fa-solid fa-copy"></i> Nusxalash</button>
-            <button onclick="handlePin()"><i class="fa-solid fa-thumbtack"></i> Pin (Qadash)</button>
-            <button onclick="handleForward()"><i class="fa-solid fa-share"></i> Uzatish (Forward)</button>
-            <button onclick="toggleSelectMode()"><i class="fa-solid fa-check-double"></i> Tanlash (Select)</button>
-            <button id="deleteBtn" onclick="deleteMsgServer()" class="btn-delete"><i class="fa-solid fa-trash"></i> O'chirish</button>
+        <div id="msgContextMenu" class="context-menu hidden">
+            <button onclick="handleReply()"><i class="fa-solid fa-reply text-blue-500"></i> Javob berish</button>
+            <button onclick="copyMsg()"><i class="fa-solid fa-copy text-gray-500"></i> Nusxalash</button>
+            
+            <button id="editBtn" onclick="startEditMsg()"><i class="fa-solid fa-pen text-amber-500"></i> Tahrirlash</button>
+            
+            <button onclick="handleForward()"><i class="fa-solid fa-share text-green-500"></i> Uzatish</button>
+            <button onclick="handlePin()"><i class="fa-solid fa-thumbtack text-purple-500"></i> Qadash (Pin)</button>
+            <button onclick="toggleSelectMode()"><i class="fa-solid fa-check-double text-blue-400"></i> Tanlash</button>
+            
+            <button id="deleteBtn" onclick="deleteMsgServer()" class="text-red-500 border-t mt-1 pt-1">
+                <i class="fa-solid fa-trash"></i> O'chirish
+            </button>
         </div>
 
         <div id="selectionBar" class="hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 flex justify-around items-center z-[101] shadow-2xl">
@@ -1069,6 +1116,61 @@ function toggleMsgSelection(id) {
     }
 }
 
+function showMenu(e, id, content, isMe) {
+    const menu = document.getElementById('msgContextMenu');
+    const msgElement = document.getElementById(`msg-${id}`);
+    
+    // 1. Xabarning ekrandagi koordinatalarini olish
+    const rect = msgElement.getBoundingClientRect();
+    
+    menu.style.display = 'block';
+    menu.classList.remove('hidden');
+
+    // 2. Menyuni joylashtirish mantiqi
+    let top = rect.top + (rect.height / 2); // Xabarning o'rtasidan boshlash
+    let left;
+
+    if (isMe) {
+        // Mening xabarim (o'ngda): Menyu xabarning chap tomonida chiqadi
+        left = rect.left - menu.offsetWidth - 10;
+    } else {
+        // Birovning xabari (chapda): Menyu xabarning o'ng tomonida chiqadi
+        left = rect.right + 10;
+    }
+
+    // 3. Ekran chetidan chiqib ketmasligini tekshirish
+    // Agar tepada joy qolmasa
+    if (top + menu.offsetHeight > window.innerHeight) {
+        top = window.innerHeight - menu.offsetHeight - 20;
+    }
+    // Agar chapda/o'ngda joy qolmasa (mobil qurilmalar uchun)
+    if (left < 10) left = 10;
+    if (left + menu.offsetWidth > window.innerWidth) {
+        left = window.innerWidth - menu.offsetWidth - 10;
+    }
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+
+    // Ma'lumotlarni saqlash
+    selectedMsgId = id;
+    selectedMsgText = content;
+    
+    // Fonni xiralashtirish (ixtiyoriy)
+    document.getElementById('msgBox').classList.add('blur-sm');
+
+    setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+    }, 10);
+}
+
+function closeMenu() {
+    const menu = document.getElementById('msgContextMenu');
+    menu.style.display = 'none';
+    document.getElementById('msgBox').classList.remove('blur-sm');
+    document.removeEventListener('click', closeMenu);
+}
+
 // 3. Swipe to Reply (Surish orqali javob berish)
 function initSwipe(element, msgId, text, sender) {
     let startX = 0;
@@ -1077,16 +1179,19 @@ function initSwipe(element, msgId, text, sender) {
 
     element.addEventListener('touchstart', e => {
         startX = e.touches[0].clientX;
-        element.style.transition = "none"; // Surayotganda animatsiyani o'chirish
+        element.style.transition = "none"; 
     }, {passive: true});
 
     element.addEventListener('touchmove', e => {
         currentX = e.touches[0].clientX;
-        let diff = startX - currentX;
-        if (diff > 0 && diff < 80) { // Faqat chapga 80px gacha surish
+        let diff = currentX - startX; // ENDI: O'ngga surish uchun (current - start)
+
+        if (diff > 0 && diff < 80) { // Faqat o'ngga 80px gacha surish
             isSwiping = true;
-            element.style.transform = `translateX(-${diff}px)`;
-            // Surish paytida reply belgisi ko'rinishi uchun indicatorni boshqarish mumkin
+            element.style.transform = `translateX(${diff}px)`; // Musbat qiymat o'ngga suradi
+            
+            // Ixtiyoriy: Surish paytida reply belgisi (icon) ko'rinishi uchun
+            // element.querySelector('.swipe-indicator').style.opacity = diff / 80;
         }
     }, {passive: true});
 
@@ -1094,8 +1199,9 @@ function initSwipe(element, msgId, text, sender) {
         element.style.transition = "transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"; 
         element.style.transform = `translateX(0)`; // Joyiga qaytarish
 
-        if (isSwiping && (startX - currentX > 50)) {
-            setupReply(msgId, text, sender); // Reply funksiyasini chaqirish
+        // Agar 50px dan ko'proq o'ngga surilgan bo'lsa - Reply!
+        if (isSwiping && (currentX - startX > 50)) {
+            setupReply(msgId, text, sender);
         }
         isSwiping = false;
     });
