@@ -467,6 +467,28 @@
         </div>
     </div>
 
+    <div id="mediaPreviewModal" class="hidden fixed inset-0 z-[100] bg-black flex flex-col">
+    <div class="p-4 flex justify-between items-center text-white">
+        <i class="fa-solid fa-xmark text-2xl" onclick="closeMediaPreview()"></i>
+        <span id="mediaTypeTitle" class="font-bold">Rasm yuborish</span>
+        <div></div>
+    </div>
+    
+    <div class="flex-1 flex items-center justify-center p-4">
+        <div id="mediaDisplayArea" class="max-w-full max-h-full">
+            </div>
+    </div>
+
+    <div class="p-4 bg-white/10 backdrop-blur-lg">
+        <div class="flex gap-2 items-center bg-white rounded-2xl p-2">
+            <input type="text" id="mediaCaption" class="flex-1 p-2 outline-none text-sm" placeholder="Izoh qoldiring...">
+            <button onclick="confirmAndSendMedia()" class="bg-blue-600 text-white w-10 h-10 rounded-full">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
     <div id="sheetOverlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
 
     <script>
@@ -753,63 +775,71 @@ function sendMsg(type = 'text', content = null) {
     }
 }
 
-        function appendMessage(data) {
-            const box = document.getElementById('msgBox');
-            const isMe = data.sender === currentUser;
-            
-            // 1. Xabar turiga qarab kontentni aniqlash
-            let contentHTML = "";
-            if (data.type === 'image') {
-                contentHTML = `<img src="${data.file_data || data.content}" class="max-w-[250px] rounded-lg cursor-pointer shadow-sm hover:opacity-90 transition" onclick="viewImage(this.src)">`;
-            } else if (data.type === 'video') {
-                contentHTML = `<video src="${data.file_data}" controls class="max-w-[250px] rounded-lg shadow-sm"></video>`;
-            } else if (data.type === 'location') {
-                contentHTML = `<div class="bg-blue-50 p-2 rounded-lg border border-blue-100">
-                    <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2">
-                        <i class="fa-solid fa-map-location-dot text-lg"></i> 📍 Joylashuvni ko'rish
-                    </a>
-                </div>`;
-            } else {
-                // Standart matnli xabar
-                contentHTML = `<p class="text-sm leading-relaxed">${data.content}</p>`;
-            }
+function appendMessage(data) {
+    const box = document.getElementById('msgBox');
+    const isMe = data.sender === currentUser;
+    
+    // 1. Multimedia qismini tayyorlash
+    let mediaHTML = "";
+    if (data.type === 'image') {
+        mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
+    } else if (data.type === 'video') {
+        mediaHTML = `<video src="${data.file_data}" controls class="max-w-full rounded-lg mb-2 shadow-sm"></video>`;
+    } else if (data.type === 'location') {
+        mediaHTML = `
+            <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
+                <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-map-location-dot"></i> 📍 Joylashuvni ko'rish
+                </a>
+            </div>`;
+    }
 
-            // 2. Reply (javob) qismini tayyorlash
-            let replyMarkup = "";
-            if (data.reply_to) {
-                replyMarkup = `
-                    <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80">
-                        <b class="text-blue-600 block">${data.reply_to.sender}</b>
-                        <p class="truncate text-gray-600">${data.reply_to.text}</p>
-                    </div>`;
-            }
+    // 2. Matn (kontent) qismini tayyorlash
+    // Agar bu location bo'lsa, linkni matn sifatida qayta ko'rsatmaymiz
+    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "") 
+                   ? `<p class="text-sm leading-relaxed">${data.content}</p>` 
+                   : "";
 
-            // 3. Konteyner yaratish
-            const container = document.createElement('div');
-            container.id = `container-${data.id}`;
-            container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4`;
-            
-            container.innerHTML = `
-                <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}" 
-                    id="msg-${data.id}">
-                    ${replyMarkup}
-                    <div class="msg-body">${contentHTML}</div>
-                    <div class="flex items-center justify-end gap-1 mt-1 opacity-60">
-                        <span class="text-[9px]">${data.timestamp}</span>
-                        ${isMe ? '<i class="fa-solid fa-check-double text-[8px]"></i>' : ''}
-                    </div>
-                </div>
-            `;
+    // 3. Reply (javob) qismi
+    let replyMarkup = "";
+    if (data.reply_to) {
+        replyMarkup = `
+            <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80 cursor-pointer" onclick="scrollToMessage('${data.reply_to.id}')">
+                <b class="text-blue-600 block">${data.reply_to.sender}</b>
+                <p class="truncate text-gray-600">${data.reply_to.text}</p>
+            </div>`;
+    }
 
-            box.appendChild(container);
-            
-            // Eventlarni bog'lash (Menyu va Swipe)
-            const bubble = container.querySelector('.msg-bubble');
-            bindContextEvents(bubble, data); 
-            initSwipe(bubble, data.id, data.content, data.sender);
-            
-            box.scrollTop = box.scrollHeight;
-        }
+    // 4. Konteyner yaratish
+    const container = document.createElement('div');
+    container.id = `container-${data.id}`;
+    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4 w-full`;
+    
+    container.innerHTML = `
+        <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}" 
+            id="msg-${data.id}">
+            ${replyMarkup}
+            <div class="msg-body">
+                ${mediaHTML}
+                ${textHTML}
+            </div>
+            <div class="flex items-center justify-end gap-1 mt-1 opacity-60">
+                <span class="text-[9px]">${data.timestamp}</span>
+                ${isMe ? '<i class="fa-solid fa-check-double text-[8px]"></i>' : ''}
+            </div>
+        </div>
+    `;
+
+    box.appendChild(container);
+    
+    // 5. Hodisalarni bog'lash
+    const bubble = container.querySelector('.msg-bubble');
+    bindContextEvents(bubble, data); 
+    initSwipe(bubble, data.id, data.content, data.sender);
+    
+    // Skrolni pastga tushirish
+    box.scrollTop = box.scrollHeight;
+}
 
         // --- CONTEXT MENU ACTIONS ---
         function showContextMenu(e, msgId) {
@@ -844,84 +874,93 @@ function sendMsg(type = 'text', content = null) {
 
 // --- MEDIA & TOOLS ---
 
-        // 1. Fayl tanlash oynasini ochish
-        function triggerUpload(type) { 
-            currentUploadType = type; 
-            document.getElementById('mediaInp').click(); 
-        }
+let pendingFileData = null;
+let pendingFileType = null;
 
-                function sendFile(fileType) {
-            const input = document.createElement('input');
-            input.type = 'file';
-            
-            // Turiga qarab filtrlash
-            if (fileType === 'image') input.accept = 'image/*';
-            if (fileType === 'video') input.accept = 'video/*';
-            
-            input.onchange = e => {
-                const file = e.target.files[0];
-                if (!file) return;
+// 1. Fayl tanlash
+function triggerMediaUpload(type) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    if (type === 'image') input.accept = 'image/*';
+    else if (type === 'video') input.accept = 'video/*';
+    else input.accept = '*/*';
 
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const fileData = event.target.result; // Base64 formatida
-                    
-                    const data = {
-                        sender: currentUser,
-                        receiver: activeChat,
-                        content: file.name, // Fayl nomi
-                        file_data: fileData, // Faylning o'zi
-                        type: fileType, // 'image', 'video', yoki 'file'
-                        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null
-                    };
-                    
-                    socket.emit('send_message', data);
-                };
-                reader.readAsDataURL(file); // Faylni o'qishni boshlash
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            pendingFileData = event.target.result; // Base64
+            pendingFileType = type;
+            showMediaPreview(pendingFileData, type);
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+// 2. Preview oynasini ochish
+function showMediaPreview(data, type) {
+    const modal = document.getElementById('mediaPreviewModal');
+    const display = document.getElementById('mediaDisplayArea');
+    modal.classList.remove('hidden');
+
+    if (type === 'image') {
+        display.innerHTML = `<img src="${data}" class="max-w-full max-h-[60vh] rounded-lg shadow-2xl">`;
+    } else if (type === 'video') {
+        display.innerHTML = `<video src="${data}" controls class="max-w-full max-h-[60vh] rounded-lg"></video>`;
+    }
+}
+
+function closeMediaPreview() {
+    document.getElementById('mediaPreviewModal').classList.add('hidden');
+    pendingFileData = null;
+}
+
+// 3. Tasdiqlash va Yuborish
+function confirmAndSendMedia() {
+    if (!pendingFileData) return;
+    
+    const caption = document.getElementById('mediaCaption').value;
+    
+    const data = {
+        sender: currentUser,
+        receiver: activeChat,
+        content: caption || (pendingFileType === 'image' ? "🖼 Rasm" : "📹 Video"),
+        file_data: pendingFileData,
+        type: pendingFileType,
+        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
+        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    };
+
+    socket.emit('send_message', data);
+    
+    // Tozalash
+    closeMediaPreview();
+    document.getElementById('mediaCaption').value = "";
+    cancelReply(); // Agar reply bo'lsa
+}
+
+// 4. Location yuborish (Preview shart emas, birdan ketadi)
+function sendLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const data = {
+                sender: currentUser,
+                receiver: activeChat,
+                content: `https://www.google.com/maps?q=${lat},${lon}`,
+                type: 'location',
+                lat: lat,
+                lon: lon,
+                timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             };
-            input.click();
-        }
-        // 2. Fayl tanlangandan keyin uni serverga yuklash va yuborish
-        async function handleFile(input) {
-            if(!input.files[0]) return;
-            const fd = new FormData();
-            fd.append('file', input.files[0]);
-            
-            try {
-                // Faylni serverga yuklash
-                const res = await fetch(`${API}/api/upload_avatar`, { method: 'POST', body: fd });
-                const d = await res.json();
-                
-                // Xabarni chatga yuborish (rasm, video yoki fayl sifatida)
-                sendMsg(currentUploadType, d.url);
-                
-                // --- MUHIM: Media menyusini (sheet) yopish ---
-                closeAllSheets(); 
-                input.value = ""; // Tanlangan faylni tozalash (keyingi safar yana tanlash uchun)
-            } catch(e) { 
-                alert("Fayl yuklashda xato yuz berdi!"); 
-            }
-        }
-
-        // 3. Geografik joylashuvni aniqlash va yuborish
-            function sendLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(position => {
-                        const data = {
-                            sender: currentUser,
-                            receiver: activeChat,
-                            content: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`,
-                            type: 'location',
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude
-                        };
-                        socket.emit('send_message', data);
-                    });
-                } else {
-                    alert("Geolokatsiya qurilmangizda yoqilmagan.");
-                }
-            }
-        
+            socket.emit('send_message', data);
+        });
+    }
+}
         function setEntityType(type) {
             currentEntityType = type;
             document.getElementById('btnTypeGroup').classList.toggle('bg-white', type === 'group');
@@ -1049,7 +1088,10 @@ function createEntity() {
         function handleEnter(e) { 
             if(e.key === 'Enter') sendMsg(); 
         }
-
+        function handleReply() {
+        setupReply(selectedMsgId, selectedMsgText, selectedMsgSender);
+        closeMenu(); // BU MUHIM!
+        }
 // CHATNI YOPISH
 function closeChatArea() { 
     const chatArea = document.getElementById('chatArea');
@@ -1301,9 +1343,11 @@ function showMenu(e, id, content, isMe) {
         document.removeEventListener('click', autoClose);
     };
     
-    setTimeout(() => {
-        document.addEventListener('click', autoClose);
-    }, 10);
+// showMenu funksiyasi oxirida mana buni ishlating:
+setTimeout(() => {
+    // click hodisasi faqat bir marta ishlashi uchun {once: true} foydali
+    document.addEventListener('click', closeMenu, { once: true });
+}, 50);
 }
 
 // closeMenu funksiyasini ham moslashtiramiz
@@ -1311,11 +1355,14 @@ function closeMenu() {
     const menu = document.getElementById('msgContextMenu');
     const msgBox = document.getElementById('msgBox');
     
+    // 1. Menyuni yashirish
     menu.style.display = 'none';
     menu.classList.add('hidden');
     
-    msgBox.style.filter = "none";
-
+    msgBox.style.filter = "none"; 
+    msgBox.classList.remove('blur-sm'); 
+    
+    document.removeEventListener('click', closeMenu);
 }
 
 function closeMenu() {

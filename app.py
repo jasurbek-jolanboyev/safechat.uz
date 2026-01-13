@@ -230,7 +230,36 @@ def get_entities():
     return jsonify(result)
 
 # --- SOCKET.IO REAL-TIME ---
+@socketio.on('send_message')
+def handle_send(data):
+    try:
+        # Fayl yoki matn mazmuni
+        content = data.get('content', '')
+        msg_type = data.get('type', 'text')
+        file_data = data.get('file_data') # Base64 shu yerda keladi
 
+        new_msg = Message(
+            sender=data['sender'],
+            receiver=data['receiver'],
+            content=content,
+            msg_type=msg_type,
+            reply_info=json.dumps(data.get('reply_to')) if data.get('reply_to') else None
+        )
+        # Agar bazada multimedia uchun alohida ustun bo'lmasa, 
+        # file_data ni ham content kabi saqlash mumkin yoki alohida ustun qo'shing
+        
+        db.session.add(new_msg)
+        db.session.commit()
+        
+        data['id'] = new_msg.id
+        # Emit qilishda file_data ni ham qo'shib yuboramiz
+        emit('receive_message', data, to=data['receiver'])
+        if data['receiver'] != data['sender']:
+            emit('receive_message', data, to=data['sender'])
+            
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
@@ -286,7 +315,7 @@ def handle_send(data):
     except Exception as e:
         print(f"Xatolik yuz berdi: {e}")
         emit('error_notification', {'message': 'Xabar yuborilmadi'}, to=data['sender'])
-        
+
 @socketio.on('edit_message')
 def handle_edit(data):
     msg = Message.query.get(data['id'])
