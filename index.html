@@ -11,6 +11,37 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+        /* Habarni tanlash effekti */
+            .msg-container.selected {
+                background-color: rgba(0, 122, 255, 0.1) !important;
+            }
+
+            .select-checkbox {
+                display: none;
+                margin-right: 10px;
+            }
+
+            .selection-mode .select-checkbox {
+                display: block;
+            }
+
+            /* Surish (Swipe) effekti uchun */
+            .msg-bubble {
+                transition: transform 0.2s ease-out;
+                position: relative;
+                user-select: none;
+                touch-action: pan-y;
+            }
+
+            .swipe-indicator {
+                position: absolute;
+                right: -40px;
+                top: 50%;
+                transform: translateY(-50%);
+                opacity: 0;
+                color: #007aff;
+                transition: opacity 0.2s;
+            }
         .install-banner {
             position: fixed;
             top: 20px;
@@ -255,11 +286,22 @@
         </main>
     </div>
 
-    <div id="msgContextMenu" class="context-menu">
-        <button onclick="copyMsg()"><i class="fa-solid fa-copy"></i> Nusxalash</button>
-        <button onclick="startEditMsg()"><i class="fa-solid fa-pen"></i> Tahrirlash</button>
-        <button onclick="deleteMsgServer()" class="btn-delete"><i class="fa-solid fa-trash"></i> O'chirish</button>
-    </div>
+        <div id="msgContextMenu" class="context-menu">
+            <button onclick="handleReply()"><i class="fa-solid fa-reply"></i> Javob berish</button>
+            <button id="editBtn" onclick="startEditMsg()"><i class="fa-solid fa-pen"></i> Tahrirlash</button>
+            <button onclick="copyMsg()"><i class="fa-solid fa-copy"></i> Nusxalash</button>
+            <button onclick="handlePin()"><i class="fa-solid fa-thumbtack"></i> Pin (Qadash)</button>
+            <button onclick="handleForward()"><i class="fa-solid fa-share"></i> Uzatish (Forward)</button>
+            <button onclick="toggleSelectMode()"><i class="fa-solid fa-check-double"></i> Tanlash (Select)</button>
+            <button id="deleteBtn" onclick="deleteMsgServer()" class="btn-delete"><i class="fa-solid fa-trash"></i> O'chirish</button>
+        </div>
+
+        <div id="selectionBar" class="hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 flex justify-around items-center z-[101] shadow-2xl">
+            <button onclick="cancelSelection()" class="text-gray-500"><i class="fa-solid fa-xmark"></i><br><span class="text-[10px]">Bekor qilish</span></button>
+            <button onclick="bulkCopy()" class="text-blue-500"><i class="fa-solid fa-copy"></i><br><span class="text-[10px]">Nusxa</span></button>
+            <button onclick="bulkForward()" class="text-green-500"><i class="fa-solid fa-share"></i><br><span class="text-[10px]">Uzatish</span></button>
+            <button onclick="bulkDelete()" class="text-red-500"><i class="fa-solid fa-trash"></i><br><span class="text-[10px]">O'chirish</span></button>
+        </div>
 
     <div id="createEntitySheet" class="ios-sheet h-[60%]">
         <div class="sheet-handle"></div>
@@ -612,26 +654,33 @@ async function openChat(name) {
             if(!content) inp.value = "";
         }
 
-        function appendMessage(data) {
-            const box = document.getElementById('msgBox');
-            const div = document.createElement('div');
-            div.className = `bubble ${data.sender === currentUser ? 'sent' : 'received'}`;
-            div.id = `msg-${data.id}`;
-            
-            if(data.type === 'image') div.innerHTML = `<img src="${data.content}" class="media-content" onclick="window.open('${data.content}')">`;
-            else if(data.type === 'video') div.innerHTML = `<video src="${data.content}" controls class="media-content"></video>`;
-            else if(data.type === 'file') div.innerHTML = `<a href="${data.content}" target="_blank" class="text-xs underline flex items-center gap-2"><i class="fa fa-file"></i> Hujjatni ochish</a>`;
-            else div.innerText = data.content;
+            function appendMessage(data) {
+                const box = document.getElementById('msgBox');
+                const isMe = data.sender === currentUser;
+                
+                const container = document.createElement('div');
+                container.id = `container-${data.id}`;
+                container.className = `msg-container flex items-center mb-3 ${isMe ? 'flex-row-reverse' : ''}`;
+                container.onclick = () => { if(isSelectionMode) toggleMsgSelection(data.id) };
 
-            // Context Menu triggers
-            div.oncontextmenu = (e) => { e.preventDefault(); showContextMenu(e, data.id); };
-            let timer;
-            div.ontouchstart = (e) => { timer = setTimeout(() => showContextMenu(e.touches[0], data.id), 600); };
-            div.ontouchend = () => clearTimeout(timer);
+                container.innerHTML = `
+                    <input type="checkbox" class="select-checkbox" ${selectedMessages.has(data.id) ? 'checked' : ''}>
+                    <div class="msg-bubble p-3 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white' : 'bg-white'}" 
+                        id="msg-${data.id}"
+                        oncontextmenu="showMenu(event, '${data.id}', '${data.content.replace(/'/g, "\\'")}', ${isMe})">
+                        <p class="text-sm">${data.content}</p>
+                        <span class="text-[9px] opacity-60">${data.timestamp}</span>
+                        <i class="fa-solid fa-reply swipe-indicator"></i>
+                    </div>
+                `;
 
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
+                // Surishni faollashtirish
+                const bubble = container.querySelector('.msg-bubble');
+                initSwipe(bubble, data.id, data.content);
+
+                box.appendChild(container);
+                box.scrollTop = box.scrollHeight;
+            }
 
         // --- CONTEXT MENU ACTIONS ---
         function showContextMenu(e, msgId) {
@@ -994,6 +1043,78 @@ async function installApp() {
     deferredPrompt = null;
 }
 
+let selectedMessages = new Set();
+let isSelectionMode = false;
+let replyToId = null;
+
+// 1. Tanlash rejimini yoqish
+function toggleSelectMode() {
+    isSelectionMode = true;
+    document.body.classList.add('selection-mode');
+    document.getElementById('selectionBar').classList.remove('hidden');
+    closeMenu();
+}
+
+// 2. Habarni tanlash/bekor qilish
+function toggleMsgSelection(id) {
+    if (!isSelectionMode) return;
+    const el = document.getElementById(`container-${id}`);
+    if (selectedMessages.has(id)) {
+        selectedMessages.delete(id);
+        el.classList.remove('selected');
+    } else {
+        selectedMessages.add(id);
+        el.classList.add('selected');
+    }
+}
+
+// 3. Swipe to Reply (Surish orqali javob berish)
+function initSwipe(element, msgId, text) {
+    let startX = 0;
+    let currentX = 0;
+
+    element.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    element.addEventListener('touchmove', e => {
+        currentX = e.touches[0].clientX;
+        let diff = startX - currentX;
+        if (diff > 0 && diff < 100) { // Faqat chapga surish
+            element.style.transform = `translateX(-${diff}px)`;
+        }
+    });
+    element.addEventListener('touchend', () => {
+        if (startX - currentX > 70) {
+            setupReply(msgId, text);
+        }
+        element.style.transform = `translateX(0)`;
+    });
+}
+
+// 4. Reply (Javob) tayyorlash
+function setupReply(id, text) {
+    replyToId = id;
+    const replyPreview = document.getElementById('replyPreview'); // HTMLda input tepasiga qo'shish kerak
+    replyPreview.innerHTML = `<div class="p-2 border-l-4 border-blue-500 bg-gray-50 text-xs">
+        <div class="flex justify-between"><b>Javob berish:</b> <i onclick="cancelReply()" class="fa-solid fa-xmark"></i></div>
+        <p class="truncate">${text}</p>
+    </div>`;
+    replyPreview.classList.remove('hidden');
+}
+
+// 5. Forward (Boshqaga yuborish)
+function handleForward() {
+    const forwardText = selectedMsgText;
+    const targetUser = prompt("Kimga yubormoqchisiz? (Username)");
+    if(targetUser) {
+        socket.emit('send_message', {
+            sender: currentUser,
+            receiver: targetUser,
+            content: `[Forwarded]: ${forwardText}`,
+            type: 'text'
+        });
+        alert("Yuborildi!");
+    }
+    closeMenu();
+}
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
 window.addEventListener('appinstalled', () => {
     installBanner.style.display = 'none';
