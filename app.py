@@ -3,6 +3,7 @@ eventlet.monkey_patch()  # Socket.io uchun eng tepada bo'lishi shart
 
 import os
 import secrets
+import json
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
@@ -40,11 +41,12 @@ class User(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender = db.Column(db.String(80), nullable=False)
-    receiver = db.Column(db.String(80), nullable=False) 
+    sender = db.Column(db.String(100), nullable=False)
+    receiver = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    msg_type = db.Column(db.String(20), default='text') 
-    is_edited = db.Column(db.Boolean, default=False)
+    msg_type = db.Column(db.String(20), default='text')
+    # Reply (javob) ma'lumotlarini JSON formatida saqlash uchun ustun
+    reply_info = db.Column(db.Text, nullable=True) 
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Entity(db.Model): 
@@ -139,6 +141,8 @@ def login_api():
         return jsonify({"status": "success", "username": user.username}), 200
     return jsonify({"message": "Login yoki parol xato!"}), 401
 
+import json # Fayl tepasida borligiga ishonch hosil qiling
+
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
@@ -147,33 +151,47 @@ def get_messages():
     if not u1 or not u2:
         return jsonify({"message": "Foydalanuvchilar ko'rsatilmadi"}), 400
 
-    # u2 guruh yoki foydalanuvchi ekanini aniqlash
-    is_entity = Entity.query.filter_by(name=u2).first()
-    
-    if is_entity:
-        # Guruh xabarlari: hamma xabarlar receiver (qabul qiluvchi) u2 bo'lganlar
-        msgs = Message.query.filter_by(receiver=u2).order_by(Message.timestamp.asc()).all()
-    else:
-        # Shaxsiy xabarlar: u1 dan u2 ga yoki u2 dan u1 ga yuborilganlar
-        msgs = Message.query.filter(
-            ((Message.sender == u1) & (Message.receiver == u2)) |
-            ((Message.sender == u2) & (Message.receiver == u1))
-        ).order_by(Message.timestamp.asc()).all()
-    
-    # JSON javobni shakllantirish
-    result = []
-    for m in msgs:
-        result.append({
-            "id": m.id,
-            "sender": m.sender,
-            "receiver": m.receiver,
-            "content": m.content,
-            "type": m.msg_type,
-            "is_edited": m.is_edited,
-            "timestamp": m.timestamp.strftime('%H:%M') # index.html dagi formatga mos
-        })
-    
-    return jsonify(result)
+    try:
+        # u2 guruh yoki foydalanuvchi ekanini aniqlash
+        is_entity = Entity.query.filter_by(name=u2).first()
+        
+        if is_entity:
+            # Guruh xabarlari
+            msgs = Message.query.filter_by(receiver=u2).order_by(Message.timestamp.asc()).all()
+        else:
+            # Shaxsiy xabarlar
+            msgs = Message.query.filter(
+                ((Message.sender == u1) & (Message.receiver == u2)) |
+                ((Message.sender == u2) & (Message.receiver == u1))
+            ).order_by(Message.timestamp.asc()).all()
+        
+        # JSON javobni shakllantirish
+        result = []
+        for m in msgs:
+            # MUHIM: reply_info matnini qaytadan JSON (obyekt)ga aylantiramiz
+            reply_to_obj = None
+            if hasattr(m, 'reply_info') and m.reply_info:
+                try:
+                    reply_to_obj = json.loads(m.reply_info)
+                except:
+                    reply_to_obj = None
+
+            result.append({
+                "id": m.id,
+                "sender": m.sender,
+                "receiver": m.receiver,
+                "content": m.content,
+                "type": m.msg_type,
+                "is_edited": getattr(m, 'is_edited', False), # Agar ustun bo'lsa oladi
+                "timestamp": m.timestamp.strftime('%H:%M'),
+                "reply_to": reply_to_obj # Front-endga obyekt sifatida ketadi
+            })
+        
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Xabarlarni yuklashda xato: {e}")
+        return jsonify({"message": "Xabarlarni yuklab bo'lmadi"}), 500
 
 @app.route('/api/users/search', methods=['GET'])
 def search_users():
@@ -222,38 +240,43 @@ def handle_join(data):
     for ent in entities:
         join_room(ent.name)
 
+import json # Faylning eng tepasiga, importlar qatoriga qo'shing
+
 @socketio.on('send_message')
 def handle_send(data):
     try:
-        # Bloklash tekshiruvi...
+        # 1. Bloklash tekshiruvi
         if not Entity.query.filter_by(name=data['receiver']).first():
             if user_is_blocked_by(data['receiver'], data['sender']):
                 return 
 
+        # 2. Reply ma'lumotini bazaga saqlash uchun tayyorlash
+        # Agar data['reply_to'] bo'lsa, uni string (matn)ga aylantiramiz
+        reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
+
+        # 3. Bazaga yangi xabarni qo'shish
         new_msg = Message(
             sender=data['sender'],
             receiver=data['receiver'],
             content=data['content'],
-            msg_type=data.get('type', 'text')
+            msg_type=data.get('type', 'text'),
+            reply_info=reply_json # Yangi ustunga saqlaymiz
         )
         db.session.add(new_msg)
         db.session.commit()
         
+        # 4. Front-end uchun ma'lumotlarni to'ldirish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        # Qabul qiluvchiga
+        # 5. Xabarni tarqatish (O'ziga va qabul qiluvchiga)
         emit('receive_message', data, to=data['receiver'])
-        
-        # Yuboruvchining o'ziga (faqat agar u qabul qiluvchi bilan bir xil bo'lmasa)
         if data['receiver'] != data['sender']:
             emit('receive_message', data, to=data['sender'])
             
     except Exception as e:
-        print(f"Xatolik: {e}")
-        # Foydalanuvchiga xatolik haqida xabar yuborish mumkin
+        print(f"Xatolik yuz berdi: {e}")
         emit('error_notification', {'message': 'Xabar yuborilmadi'}, to=data['sender'])
-
 @socketio.on('edit_message')
 def handle_edit(data):
     msg = Message.query.get(data['id'])

@@ -640,6 +640,7 @@ async function openChat(name) {
                     sender: currentUser, 
                     receiver: activeChat, 
                     content: val, 
+                    reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
                     type: type 
                 };
 
@@ -1069,37 +1070,69 @@ function toggleMsgSelection(id) {
 }
 
 // 3. Swipe to Reply (Surish orqali javob berish)
-function initSwipe(element, msgId, text) {
+function initSwipe(element, msgId, text, sender) {
     let startX = 0;
     let currentX = 0;
+    let isSwiping = false;
 
-    element.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    element.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+        element.style.transition = "none"; // Surayotganda animatsiyani o'chirish
+    }, {passive: true});
+
     element.addEventListener('touchmove', e => {
         currentX = e.touches[0].clientX;
         let diff = startX - currentX;
-        if (diff > 0 && diff < 100) { // Faqat chapga surish
+        if (diff > 0 && diff < 80) { // Faqat chapga 80px gacha surish
+            isSwiping = true;
             element.style.transform = `translateX(-${diff}px)`;
+            // Surish paytida reply belgisi ko'rinishi uchun indicatorni boshqarish mumkin
         }
-    });
+    }, {passive: true});
+
     element.addEventListener('touchend', () => {
-        if (startX - currentX > 70) {
-            setupReply(msgId, text);
+        element.style.transition = "transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"; 
+        element.style.transform = `translateX(0)`; // Joyiga qaytarish
+
+        if (isSwiping && (startX - currentX > 50)) {
+            setupReply(msgId, text, sender); // Reply funksiyasini chaqirish
         }
-        element.style.transform = `translateX(0)`;
+        isSwiping = false;
     });
 }
 
+
+// Global o'zgaruvchilar
+let replyToText = "";
+let replyToSender = "";
 // 4. Reply (Javob) tayyorlash
-function setupReply(id, text) {
+function setupReply(id, text, sender) {
     replyToId = id;
-    const replyPreview = document.getElementById('replyPreview'); // HTMLda input tepasiga qo'shish kerak
-    replyPreview.innerHTML = `<div class="p-2 border-l-4 border-blue-500 bg-gray-50 text-xs">
-        <div class="flex justify-between"><b>Javob berish:</b> <i onclick="cancelReply()" class="fa-solid fa-xmark"></i></div>
-        <p class="truncate">${text}</p>
-    </div>`;
+    replyToText = text;
+    replyToSender = sender;
+
+    const replyPreview = document.getElementById('replyPreview');
+    replyPreview.innerHTML = `
+        <div class="flex items-center gap-2 p-2 bg-gray-100 border-l-4 border-blue-500 rounded-t-lg animate-slide-up">
+            <div class="flex-1 min-w-0">
+                <p class="text-[10px] font-bold text-blue-600">${sender}</p>
+                <p class="text-xs text-gray-600 truncate">${text}</p>
+            </div>
+            <button onclick="cancelReply()" class="p-1 text-gray-400 hover:text-red-500">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    `;
     replyPreview.classList.remove('hidden');
+    document.getElementById('msgInp').focus();
 }
 
+function cancelReply() {
+    replyToId = null;
+    replyToText = "";
+    replyToSender = "";
+    document.getElementById('replyPreview').classList.add('hidden');
+}
 // 5. Forward (Boshqaga yuborish)
 function handleForward() {
     const forwardText = selectedMsgText;
