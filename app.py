@@ -201,6 +201,57 @@ def handle_delete(data):
         emit('message_deleted', data['id'], to=r)
         emit('message_deleted', data['id'], to=s)
 
+@socketio.on('create_entity')
+def handle_create_entity(data):
+    name = data.get('name')
+    entity_type = data.get('type')
+    creator = data.get('creator')
+
+    # Bo‘sh nom yoki noto‘g‘ri tur
+    if not name or entity_type not in ['group', 'channel']:
+        return
+
+    # Bunday guruh yoki kanal allaqachon bormi?
+    if Entity.query.filter_by(name=name).first():
+        emit('entity_error', {"message": "Bu nom band!"}, to=creator)
+        return
+
+    # Foydalanuvchini a'zo sifatida yozamiz
+    new_entity = Entity(
+        name=name,
+        creator=creator,
+        entity_type=entity_type,
+        members=creator  # Yaratgan odam avtomatik a'zo bo‘ladi
+    )
+
+    db.session.add(new_entity)
+    db.session.commit()
+
+    # Xonaga qo‘shib qo‘yamiz
+    join_room(name)
+
+    # Front-endga qaytariladigan event
+    emit('entity_created', {
+        "name": name,
+        "type": entity_type,
+        "creator": creator
+    }, broadcast=True)
+
+@socketio.on('add_member')
+def add_member(data):
+    group = Entity.query.filter_by(name=data['group']).first()
+    if not group:
+        return
+    
+    members = group.members.split(',') if group.members else []
+    if data['username'] not in members:
+        members.append(data['username'])
+        group.members = ",".join(members)
+        db.session.commit()
+
+    join_room(data['group'])
+    emit('member_added', data, to=data['group'])
+
 @socketio.on('block_user')
 def handle_block(data):
     user = User.query.filter_by(username=data['sender']).first()
