@@ -57,6 +57,22 @@
         .nav-item.active { color: var(--ios-accent); }
         .nav-item i { font-size: 24px; margin-bottom: 4px; }
 
+        /* Chat ochilganda navigatsiyani yashirish */
+#chatArea {
+    z-index: 1000 !important; /* Navigatsiyadan balandroq bo'lishi kerak */
+    position: fixed;
+    background: #F2F2F7;
+    inset: 0;
+}
+
+/* Navigatsiya elementlari uchun animatsiya */
+.nav-item {
+    color: #8E8E93;
+    transition: all 0.2s;
+}
+.nav-item.active {
+    color: #007AFF;
+}
         .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; cursor: pointer; display: block; }
         #adminPanel { display: none; background: #000; color: #0f0; font-family: monospace; position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto; }
         .install-banner { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 10000; transition: 0.5s; }
@@ -135,11 +151,31 @@
             <div id="groupsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
             <div id="channelsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
 
-            <nav class="bottom-nav">
-                <div onclick="switchTab('chats')" id="nav-chats" class="nav-item active"><i class="fa-solid fa-message"></i><span>Chatlar</span></div>
-                <div onclick="switchTab('groups')" id="nav-groups" class="nav-item"><i class="fa-solid fa-users-viewfinder"></i><span>Guruhlar</span></div>
-                <div onclick="switchTab('channels')" id="nav-channels" class="nav-item"><i class="fa-solid fa-bullhorn"></i><span>Kanallar</span></div>
-            </nav>
+            <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 px-6 py-3 flex justify-between items-center z-50">
+    <button onclick="switchTab('chats')" id="nav-chats" class="nav-item active flex flex-col items-center gap-1">
+        <i class="fa-solid fa-message text-xl"></i>
+        <span class="text-[10px] font-medium">Chatlar</span>
+    </button>
+
+    <button onclick="switchTab('groups')" id="nav-groups" class="nav-item flex flex-col items-center gap-1">
+        <i class="fa-solid fa-user-group text-xl"></i>
+        <span class="text-[10px] font-medium">Guruhlar</span>
+    </button>
+
+    <button onclick="openSheet('createEntitySheet')" class="bg-blue-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-blue-200 -mt-8 border-4 border-white">
+        <i class="fa-solid fa-plus text-white text-xl"></i>
+    </button>
+
+    <button onclick="openSheet('profileSheet')" class="nav-item flex flex-col items-center gap-1">
+        <i class="fa-solid fa-circle-user text-xl"></i>
+        <span class="text-[10px] font-medium">Profil</span>
+    </button>
+
+    <button onclick="openSheet('settingsSheet')" class="nav-item flex flex-col items-center gap-1">
+        <i class="fa-solid fa-gear text-xl"></i>
+        <span class="text-[10px] font-medium">Sozlamalar</span>
+    </button>
+</nav>
         </aside>
 
         <main id="chatArea" class="flex flex-1 flex-col bg-white relative md:flex">
@@ -530,13 +566,13 @@ async function openChat(name) {
             closeAllSheets();
         }
 
-        socket.on("entity_created", (data) => {
-    if (data.type === "group") {
-        addToGroupList(data.name);
-    } else {
-        addToChannelList(data.name);
-    }
-});
+                    socket.on("entity_created", (data) => {
+                if (data.type === "group") {
+                    addToGroupList(data.name);
+                } else {
+                    addToChannelList(data.name);
+                }
+            });
 
         function openUserMenu() {
             const block = confirm(activeChat + " foydalanuvchini bloklash?");
@@ -605,6 +641,22 @@ function addToChannelList(name) {
         </div>
     `;
 }
+
+function createEntity() {
+    const type = currentEntityType; 
+    const name = document.getElementById("entityName").value.trim();
+
+    if (!name) return alert("Nomi bo‘sh bo‘lmasin!");
+
+    socket.emit("create_entity", {
+        type: type,
+        name: name
+    });
+
+    closeSheet('createEntitySheet');
+    document.getElementById("entityName").value = "";
+}
+
 // --- UI HELPERS (YANGILANGAN) ---
         function openSheet(id) { 
             document.getElementById(id).classList.add('active'); 
