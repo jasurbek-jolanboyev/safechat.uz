@@ -12,6 +12,23 @@
     
     <style>
         /* Habarni tanlash effekti */
+        /* Tanlangan xabar orqa foni */
+            .selected-msg .msg-bubble {
+                box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
+                transform: scale(0.98);
+            }
+
+            .selection-active .msg-bubble {
+                cursor: pointer;
+            }
+
+            /* Reply Preview Glassmorphism */
+            #replyPreview {
+                background: rgba(255, 255, 255, 0.6);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
             .msg-container.selected {
                 background-color: rgba(0, 122, 255, 0.1) !important;
             }
@@ -343,11 +360,22 @@
             </button>
         </div>
 
-        <div id="selectionBar" class="hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 flex justify-around items-center z-[101] shadow-2xl">
-            <button onclick="cancelSelection()" class="text-gray-500"><i class="fa-solid fa-xmark"></i><br><span class="text-[10px]">Bekor qilish</span></button>
-            <button onclick="bulkCopy()" class="text-blue-500"><i class="fa-solid fa-copy"></i><br><span class="text-[10px]">Nusxa</span></button>
-            <button onclick="bulkForward()" class="text-green-500"><i class="fa-solid fa-share"></i><br><span class="text-[10px]">Uzatish</span></button>
-            <button onclick="bulkDelete()" class="text-red-500"><i class="fa-solid fa-trash"></i><br><span class="text-[10px]">O'chirish</span></button>
+        <div id="replyPreview" class="hidden border-l-4 border-blue-500 mx-2 my-1 rounded-r-lg bg-white/20 backdrop-blur-md">
+    </div>
+
+        <div id="selectionBar" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl px-6 py-3 flex gap-8 z-[50] border border-gray-200">
+            <button onclick="bulkCopy()" class="flex flex-col items-center text-blue-600">
+                <i class="fa-solid fa-copy"></i><span class="text-[10px] mt-1">Copy</span>
+            </button>
+            <button onclick="bulkForward()" class="flex flex-col items-center text-green-600">
+                <i class="fa-solid fa-share"></i><span class="text-[10px] mt-1">Forward</span>
+            </button>
+            <button onclick="bulkDelete()" class="flex flex-col items-center text-red-600">
+                <i class="fa-solid fa-trash"></i><span class="text-[10px] mt-1">Delete</span>
+            </button>
+            <button onclick="cancelSelection()" class="flex flex-col items-center text-gray-500">
+                <i class="fa-solid fa-xmark"></i><span class="text-[10px] mt-1">Exit</span>
+            </button>
         </div>
 
     <div id="createEntitySheet" class="ios-sheet h-[60%]">
@@ -672,35 +700,56 @@ async function openChat(name) {
     closeAllSheets();
 }
 
-    function sendMsg(type = 'text', content = null) {
-            const inp = document.getElementById('msgInp');
-            const val = content || inp.value.trim();
-            if(!val || !activeChat) return;
+function sendMsg(type = 'text', content = null) {
+    const inp = document.getElementById('msgInp');
+    const val = content || inp.value.trim();
+    
+    // Agar xabar bo'sh bo'lsa yoki chat tanlanmagan bo'lsa chiqib ketish
+    if (!val || !activeChat) return;
 
-            if(isEditing) {
-                socket.emit('edit_message', { id: selectedMsgId, content: val, receiver: activeChat });
-                isEditing = false;
-                document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
-            } else {
-                // Xabarni tayyorlash
-                const data = { 
-                    sender: currentUser, 
-                    receiver: activeChat, 
-                    content: val, 
-                    reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
-                    type: type 
-                };
+    if (isEditing) {
+        // --- TAHRIRLASH REJIMI ---
+        socket.emit('edit_message', { 
+            id: selectedMsgId, 
+            content: val, 
+            receiver: activeChat 
+        });
+        
+        // Tahrirlashni yakunlash va tugma ikonkasini qaytarish
+        isEditing = false;
+        selectedMsgId = null; 
+        document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
+        
+    } else {
+        // --- YANGI XABAR YUBORISH REJIMI ---
+        const data = { 
+            sender: currentUser, 
+            receiver: activeChat, 
+            content: val, 
+            // Reply ma'lumotlarini qo'shish
+            reply_to: replyToId ? { 
+                id: replyToId, 
+                text: replyToText, 
+                sender: replyToSender 
+            } : null,
+            type: type 
+        };
 
-                // Serverga yuborish
-                socket.emit('send_message', data);
-                
-                // --- MUHIM: Bu yerdan appendMessage(data) olib tashlandi! ---
-                // Xabar serverdan "receive_message" orqali qaytib kelganda ekranda ko'rinadi.
-            }
-            
-            // Inputni tozalash
-            if(!content) inp.value = "";
+        // Serverga yuborish
+        socket.emit('send_message', data);
+        
+        // --- MUHIM: Reply rejimini tozalash ---
+        if (replyToId) {
+            cancelReply(); // Reply oynasini yopish va o'zgaruvchilarni nolga tushirish
         }
+    }
+    
+    // Inputni tozalash va fokusni qaytarish
+    if (!content) {
+        inp.value = "";
+        inp.focus();
+    }
+}
 
             function appendMessage(data) {
                 const box = document.getElementById('msgBox');
@@ -708,26 +757,36 @@ async function openChat(name) {
                 
                 const container = document.createElement('div');
                 container.id = `container-${data.id}`;
-                container.className = `msg-container flex items-center mb-3 ${isMe ? 'flex-row-reverse' : ''}`;
-                container.onclick = () => { if(isSelectionMode) toggleMsgSelection(data.id) };
+                container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2 px-4 transition-all`;
+                
+                // Agar bu tanlash rejimida bo'lsa
+                container.onclick = () => isSelectionMode && toggleMsgSelection(data.id);
+
+                let replyHTML = "";
+                if (data.reply_to) {
+                    replyHTML = `
+                        <div class="bg-black/5 border-l-2 border-blue-500 p-1 mb-1 rounded text-[10px] opacity-70">
+                            <b class="text-blue-600">${data.reply_to.sender}</b>
+                            <p class="truncate">${data.reply_to.text}</p>
+                        </div>
+                    `;
+                }
 
                 container.innerHTML = `
-                    <input type="checkbox" class="select-checkbox" ${selectedMessages.has(data.id) ? 'checked' : ''}>
-                    <div class="msg-bubble p-3 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white' : 'bg-white'}" 
-                        id="msg-${data.id}"
-                        oncontextmenu="showMenu(event, '${data.id}', '${data.content.replace(/'/g, "\\'")}', ${isMe})">
+                    <div class="msg-bubble relative max-w-[80%] p-2 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-black rounded-tl-none'}" 
+                        id="msg-${data.id}">
+                        ${replyHTML}
                         <p class="text-sm">${data.content}</p>
-                        <span class="text-[9px] opacity-60">${data.timestamp}</span>
-                        <i class="fa-solid fa-reply swipe-indicator"></i>
+                        <span class="text-[9px] block text-right mt-1 opacity-50">${data.timestamp}</span>
                     </div>
                 `;
 
-                // Surishni faollashtirish
-                const bubble = container.querySelector('.msg-bubble');
-                initSwipe(bubble, data.id, data.content);
-
                 box.appendChild(container);
-                box.scrollTop = box.scrollHeight;
+                
+                const bubble = container.querySelector('.msg-bubble');
+                // Context menu va Swipe eventlarini bog'lash
+                bindContextEvents(bubble, data); 
+                initSwipe(bubble, data.id, data.content, data.sender);
             }
 
         // --- CONTEXT MENU ACTIONS ---
@@ -1091,9 +1150,11 @@ async function installApp() {
     deferredPrompt = null;
 }
 
+let replyToId = null;
+let replyToText = "";
+let replyToSender = "";
 let selectedMessages = new Set();
 let isSelectionMode = false;
-let replyToId = null;
 
 // 1. Tanlash rejimini yoqish
 function toggleSelectMode() {
@@ -1119,49 +1180,91 @@ function toggleMsgSelection(id) {
 function showMenu(e, id, content, isMe) {
     const menu = document.getElementById('msgContextMenu');
     const msgElement = document.getElementById(`msg-${id}`);
-    
-    // 1. Xabarning ekrandagi koordinatalarini olish
+    const editBtn = document.getElementById('editBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+
+    if (!msgElement) return;
+
+    // 1. XAVFSIZLIK: Faqat o'z xabari bo'lsa Tahrirlash va O'chirishni ko'rsatish
+    // isMe argumenti appendMessage'dan keladi (data.sender === currentUser)
+    if (isMe) {
+        editBtn.style.display = "flex";
+        deleteBtn.style.display = "flex";
+    } else {
+        editBtn.style.display = "none";
+        deleteBtn.style.display = "none";
+    }
+
+    // 2. Koordinatalarni olish
     const rect = msgElement.getBoundingClientRect();
-    
     menu.style.display = 'block';
     menu.classList.remove('hidden');
 
-    // 2. Menyuni joylashtirish mantiqi
-    let top = rect.top + (rect.height / 2); // Xabarning o'rtasidan boshlash
+    // 3. POZITSIYA: Xabarning markaziga yaqinroq joylashtirish
+    // Xabarning balandligi o'rtasidan biroz yuqoriroq
+    let top = rect.top + (rect.height / 4); 
     let left;
 
     if (isMe) {
-        // Mening xabarim (o'ngda): Menyu xabarning chap tomonida chiqadi
-        left = rect.left - menu.offsetWidth - 10;
+        // Mening xabarim (o'ngda): Menyu xabarning chap burchagiga yaqin chiqadi
+        left = rect.left - (menu.offsetWidth / 2);
     } else {
-        // Birovning xabari (chapda): Menyu xabarning o'ng tomonida chiqadi
-        left = rect.right + 10;
+        // Birovning xabari (chapda): Menyu xabarning o'ng burchagiga yaqin chiqadi
+        left = rect.right - (menu.offsetWidth / 2);
     }
 
-    // 3. Ekran chetidan chiqib ketmasligini tekshirish
-    // Agar tepada joy qolmasa
-    if (top + menu.offsetHeight > window.innerHeight) {
-        top = window.innerHeight - menu.offsetHeight - 20;
+    // 4. EKRAN CHEGARALARI: Menyu ekrandan chiqib ketmasligi uchun
+    const padding = 15; // Ekran chetidan masofa
+    
+    // Gorizontal tekshiruv
+    if (left < padding) left = padding;
+    if (left + menu.offsetWidth > window.innerWidth - padding) {
+        left = window.innerWidth - menu.offsetWidth - padding;
     }
-    // Agar chapda/o'ngda joy qolmasa (mobil qurilmalar uchun)
-    if (left < 10) left = 10;
-    if (left + menu.offsetWidth > window.innerWidth) {
-        left = window.innerWidth - menu.offsetWidth - 10;
+
+    // Vertikal tekshiruv
+    if (top < padding) top = padding;
+    if (top + menu.offsetHeight > window.innerHeight - padding) {
+        top = window.innerHeight - menu.offsetHeight - padding;
     }
 
     menu.style.top = `${top}px`;
     menu.style.left = `${left}px`;
 
-    // Ma'lumotlarni saqlash
+    // 5. MA'LUMOTLARNI SAQLASH
     selectedMsgId = id;
     selectedMsgText = content;
     
-    // Fonni xiralashtirish (ixtiyoriy)
-    document.getElementById('msgBox').classList.add('blur-sm');
+    // Fonni xiralashtirish (Telegram effektini beradi)
+    const msgBox = document.getElementById('msgBox');
+    msgBox.style.filter = "blur(2px)";
+    msgBox.style.transition = "filter 0.2s";
 
+    // Menyu ochilganda xabarni ajratib ko'rsatish (ixtiyoriy)
+    msgElement.style.zIndex = "10001";
+    msgElement.style.position = "relative";
+
+    // Bir marta bosilganda menyuni yopish
+    const autoClose = () => {
+        closeMenu();
+        document.removeEventListener('click', autoClose);
+    };
+    
     setTimeout(() => {
-        document.addEventListener('click', closeMenu);
+        document.addEventListener('click', autoClose);
     }, 10);
+}
+
+// closeMenu funksiyasini ham moslashtiramiz
+function closeMenu() {
+    const menu = document.getElementById('msgContextMenu');
+    const msgBox = document.getElementById('msgBox');
+    
+    menu.style.display = 'none';
+    menu.classList.add('hidden');
+    
+    // Xiralikni olib tashlash
+    msgBox.style.filter = "none";
 }
 
 function closeMenu() {
@@ -1208,31 +1311,70 @@ function initSwipe(element, msgId, text, sender) {
 }
 
 
-// Global o'zgaruvchilar
-let replyToText = "";
-let replyToSender = "";
-// 4. Reply (Javob) tayyorlash
+
+// 1. Replyni o'rnatish
 function setupReply(id, text, sender) {
     replyToId = id;
     replyToText = text;
     replyToSender = sender;
 
-    const replyPreview = document.getElementById('replyPreview');
-    replyPreview.innerHTML = `
-        <div class="flex items-center gap-2 p-2 bg-gray-100 border-l-4 border-blue-500 rounded-t-lg animate-slide-up">
+    const preview = document.getElementById('replyPreview');
+    preview.innerHTML = `
+        <div class="flex items-center p-2 gap-3">
             <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-bold text-blue-600">${sender}</p>
-                <p class="text-xs text-gray-600 truncate">${text}</p>
+                <p class="text-[11px] font-bold text-blue-600">${sender}</p>
+                <p class="text-xs text-gray-600 truncate opacity-80">${text}</p>
             </div>
-            <button onclick="cancelReply()" class="p-1 text-gray-400 hover:text-red-500">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+            <i onclick="cancelReply()" class="fa-solid fa-xmark text-gray-400 p-2 cursor-pointer"></i>
         </div>
     `;
-    replyPreview.classList.remove('hidden');
+    preview.classList.remove('hidden');
     document.getElementById('msgInp').focus();
 }
 
+function cancelReply() {
+    replyToId = null;
+    document.getElementById('replyPreview').classList.add('hidden');
+}
+
+// 2. Selection (Tanlash) rejimi
+function toggleSelectMode() {
+    isSelectionMode = true;
+    selectedMessages.clear();
+    document.getElementById('msgBox').classList.add('selection-active');
+    closeMenu();
+}
+
+function toggleMsgSelection(id) {
+    if (!isSelectionMode) return;
+    
+    const container = document.getElementById(`container-${id}`);
+    if (selectedMessages.has(id)) {
+        selectedMessages.delete(id);
+        container.classList.remove('selected-msg');
+    } else {
+        selectedMessages.add(id);
+        container.classList.add('selected-msg');
+    }
+
+    // Panelni ko'rsatish yoki yashirish
+    const bar = document.getElementById('selectionBar');
+    if (selectedMessages.size > 0) {
+        bar.classList.remove('hidden');
+        bar.style.display = 'flex';
+    } else {
+        bar.classList.add('hidden');
+        bar.style.display = 'none';
+    }
+}
+
+function cancelSelection() {
+    isSelectionMode = false;
+    selectedMessages.clear();
+    document.querySelectorAll('.msg-container').forEach(el => el.classList.remove('selected-msg'));
+    document.getElementById('selectionBar').classList.add('hidden');
+    document.getElementById('msgBox').classList.remove('selection-active');
+}
 function cancelReply() {
     replyToId = null;
     replyToText = "";
