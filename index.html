@@ -424,84 +424,102 @@
         }
 
         // QIDIRUVNI BAZAGA ULASH (Buni ham loadList dan keyin qo'shing)
-        async function liveSearch(val) {
-            const list = document.getElementById('chatList');
-            
-            if (val.length < 2) {
-                loadList('chats');
-                return;
-            }
+async function liveSearch(val) {
+    const list = document.getElementById('chatList');
+    
+    // Qidiruv maydoni bo'sh bo'lsa chatlar ro'yxatini qayta tiklash
+    if (val.length < 1) {
+        loadList('chats');
+        return;
+    }
 
-            try {
-                // Serverdan haqiqiy foydalanuvchilarni olish
-                const res = await fetch(`${API}/api/users/search`); 
-                const users = await res.json();
-                
-                // Qidiruvga mos keladigan foydalanuvchilarni filtrlaymiz
-                const filtered = users.filter(u => 
-                    u.username.toLowerCase().includes(val.toLowerCase()) && 
-                    u.username !== currentUser
-                );
+    try {
+        // Serverdan foydalanuvchilarni qidirish
+        const res = await fetch(`${API}/api/users/search`);
+        if (!res.ok) throw new Error("Serverdan ma'lumot olishda xato");
+        
+        const users = await res.json();
+        
+        // Qidiruvga mos keladigan va o'zi bo'lmagan foydalanuvchilarni filtrlaymiz
+        const filtered = users.filter(u => 
+            u.username.toLowerCase().includes(val.toLowerCase()) && 
+            u.username !== currentUser
+        );
 
-                list.innerHTML = ""; // Ro'yxatni tozalash
+        list.innerHTML = ""; // Avvalgi ro'yxatni tozalash
 
-                if(filtered.length === 0) {
-                    list.innerHTML = `<p class="text-center text-red-400 mt-10">Foydalanuvchi topilmadi</p>`;
-                    return;
-                }
-
-                // Topilgan foydalanuvchilarni chatlar ro'yxatiga chiqarish
-                filtered.forEach(u => {
-                    const div = document.createElement('div');
-                    div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
-                    div.innerHTML = `
-                        <img src="https://ui-avatars.com/api/?name=${u.username}&background=007aff&color=fff" class="w-12 h-12 rounded-full">
-                        <div>
-                            <h5 class="font-bold text-sm">${u.username}</h5>
-                            <p class="text-xs text-blue-500">Tizimda mavjud</p>
-                        </div>`;
-                    div.onclick = () => openChat(u.username);
-                    list.appendChild(div);
-                });
-            } catch(e) {
-                console.error("Qidiruv xatosi:", e);
-            }
+        if(filtered.length === 0) {
+            list.innerHTML = `<p class="text-center text-red-400 mt-10">Foydalanuvchi topilmadi</p>`;
+            return;
         }
+
+        // Topilgan foydalanuvchilarni ekranga chiqarish
+        filtered.forEach(u => {
+            const div = document.createElement('div');
+            // iOS uslubidagi chiroyli dizayn
+            div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
+            
+            div.innerHTML = `
+                <img src="https://ui-avatars.com/api/?name=${u.username}&background=007aff&color=fff" class="w-12 h-12 rounded-full">
+                <div class="flex-1">
+                    <h5 class="font-bold text-sm text-gray-800">${u.username}</h5>
+                    <p class="text-[10px] text-blue-500 font-medium">Chatni boshlash uchun bosing</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            `;
+
+            // --- MUHIM: Bosganda chatni ochish ---
+            div.onclick = () => {
+                console.log("Chat ochilmoqda: ", u.username);
+                openChat(u.username);
+                // Qidiruv maydonini tozalash (ixtiyoriy)
+                document.querySelector('input[type="search"]').value = "";
+            };
+
+            list.appendChild(div);
+        });
+    } catch(e) {
+        console.error("Qidiruv xatosi:", e);
+        list.innerHTML = `<p class="text-center text-gray-400 mt-10">Ulanishda xato yuz berdi</p>`;
+    }
+}
 
 async function openChat(name) {
-            activeChat = name;
-            const chatArea = document.getElementById('chatArea');
-            
-            // 1. Chat oynasini ko'rinadigan qilish
-            chatArea.classList.remove('hidden');
-            chatArea.classList.add('flex');
-            
-            // 2. Mobil qurilmalar uchun chatni to'liq ekranga chiqarish (Z-index bilan)
-            if(window.innerWidth < 768) {
-                chatArea.style.position = 'fixed';
-                chatArea.style.inset = '0';
-                chatArea.style.zIndex = '5000';
+    activeChat = name;
+    const chatArea = document.getElementById('chatArea');
+    
+    // 1. Chat oynasini ko'rinadigan qilish (CSS dagi display: none ni yengish uchun)
+    chatArea.style.display = 'flex'; 
+    chatArea.classList.remove('hidden');
+    
+    // 2. Suhbatdosh ma'lumotlarini yangilash
+    document.getElementById('activeName').innerText = name;
+    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
+    
+    // Xabarlar oynasini tozalash va yuklanayotganini ko'rsatish (ixtiyoriy)
+    const msgBox = document.getElementById('msgBox');
+    msgBox.innerHTML = '<div class="text-center py-10 text-gray-400 text-xs">Yuklanmoqda...</div>'; 
+    
+    // 3. Xabarlar tarixini serverdan yuklash
+    try {
+        const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${name}`);
+        if (res.ok) {
+            const msgs = await res.json();
+            msgBox.innerHTML = ""; // Yuklanmoqda yozuvini o'chirish
+            if(msgs.length === 0) {
+                msgBox.innerHTML = '<div class="text-center py-10 text-gray-300 text-xs">Xabarlar mavjud emas</div>';
+            } else {
+                msgs.forEach(appendMessage);
             }
-
-            // 3. Suhbatdosh ma'lumotlarini yangilash
-            document.getElementById('activeName').innerText = name;
-            document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
-            document.getElementById('msgBox').innerHTML = ""; // Oldingi xabarlarni tozalash
-            
-            // 4. Xabarlar tarixini serverdan yuklash
-            try {
-                const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${name}`);
-                if (res.ok) {
-                    const msgs = await res.json();
-                    msgs.forEach(appendMessage);
-                }
-            } catch(e) { 
-                console.log("Xabarlarni yuklashda xato yuz berdi:", e); 
-            }
-
-            // 5. Ochiq turgan barcha menyu/sheetlarni yopish
-            closeAllSheets();
         }
+    } catch(e) { 
+        console.log("Xabarlarni yuklashda xato:", e);
+        msgBox.innerHTML = '<div class="text-center py-10 text-red-400 text-xs">Xabarlarni yuklab bo\'lmadi</div>';
+    }
+
+    // 4. Ochiq turgan barcha menyularni yopish
+    closeAllSheets();
+}
 
         function sendMsg(type = 'text', content = null) {
             const inp = document.getElementById('msgInp');
@@ -751,19 +769,24 @@ function createEntity() {
             if(e.key === 'Enter') sendMsg(); 
         }
 
-        // CHATNI YOPISH (Mobil telefonlar uchun juda muhim)
-        function closeChatArea() { 
-            const chatArea = document.getElementById('chatArea');
-            chatArea.classList.add('hidden'); 
-            chatArea.classList.remove('flex');
-            
-            // Mobil ekran stillarini tozalash
-            chatArea.style.position = '';
-            chatArea.style.inset = '';
-            chatArea.style.zIndex = '';
-            
-            activeChat = null; // Suhbatni to'xtatish
-        }
+// CHATNI YOPISH
+function closeChatArea() { 
+    const chatArea = document.getElementById('chatArea');
+    
+    // 1. Chatni butunlay yashirish
+    chatArea.style.display = 'none'; 
+    
+    // 2. Classlarni tozalash (xavfsizlik uchun)
+    chatArea.classList.add('hidden'); 
+    chatArea.classList.remove('flex');
+    
+    // 3. Faol suhbatni to'xtatish
+    activeChat = null; 
+
+    // 4. Agar qidiruv maydoni ochiq bo'lsa, uni ham tozalash (ixtiyoriy)
+    const searchInp = document.querySelector('input[type="search"]');
+    if(searchInp) searchInp.value = "";
+}
 
         // TIZIMDAN CHIQISH (To'liq tozalash bilan)
         function logout() {
