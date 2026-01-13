@@ -583,7 +583,7 @@ async function openChat(name) {
     closeAllSheets();
 }
 
-        function sendMsg(type = 'text', content = null) {
+    function sendMsg(type = 'text', content = null) {
             const inp = document.getElementById('msgInp');
             const val = content || inp.value.trim();
             if(!val || !activeChat) return;
@@ -593,11 +593,23 @@ async function openChat(name) {
                 isEditing = false;
                 document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
             } else {
-                const data = { id: Date.now(), sender: currentUser, receiver: activeChat, content: val, type: type };
+                // Xabarni tayyorlash
+                const data = { 
+                    sender: currentUser, 
+                    receiver: activeChat, 
+                    content: val, 
+                    type: type 
+                };
+
+                // Serverga yuborish
                 socket.emit('send_message', data);
-                appendMessage(data);
+                
+                // --- MUHIM: Bu yerdan appendMessage(data) olib tashlandi! ---
+                // Xabar serverdan "receive_message" orqali qaytib kelganda ekranda ko'rinadi.
             }
-            inp.value = "";
+            
+            // Inputni tozalash
+            if(!content) inp.value = "";
         }
 
         function appendMessage(data) {

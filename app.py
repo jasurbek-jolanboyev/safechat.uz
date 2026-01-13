@@ -224,28 +224,35 @@ def handle_join(data):
 
 @socketio.on('send_message')
 def handle_send(data):
-    # Bloklash tekshiruvi (faqat shaxsiy suhbatlarda)
-    if not Entity.query.filter_by(name=data['receiver']).first():
-        if user_is_blocked_by(data['receiver'], data['sender']):
-            return # Xabar qabul qilinmaydi
+    try:
+        # Bloklash tekshiruvi...
+        if not Entity.query.filter_by(name=data['receiver']).first():
+            if user_is_blocked_by(data['receiver'], data['sender']):
+                return 
 
-    new_msg = Message(
-        sender=data['sender'],
-        receiver=data['receiver'],
-        content=data['content'],
-        msg_type=data.get('type', 'text')
-    )
-    db.session.add(new_msg)
-    db.session.commit()
-    
-    data['id'] = new_msg.id
-    data['timestamp'] = datetime.utcnow().strftime('%H:%M')
-    
-    # Xabarni xonaga tarqatish (Room bu yerda receiver nomi)
-    emit('receive_message', data, to=data['receiver'])
-    # Agar receiver o'zi bo'lmasa, o'ziga ham yuboramiz (boshqa qurilmalar uchun)
-    if data['receiver'] != data['sender']:
-        emit('receive_message', data, to=data['sender'])
+        new_msg = Message(
+            sender=data['sender'],
+            receiver=data['receiver'],
+            content=data['content'],
+            msg_type=data.get('type', 'text')
+        )
+        db.session.add(new_msg)
+        db.session.commit()
+        
+        data['id'] = new_msg.id
+        data['timestamp'] = datetime.utcnow().strftime('%H:%M')
+        
+        # Qabul qiluvchiga
+        emit('receive_message', data, to=data['receiver'])
+        
+        # Yuboruvchining o'ziga (faqat agar u qabul qiluvchi bilan bir xil bo'lmasa)
+        if data['receiver'] != data['sender']:
+            emit('receive_message', data, to=data['sender'])
+            
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        # Foydalanuvchiga xatolik haqida xabar yuborish mumkin
+        emit('error_notification', {'message': 'Xabar yuborilmadi'}, to=data['sender'])
 
 @socketio.on('edit_message')
 def handle_edit(data):
