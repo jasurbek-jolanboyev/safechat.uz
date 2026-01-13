@@ -250,26 +250,35 @@ def handle_send(data):
             if user_is_blocked_by(data['receiver'], data['sender']):
                 return 
 
-        # 2. Reply ma'lumotini bazaga saqlash uchun tayyorlash
-        # Agar data['reply_to'] bo'lsa, uni string (matn)ga aylantiramiz
+        # 2. Multimedia ma'lumotlarini tayyorlash
+        # Agar rasm yoki video bo'lsa, contentda fayl nomi, file_data'da esa Base64 bo'ladi
+        msg_type = data.get('type', 'text')
+        file_payload = data.get('file_data') # Base64 formatidagi fayl
+
+        # 3. Reply ma'lumotini saqlash
         reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
 
-        # 3. Bazaga yangi xabarni qo'shish
+        # 4. Bazaga saqlash
         new_msg = Message(
             sender=data['sender'],
             receiver=data['receiver'],
-            content=data['content'],
-            msg_type=data.get('type', 'text'),
-            reply_info=reply_json # Yangi ustunga saqlaymiz
+            content=data['content'], # Matn yoki fayl nomi
+            msg_type=msg_type,
+            reply_info=reply_json
         )
         db.session.add(new_msg)
         db.session.commit()
         
-        # 4. Front-end uchun ma'lumotlarni to'ldirish
+        # 5. Front-end uchun ma'lumotlarni to'ldirish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        # 5. Xabarni tarqatish (O'ziga va qabul qiluvchiga)
+        # MUHIM: file_data ni data obyektiga qayta yuklaymiz (agar u bo'lsa)
+        # Shunda receive_message ni olgan odam rasmni ko'ra oladi
+        if file_payload:
+            data['file_data'] = file_payload
+
+        # 6. Xabarni tarqatish
         emit('receive_message', data, to=data['receiver'])
         if data['receiver'] != data['sender']:
             emit('receive_message', data, to=data['sender'])
@@ -277,6 +286,7 @@ def handle_send(data):
     except Exception as e:
         print(f"Xatolik yuz berdi: {e}")
         emit('error_notification', {'message': 'Xabar yuborilmadi'}, to=data['sender'])
+        
 @socketio.on('edit_message')
 def handle_edit(data):
     msg = Message.query.get(data['id'])

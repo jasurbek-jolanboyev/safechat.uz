@@ -11,7 +11,74 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* Habarni tanlash effekti */
+            /* Asosiy chat konteyneri */
+            .chat-container {
+                display: flex;
+                flex-direction: column;
+                height: 100vh; /* Ekran bo'yi barobar */
+                overflow: hidden; /* Butun sayt skrol bo'lmasligi uchun */
+            }
+
+            /* Header (Ism va rasm turadigan joy) */
+            .chat-header {
+                flex-shrink: 0; /* Qisqarib ketmasligi uchun */
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+
+            /* Xabarlar maydoni */
+            #msgBox {
+                flex-grow: 1; /* Bo'sh joyni to'ldiradi */
+                overflow-y: auto; /* Faqat shu yer skrol bo'ladi */
+                padding: 10px;
+                -webkit-overflow-scrolling: touch; /* Mobil uchun silliq skrol */
+            }
+
+            /* Input maydoni */
+            .chat-footer {
+                flex-shrink: 0;
+                position: sticky;
+                bottom: 0;
+            }
+            /* Butun sahifa skrol bo'lishini to'xtatamiz */
+            body, html {
+                height: 100%;
+                margin: 0;
+                overflow: hidden; 
+            }
+
+            /* Asosiy konteyner */
+            .main-app-container {
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+
+            /* Tepa qism (Header) */
+            .chat-header {
+                height: 60px;
+                flex-shrink: 0; /* Qisqarib ketmaydi */
+                background: white;
+                z-index: 100;
+                border-bottom: 1px solid #ddd;
+            }
+
+            /* Xabarlar maydoni (Faqat shu qism skrol bo'ladi) */
+            #msgBox {
+                flex-grow: 1; /* Qolgan barcha bo'sh joyni egallaydi */
+                overflow-y: auto;
+                padding: 15px;
+                background: #e5ddd5; /* Chat foni */
+            }
+
+            /* Pastki qism (Input va ReplyPreview) */
+            .chat-footer {
+                flex-shrink: 0;
+                background: white;
+                border-top: 1px solid #ddd;
+                padding: 10px;
+            }
         /* Tanlangan xabar orqa foni */
             .selected-msg .msg-bubble {
                 box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.4);
@@ -292,10 +359,10 @@
             <div id="channelsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
 
             <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 px-6 py-3 flex justify-between items-center z-50">
-    <button onclick="switchTab('chats')" id="nav-chats" class="nav-item active flex flex-col items-center gap-1">
-        <i class="fa-solid fa-message text-xl"></i>
-        <span class="text-[10px] font-medium">Chatlar</span>
-    </button>
+            <button onclick="switchTab('chats')" id="nav-chats" class="nav-item active flex flex-col items-center gap-1">
+                <i class="fa-solid fa-message text-xl"></i>
+                <span class="text-[10px] font-medium">Chatlar</span>
+            </button>
 
     <button onclick="switchTab('groups')" id="nav-groups" class="nav-item flex flex-col items-center gap-1">
         <i class="fa-solid fa-user-group text-xl"></i>
@@ -753,43 +820,63 @@ function sendMsg(type = 'text', content = null) {
     }
 }
 
-            function appendMessage(data) {
-                const box = document.getElementById('msgBox');
-                const isMe = data.sender === currentUser;
-                
-                const container = document.createElement('div');
-                container.id = `container-${data.id}`;
-                container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-2 px-4 transition-all`;
-                
-                // Agar bu tanlash rejimida bo'lsa
-                container.onclick = () => isSelectionMode && toggleMsgSelection(data.id);
-
-                let replyHTML = "";
-                if (data.reply_to) {
-                    replyHTML = `
-                        <div class="bg-black/5 border-l-2 border-blue-500 p-1 mb-1 rounded text-[10px] opacity-70">
-                            <b class="text-blue-600">${data.reply_to.sender}</b>
-                            <p class="truncate">${data.reply_to.text}</p>
-                        </div>
-                    `;
-                }
-
-                container.innerHTML = `
-                    <div class="msg-bubble relative max-w-[80%] p-2 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-black rounded-tl-none'}" 
-                        id="msg-${data.id}">
-                        ${replyHTML}
-                        <p class="text-sm">${data.content}</p>
-                        <span class="text-[9px] block text-right mt-1 opacity-50">${data.timestamp}</span>
-                    </div>
-                `;
-
-                box.appendChild(container);
-                
-                const bubble = container.querySelector('.msg-bubble');
-                // Context menu va Swipe eventlarini bog'lash
-                bindContextEvents(bubble, data); 
-                initSwipe(bubble, data.id, data.content, data.sender);
+        function appendMessage(data) {
+            const box = document.getElementById('msgBox');
+            const isMe = data.sender === currentUser;
+            
+            // 1. Xabar turiga qarab kontentni aniqlash
+            let contentHTML = "";
+            if (data.type === 'image') {
+                contentHTML = `<img src="${data.file_data || data.content}" class="max-w-[250px] rounded-lg cursor-pointer shadow-sm hover:opacity-90 transition" onclick="viewImage(this.src)">`;
+            } else if (data.type === 'video') {
+                contentHTML = `<video src="${data.file_data}" controls class="max-w-[250px] rounded-lg shadow-sm"></video>`;
+            } else if (data.type === 'location') {
+                contentHTML = `<div class="bg-blue-50 p-2 rounded-lg border border-blue-100">
+                    <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-lg"></i> 📍 Joylashuvni ko'rish
+                    </a>
+                </div>`;
+            } else {
+                // Standart matnli xabar
+                contentHTML = `<p class="text-sm leading-relaxed">${data.content}</p>`;
             }
+
+            // 2. Reply (javob) qismini tayyorlash
+            let replyMarkup = "";
+            if (data.reply_to) {
+                replyMarkup = `
+                    <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80">
+                        <b class="text-blue-600 block">${data.reply_to.sender}</b>
+                        <p class="truncate text-gray-600">${data.reply_to.text}</p>
+                    </div>`;
+            }
+
+            // 3. Konteyner yaratish
+            const container = document.createElement('div');
+            container.id = `container-${data.id}`;
+            container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4`;
+            
+            container.innerHTML = `
+                <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}" 
+                    id="msg-${data.id}">
+                    ${replyMarkup}
+                    <div class="msg-body">${contentHTML}</div>
+                    <div class="flex items-center justify-end gap-1 mt-1 opacity-60">
+                        <span class="text-[9px]">${data.timestamp}</span>
+                        ${isMe ? '<i class="fa-solid fa-check-double text-[8px]"></i>' : ''}
+                    </div>
+                </div>
+            `;
+
+            box.appendChild(container);
+            
+            // Eventlarni bog'lash (Menyu va Swipe)
+            const bubble = container.querySelector('.msg-bubble');
+            bindContextEvents(bubble, data); 
+            initSwipe(bubble, data.id, data.content, data.sender);
+            
+            box.scrollTop = box.scrollHeight;
+        }
 
         // --- CONTEXT MENU ACTIONS ---
         function showContextMenu(e, msgId) {
@@ -830,6 +917,37 @@ function sendMsg(type = 'text', content = null) {
             document.getElementById('mediaInp').click(); 
         }
 
+                function sendFile(fileType) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            
+            // Turiga qarab filtrlash
+            if (fileType === 'image') input.accept = 'image/*';
+            if (fileType === 'video') input.accept = 'video/*';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const fileData = event.target.result; // Base64 formatida
+                    
+                    const data = {
+                        sender: currentUser,
+                        receiver: activeChat,
+                        content: file.name, // Fayl nomi
+                        file_data: fileData, // Faylning o'zi
+                        type: fileType, // 'image', 'video', yoki 'file'
+                        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null
+                    };
+                    
+                    socket.emit('send_message', data);
+                };
+                reader.readAsDataURL(file); // Faylni o'qishni boshlash
+            };
+            input.click();
+        }
         // 2. Fayl tanlangandan keyin uni serverga yuklash va yuborish
         async function handleFile(input) {
             if(!input.files[0]) return;
@@ -853,25 +971,23 @@ function sendMsg(type = 'text', content = null) {
         }
 
         // 3. Geografik joylashuvni aniqlash va yuborish
-        function sendLocation() {
-            if (!navigator.geolocation) {
-                return alert("Brauzeringiz geolokatsiyani qo'llab-quvvatlamaydi");
+            function sendLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const data = {
+                            sender: currentUser,
+                            receiver: activeChat,
+                            content: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`,
+                            type: 'location',
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        };
+                        socket.emit('send_message', data);
+                    });
+                } else {
+                    alert("Geolokatsiya qurilmangizda yoqilmagan.");
+                }
             }
-
-            navigator.geolocation.getCurrentPosition(p => {
-                const lat = p.coords.latitude;
-                const lon = p.coords.longitude;
-                // Google Maps havolasini yaratish
-                const url = `https://www.google.com/maps?q=${lat},${lon}`;
-                
-                sendMsg('text', "📍 Mening joylashuvim: " + url);
-                
-                // --- MUHIM: Media menyusini (sheet) yopish ---
-                closeAllSheets();
-            }, (err) => {
-                alert("Joylashuvni aniqlashga ruxsat berilmadi yoki xato yuz berdi.");
-            });
-        }
         
         function setEntityType(type) {
             currentEntityType = type;
@@ -1265,8 +1381,8 @@ function closeMenu() {
     menu.style.display = 'none';
     menu.classList.add('hidden');
     
-    // Xiralikni olib tashlash
     msgBox.style.filter = "none";
+
 }
 
 function closeMenu() {
