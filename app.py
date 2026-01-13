@@ -101,34 +101,44 @@ def login_api():
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
-    u2 = request.args.get('user2') # Bu shaxs yoki guruh nomi bo'lishi mumkin
+    u2 = request.args.get('user2')
     
+    if not u1 or not u2:
+        return jsonify({"message": "Foydalanuvchilar ko'rsatilmadi"}), 400
+
+    # u2 guruh yoki foydalanuvchi ekanini aniqlash
     is_entity = Entity.query.filter_by(name=u2).first()
     
     if is_entity:
-        # Guruh xabarlarini olish
+        # Guruh xabarlari: hamma xabarlar receiver (qabul qiluvchi) u2 bo'lganlar
         msgs = Message.query.filter_by(receiver=u2).order_by(Message.timestamp.asc()).all()
     else:
-        # Shaxsiy xabarlarni filtrlab olish
+        # Shaxsiy xabarlar: u1 dan u2 ga yoki u2 dan u1 ga yuborilganlar
         msgs = Message.query.filter(
             ((Message.sender == u1) & (Message.receiver == u2)) |
             ((Message.sender == u2) & (Message.receiver == u1))
         ).order_by(Message.timestamp.asc()).all()
     
-    return jsonify([{
-        "id": m.id,
-        "sender": m.sender,
-        "receiver": m.receiver,
-        "content": m.content,
-        "type": m.msg_type,
-        "is_edited": m.is_edited,
-        "timestamp": m.timestamp.strftime('%H:%M')
-    } for m in msgs])
+    # JSON javobni shakllantirish
+    result = []
+    for m in msgs:
+        result.append({
+            "id": m.id,
+            "sender": m.sender,
+            "receiver": m.receiver,
+            "content": m.content,
+            "type": m.msg_type,
+            "is_edited": m.is_edited,
+            "timestamp": m.timestamp.strftime('%H:%M') # index.html dagi formatga mos
+        })
+    
+    return jsonify(result)
 
-@app.route('/api/admin/users', methods=['GET'])
-def admin_users():
+@app.route('/api/users/search', methods=['GET'])
+def search_users():
+    # Faqat username va statusni qaytaramiz (Xavfsiz qidiruv)
     users = User.query.all()
-    return jsonify([{"username": u.username, "ip": u.ip_address, "is_blocked": u.is_blocked} for u in users])
+    return jsonify([{"username": u.username, "is_blocked": u.is_blocked} for u in users])
 
 @app.route('/api/upload_avatar', methods=['POST'])
 def upload_file_api():
@@ -207,30 +217,26 @@ def handle_create_entity(data):
     entity_type = data.get('type')
     creator = data.get('creator')
 
-    # Bo‘sh nom yoki noto‘g‘ri tur
     if not name or entity_type not in ['group', 'channel']:
         return
 
-    # Bunday guruh yoki kanal allaqachon bormi?
     if Entity.query.filter_by(name=name).first():
         emit('entity_error', {"message": "Bu nom band!"}, to=creator)
         return
 
-    # Foydalanuvchini a'zo sifatida yozamiz
     new_entity = Entity(
         name=name,
         creator=creator,
         entity_type=entity_type,
-        members=creator  # Yaratgan odam avtomatik a'zo bo‘ladi
+        members=creator 
     )
-
     db.session.add(new_entity)
     db.session.commit()
 
-    # Xonaga qo‘shib qo‘yamiz
     join_room(name)
-
-    # Front-endga qaytariladigan event
+    
+    # MUHIM: Faqat yaratuvchiga "Yaratildi" deb javob berish
+    # Yoki hamma yangi guruhlarni ko'rsin desangiz broadcast=True qolaveradi
     emit('entity_created', {
         "name": name,
         "type": entity_type,
