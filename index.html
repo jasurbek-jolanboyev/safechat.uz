@@ -142,7 +142,7 @@
             </nav>
         </aside>
 
-        <main id="chatArea" class="hidden md:flex flex-1 flex-col bg-white relative">
+        <main id="chatArea" class="flex flex-1 flex-col bg-white relative md:flex">
             <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
                 <div class="flex items-center gap-3">
                     <button class="md:hidden text-blue-600 mr-2" onclick="closeChatArea()"><i class="fa-solid fa-chevron-left text-xl"></i></button>
@@ -186,7 +186,7 @@
                 <button id="btnTypeChannel" onclick="setEntityType('channel')" class="flex-1 py-3 rounded-xl font-bold text-gray-500">Kanal</button>
             </div>
             <input type="text" id="entityName" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none mb-4" placeholder="Nomi">
-            <button onclick="submitNewEntity()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">Tasdiqlash</button>
+            <button onclick="createEntity()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">Tasdiqlash</button>
         </div>
     </div>
 
@@ -530,6 +530,14 @@ async function openChat(name) {
             closeAllSheets();
         }
 
+        socket.on("entity_created", (data) => {
+    if (data.type === "group") {
+        addToGroupList(data.name);
+    } else {
+        addToChannelList(data.name);
+    }
+});
+
         function openUserMenu() {
             const block = confirm(activeChat + " foydalanuvchini bloklash?");
             if(block) socket.emit('block_user', { target: activeChat });
@@ -539,7 +547,64 @@ async function openChat(name) {
             alert(type + " qo'ng'iroq signali yuborilmoqda...");
             socket.emit('call_signal', { to: activeChat, type: type });
         }
+        // guruh va kanallar qoshish uchun yangi funksiya 
+        let entityType = "group"; // default
 
+function setEntityType(type) {
+    entityType = type;
+
+    document.getElementById("btnTypeGroup").classList.toggle("bg-white", type === "group");
+    document.getElementById("btnTypeGroup").classList.toggle("text-gray-800", type === "group");
+    document.getElementById("btnTypeGroup").classList.toggle("text-gray-500", type !== "group");
+
+    document.getElementById("btnTypeChannel").classList.toggle("bg-white", type === "channel");
+    document.getElementById("btnTypeChannel").classList.toggle("text-gray-800", type === "channel");
+    document.getElementById("btnTypeChannel").classList.toggle("text-gray-500", type !== "channel");
+}
+
+function createEntity() {
+    const name = document.getElementById("entityName").value.trim();
+    if (name.length < 2) {
+        alert("Nomi juda qisqa!");
+        return;
+    }
+
+    // Backendga yuboriladi
+    socket.emit("create_entity", { 
+        type: entityType,
+        name: name 
+    });
+
+    // UIga qo‘shib qo‘yamiz (real vaqtda ko‘rinishi uchun)
+    if (entityType === "group") {
+        addToGroupList(name);
+    } else {
+        addToChannelList(name);
+    }
+
+    closeSheet();
+}
+
+// Frontendga yangi element qo‘shish
+function addToGroupList(name) {
+    const box = document.getElementById("groupsTab");
+    box.innerHTML += `
+        <div class="p-4 bg-white rounded-2xl shadow-sm">
+            <h3 class="text-lg font-bold">${name}</h3>
+            <p class="text-gray-500 text-sm">Yangi guruh</p>
+        </div>
+    `;
+}
+
+function addToChannelList(name) {
+    const box = document.getElementById("channelsTab");
+    box.innerHTML += `
+        <div class="p-4 bg-white rounded-2xl shadow-sm">
+            <h3 class="text-lg font-bold">${name}</h3>
+            <p class="text-gray-500 text-sm">Yangi kanal</p>
+        </div>
+    `;
+}
 // --- UI HELPERS (YANGILANGAN) ---
         function openSheet(id) { 
             document.getElementById(id).classList.add('active'); 
