@@ -11,18 +11,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-
-            .marquee-text {
-                white-space: nowrap;
-                display: inline-block;
-                padding-left: 100%;
-                animation: marquee 15s linear infinite;
-            }
-
-            @keyframes marquee {
-                0% { transform: translate(0, 0); }
-                100% { transform: translate(-100%, 0); }
-            }
             /* Asosiy chat konteyneri */
             :root {
                 --ios-bg: #f2f2f7;
@@ -226,7 +214,7 @@
     color: #007AFF;
 }
         .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; cursor: pointer; display: block; }
-        #adminPanel { display: none; background: #ffffff; color: #0f0; font-family: monospace; position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto; }
+        #adminPanel { display: none; background: #b1a1a1; color: #0f0; font-family: monospace; position: fixed; inset: 0; z-index: 9999; padding: 20px; overflow-y: auto; }
         .install-banner { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; z-index: 10000; transition: 0.5s; }
         .install-banner.active { top: 20px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -242,44 +230,43 @@
         <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold">O'rnatish</button>
     </div>
 
-<div id="countryModal" class="hidden fixed inset-0 z-[6000] bg-white flex flex-col animate-slide-up">
-    <div class="p-4 flex items-center gap-4 border-b">
-        <i class="fa-solid fa-arrow-left text-xl cursor-pointer" onclick="closeCountryModal()"></i>
-        <input type="text" id="countrySearch" oninput="filterCountries()" placeholder="Davlatni qidiring..." class="flex-1 p-2 outline-none text-lg">
-    </div>
-    <div id="countryList" class="flex-1 overflow-y-auto overflow-x-hidden">
-        </div>
-</div>
-
-<div id="registerView" class="hidden">
-    <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
-    <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
-    
-    <div class="space-y-4">
-        <div onclick="openCountryModal()" class="w-full p-4 bg-white border border-gray-100 rounded-2xl flex items-center justify-between cursor-pointer active:bg-gray-50 transition">
-            <div class="flex items-center gap-3">
-                <span id="selectedFlag" class="text-2xl">🇺🇿</span>
-                <span id="selectedCountryName" class="font-medium text-gray-700">Uzbekistan</span>
+    <div id="authScreen" class="fixed inset-0 z-[5000] flex items-center justify-center p-6 bg-[#f2f2f7]">
+        <div class="glass-panel w-full max-w-[420px] p-8 rounded-[40px] shadow-2xl">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg">
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
-            <i class="fa-solid fa-chevron-right text-gray-400"></i>
-        </div>
+            
+            <div id="loginView">
+                <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Kirish</h1>
+                <p class="text-gray-500 text-center mb-8">SafeChat Tizimiga qaytish</p>
+                <div class="space-y-4">
+                    <div class="relative">
+                        <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+                    </div>
+                    <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
+                    <button onclick="login()" class="w-full py-4 bg-blue-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Tizimga kirish</button>
+                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz yo'qmi? <span onclick="toggleAuth(true)" class="text-blue-600 font-bold cursor-pointer">Ro'yxatdan o'tish</span></p>
+                </div>
+            </div>
 
-        <div class="flex gap-2">
-            <input type="text" id="phoneCode" class="w-24 p-4 bg-white border border-gray-100 rounded-2xl text-center font-bold" value="+998" readonly>
-            <input type="tel" id="reg_phone" class="flex-1 p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="90 123 45 67">
+            <div id="registerView" class="hidden">
+                <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
+                <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
+                <div class="space-y-4">
+                    <input type="email" id="reg_email" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Email manzilingiz">
+                    <div class="relative">
+                        <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+                    </div>
+                    <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Murakkab parol yarating">
+                    <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
+                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer">Kirish</span></p>
+                </div>
+            </div>
+            <p onclick="showAdminLogin()" class="text-center text-[10px] text-gray-400 mt-8 uppercase tracking-widest cursor-pointer hover:text-blue-500">CEO & ADMIN ACCESS ONLY</p>
         </div>
-
-        <div class="relative">
-            <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
-            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
-        </div>
-        
-        <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
-        
-        <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
-        <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer text-lg">Kirish</span></p>
     </div>
-</div>
 
     <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
         
@@ -348,13 +335,6 @@
                 </div>
             </header>
 
-            <!-- reklama -->
-             <div id="globalAnnouncement" class="hidden bg-yellow-100 border-b border-yellow-200 overflow-hidden relative py-2">
-            <div id="announcementContent" class="flex items-center px-4">
-                </div>
-            <i onclick="hideAnnouncement()" class="fa-solid fa-xmark absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs cursor-pointer"></i>
-            </div>
-            <!-- reklama -->
             <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col no-scrollbar bg-[#f2f2f7]"></div>
 
             <footer id="chatFooter" class="p-4 pb-10 flex items-center gap-3 glass-panel">
@@ -474,65 +454,18 @@
         </div>
     </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    <div class="lg:col-span-2 bg-green-900/10 border border-green-700 rounded-lg overflow-hidden">
-        <div class="bg-green-800 text-black p-2 text-xs font-bold uppercase tracking-tighter">User_Management_Module</div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-[11px]">
-                <thead class="bg-green-900/50 border-b border-green-700">
-                    <tr>
-                        <th class="p-3">IDENTIFIER</th>
-                        <th class="p-3">ROLE</th>
-                        <th class="p-3">STATUS</th>
-                        <th class="p-3">RESTRICTION</th>
-                        <th class="p-3">ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody id="adminTable" class="divide-y divide-green-900/30"></tbody>
+    <div id="adminPanel">
+        <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
+            <h2 class="text-xl font-bold tracking-tighter text-green-500">SAFECHAT_CORE_v2.0</h2>
+            <button onclick="closeAdmin()" class="bg-red-900 text-white px-4 py-1 rounded text-xs">EXIT_ROOT</button>
+        </div>
+        <div id="adminTableContent" class="overflow-x-auto text-xs">
+             <table class="w-full text-left">
+                <thead class="bg-green-900 text-black uppercase"><tr><th class="p-2">User</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead>
+                <tbody id="adminTable"></tbody>
             </table>
         </div>
     </div>
-
-    <div class="flex flex-col gap-6">
-        
-        <div class="bg-black border border-green-700 rounded-lg overflow-hidden">
-            <div class="bg-green-800 text-black p-2 text-xs font-bold uppercase tracking-tighter">Broadcast_System_Module</div>
-            <div class="p-4 bg-green-900/5">
-                <select id="advType" class="bg-black text-green-500 text-xs p-2 mb-3 w-full border border-green-700 outline-none focus:border-green-400">
-                    <option value="text">Marquee Text (Yuruvchi matn)</option>
-                    <option value="video">YouTube Video (Embed)</option>
-                    <option value="image">Image Banner (URL)</option>
-                </select>
-                
-                <input type="text" id="advValue" placeholder="Matn yoki URL kiriting..." class="bg-black border border-green-700 text-green-500 text-xs p-2 w-full mb-3 outline-none focus:border-green-400">
-                
-                <div class="flex gap-2 mb-3">
-                    <div class="w-1/2">
-                        <label class="text-[9px] block mb-1 opacity-50">START_TIME</label>
-                        <input type="datetime-local" id="advStart" class="bg-black text-green-500 text-[10px] border border-green-700 p-1 w-full">
-                    </div>
-                    <div class="w-1/2">
-                        <label class="text-[9px] block mb-1 opacity-50">END_TIME</label>
-                        <input type="datetime-local" id="advEnd" class="bg-black text-green-500 text-[10px] border border-green-700 p-1 w-full">
-                    </div>
-                </div>
-                
-                <button onclick="publishAnnouncement()" class="w-full bg-green-600 hover:bg-green-500 text-black text-xs font-bold py-2 transition-colors">
-                    <i class="fa-solid fa-tower-broadcast mr-2"></i>DEPLOY_BROADCAST
-                </button>
-            </div>
-        </div>
-
-        <div class="bg-black border border-green-700 rounded-lg flex flex-col h-[300px]">
-            <div class="bg-green-800 text-black p-2 text-xs font-bold uppercase">System_Log_Stream</div>
-            <div id="adminLogs" class="flex-1 p-3 text-[10px] overflow-y-auto space-y-1 font-mono leading-tight">
-                <div class="text-blue-400">[SYSTEM]: Kernel monitoring active...</div>
-            </div>
-        </div>
-        
-    </div>
-</div>
 
     <div id="mediaPreviewModal" class="hidden fixed inset-0 z-[100] bg-black flex flex-col">
     <div class="p-4 flex justify-between items-center text-white">
@@ -575,23 +508,18 @@
         }
 
         async function register() {
-            const phone = document.getElementById('phoneCode').value + document.getElementById('reg_phone').value.replace(/\s/g, '');
+            const email = document.getElementById('reg_email').value.trim();
             const u = document.getElementById('reg_u').value.trim();
             const p = document.getElementById('reg_p').value.trim();
-
-            if(!phone || !u || !p) return alert("Hamma joyni to'ldiring!");
-
+            if(!email || !u || !p) return alert("To'liq to'ldiring!");
             try {
                 const res = await fetch(`${API}/api/register`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        phone: phone, // Email o'rniga telefon
-                        username: u + ".connect.uz", 
-                        password: p 
-                    })
+                    body: JSON.stringify({ email, username: u + ".connect.uz", password: p })
                 });
-                // ... qolgan mantiq (alert va toggleAuth)
+                if(res.ok) { alert("Muvaffaqiyatli!"); toggleAuth(false); }
+                else { const d = await res.json(); alert(d.message); }
             } catch(e) { alert("Xato!"); }
         }
 
@@ -618,58 +546,6 @@
             } catch(e) { alert("Server bilan ulanishda xato!"); }
         }
 
-        const countries = [
-    { name: "Uzbekistan", code: "+998", flag: "🇺🇿" },
-    { name: "Russia", code: "+7", flag: "🇷🇺" },
-    { name: "USA", code: "+1", flag: "🇺🇸" },
-    { name: "Turkey", code: "+90", flag: "🇹🇷" },
-    { name: "Kazakhstan", code: "+7", flag: "🇰🇿" },
-    { name: "Germany", code: "+49", flag: "🇩🇪" },
-    { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
-    { name: "United Arab Emirates", code: "+971", flag: "🇦🇪" },
-    { name: "South Korea", code: "+82", flag: "🇰🇷" }
-    // Qo'shimcha davlatlarni shu yerga qo'shish mumkin
-];
-
-function openCountryModal() {
-    document.getElementById('countryModal').classList.remove('hidden');
-    renderCountries(countries);
-}
-
-function closeCountryModal() {
-    document.getElementById('countryModal').classList.add('hidden');
-}
-
-function renderCountries(list) {
-    const container = document.getElementById('countryList');
-    container.innerHTML = "";
-    list.forEach(c => {
-        const item = document.createElement('div');
-        item.className = "flex items-center justify-between p-4 border-b hover:bg-gray-50 cursor-pointer";
-        item.innerHTML = `
-            <div class="flex items-center gap-4">
-                <span class="text-2xl">${c.flag}</span>
-                <span class="font-medium">${c.name}</span>
-            </div>
-            <span class="text-gray-400 font-bold">${c.code}</span>
-        `;
-        item.onclick = () => selectCountry(c);
-        container.appendChild(item);
-    });
-}
-
-function selectCountry(c) {
-    document.getElementById('selectedFlag').innerText = c.flag;
-    document.getElementById('selectedCountryName').innerText = c.name;
-    document.getElementById('phoneCode').value = c.code;
-    closeCountryModal();
-}
-
-function filterCountries() {
-    const term = document.getElementById('countrySearch').value.toLowerCase();
-    const filtered = countries.filter(c => c.name.toLowerCase().includes(term));
-    renderCountries(filtered);
-}
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -844,59 +720,6 @@ async function openChat(name) {
         msgBox.innerHTML = '<div class="text-center py-10 text-red-400 text-xs">Xabarlarni yuklab bo\'lmadi</div>';
     }
 
-    function setGlobalAnnouncement(config) {
-    const bar = document.getElementById('globalAnnouncement');
-    const content = document.getElementById('announcementContent');
-    
-    const now = new Date().getTime();
-    const startTime = new Date(config.start).getTime();
-    const endTime = new Date(config.end).getTime();
-
-    // Vaqtni tekshirish
-    if (now >= startTime && now <= endTime) {
-        bar.classList.remove('hidden');
-        
-        if (config.type === 'text') {
-            content.innerHTML = `<div class="w-full overflow-hidden">
-                <p class="marquee-text text-sm font-bold text-yellow-800">${config.value}</p>
-            </div>`;
-        } 
-        else if (config.type === 'video') {
-            // YouTube linkini embed qilish
-            const videoId = extractVideoID(config.value);
-            content.innerHTML = `<div class="w-full flex justify-center">
-                <iframe width="100%" height="150" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
-            </div>`;
-        }
-        else if (config.type === 'image') {
-            content.innerHTML = `<img src="${config.value}" class="h-10 w-full object-cover rounded-md">`;
-        }
-    } else {
-        bar.classList.add('hidden');
-    }
-}
-
-// YouTube linkidan ID ni ajratib olish
-function extractVideoID(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-}
-function publishAnnouncement() {
-    const config = {
-        type: document.getElementById('advType').value,
-        value: document.getElementById('advValue').value,
-        start: document.getElementById('advStart').value,
-        end: document.getElementById('advEnd').value
-    };
-    // Socket orqali hammaga yuborish
-    socket.emit('broadcast_announcement', config);
-}
-
-// Clientlarda qabul qilish
-socket.on('receive_announcement', (config) => {
-    setGlobalAnnouncement(config);
-});
     // 4. Ochiq turgan barcha menyularni yopish
     closeAllSheets();
 }
@@ -1280,58 +1103,6 @@ function closeChatArea() {
     chatArea.classList.add('hidden'); 
     chatArea.classList.remove('flex');
     
-    // Admin Login
-function showAdminLogin() {
-    const key = prompt("ENTER ROOT_KEY:");
-    if (key === 'serinaqu') {
-        document.getElementById('adminPanel').style.display = 'block';
-        loadAdminData();
-        addLog("ADMIN_SESSION_STARTED", "success");
-    } else {
-        alert("ACCESS_DENIED: INVALID_KEY");
-    }
-}
-
-// Log qo'shish funksiyasi
-function addLog(msg, type = "info") {
-    const logContainer = document.getElementById('adminLogs');
-    const time = new Date().toLocaleTimeString();
-    const color = type === "success" ? "text-green-400" : type === "danger" ? "text-red-500" : "text-blue-400";
-    logContainer.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
-    logContainer.scrollTop = logContainer.scrollHeight;
-}
-
-// Ma'lumotlarni yuklash (Serverdan fetch qilish kerak)
-async function loadAdminData() {
-    try {
-        const response = await fetch('/api/admin/users'); // API endpoint yaratish kerak
-        const users = await response.json();
-        
-        const table = document.getElementById('adminTable');
-        table.innerHTML = "";
-        
-        users.forEach(u => {
-            const row = `
-                <tr class="hover:bg-green-900/20 transition-colors">
-                    <td class="p-3 font-bold">${u.name}</td>
-                    <td class="p-3">USER</td>
-                    <td class="p-3"><span class="w-2 h-2 inline-block rounded-full ${u.online ? 'bg-green-500' : 'bg-gray-600'} mr-2"></span>${u.online ? 'ONLINE' : 'OFFLINE'}</td>
-                    <td class="p-3 text-red-400">${u.is_blocked ? 'BANNED' : 'CLEAR'}</td>
-                    <td class="p-3 flex gap-2">
-                        <button onclick="banUser('${u.name}')" class="bg-red-900/50 border border-red-700 px-2 py-1 rounded text-[10px] hover:bg-red-700">BAN</button>
-                        <button onclick="deleteMessages('${u.name}')" class="bg-blue-900/50 border border-blue-700 px-2 py-1 rounded text-[10px] hover:bg-blue-700">WIPE</button>
-                    </td>
-                </tr>`;
-            table.innerHTML += row;
-        });
-        
-        // Stats yangilash (misol uchun)
-        document.getElementById('totalUsersStat').innerText = users.length;
-    } catch (e) {
-        addLog("DATA_LOAD_FAILED: " + e.message, "danger");
-    }
-}
-
     // 3. Faol suhbatni to'xtatish
     activeChat = null; 
 
