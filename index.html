@@ -242,43 +242,44 @@
         <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold">O'rnatish</button>
     </div>
 
-    <div id="authScreen" class="fixed inset-0 z-[5000] flex items-center justify-center p-6 bg-[#f2f2f7]">
-        <div class="glass-panel w-full max-w-[420px] p-8 rounded-[40px] shadow-2xl">
-            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            
-            <div id="loginView">
-                <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Kirish</h1>
-                <p class="text-gray-500 text-center mb-8">SafeChat Tizimiga qaytish</p>
-                <div class="space-y-4">
-                    <div class="relative">
-                        <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
-                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
-                    </div>
-                    <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
-                    <button onclick="login()" class="w-full py-4 bg-blue-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Tizimga kirish</button>
-                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz yo'qmi? <span onclick="toggleAuth(true)" class="text-blue-600 font-bold cursor-pointer">Ro'yxatdan o'tish</span></p>
-                </div>
-            </div>
-
-            <div id="registerView" class="hidden">
-                <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
-                <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
-                <div class="space-y-4">
-                    <input type="email" id="reg_email" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Email manzilingiz">
-                    <div class="relative">
-                        <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
-                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
-                    </div>
-                    <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Murakkab parol yarating">
-                    <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
-                    <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer">Kirish</span></p>
-                </div>
-            </div>
-            <p onclick="showAdminLogin()" class="text-center text-[10px] text-gray-400 mt-8 uppercase tracking-widest cursor-pointer hover:text-blue-500">CEO & ADMIN ACCESS ONLY</p>
-        </div>
+<div id="countryModal" class="hidden fixed inset-0 z-[6000] bg-white flex flex-col animate-slide-up">
+    <div class="p-4 flex items-center gap-4 border-b">
+        <i class="fa-solid fa-arrow-left text-xl cursor-pointer" onclick="closeCountryModal()"></i>
+        <input type="text" id="countrySearch" oninput="filterCountries()" placeholder="Davlatni qidiring..." class="flex-1 p-2 outline-none text-lg">
     </div>
+    <div id="countryList" class="flex-1 overflow-y-auto overflow-x-hidden">
+        </div>
+</div>
+
+<div id="registerView" class="hidden">
+    <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
+    <p class="text-gray-500 text-center mb-8">Yangi xavfsiz hisob yarating</p>
+    
+    <div class="space-y-4">
+        <div onclick="openCountryModal()" class="w-full p-4 bg-white border border-gray-100 rounded-2xl flex items-center justify-between cursor-pointer active:bg-gray-50 transition">
+            <div class="flex items-center gap-3">
+                <span id="selectedFlag" class="text-2xl">🇺🇿</span>
+                <span id="selectedCountryName" class="font-medium text-gray-700">Uzbekistan</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </div>
+
+        <div class="flex gap-2">
+            <input type="text" id="phoneCode" class="w-24 p-4 bg-white border border-gray-100 rounded-2xl text-center font-bold" value="+998" readonly>
+            <input type="tel" id="reg_phone" class="flex-1 p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="90 123 45 67">
+        </div>
+
+        <div class="relative">
+            <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
+            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+        </div>
+        
+        <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
+        
+        <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Hisobni yaratish</button>
+        <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer text-lg">Kirish</span></p>
+    </div>
+</div>
 
     <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
         
@@ -574,18 +575,23 @@
         }
 
         async function register() {
-            const email = document.getElementById('reg_email').value.trim();
+            const phone = document.getElementById('phoneCode').value + document.getElementById('reg_phone').value.replace(/\s/g, '');
             const u = document.getElementById('reg_u').value.trim();
             const p = document.getElementById('reg_p').value.trim();
-            if(!email || !u || !p) return alert("To'liq to'ldiring!");
+
+            if(!phone || !u || !p) return alert("Hamma joyni to'ldiring!");
+
             try {
                 const res = await fetch(`${API}/api/register`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ email, username: u + ".connect.uz", password: p })
+                    body: JSON.stringify({ 
+                        phone: phone, // Email o'rniga telefon
+                        username: u + ".connect.uz", 
+                        password: p 
+                    })
                 });
-                if(res.ok) { alert("Muvaffaqiyatli!"); toggleAuth(false); }
-                else { const d = await res.json(); alert(d.message); }
+                // ... qolgan mantiq (alert va toggleAuth)
             } catch(e) { alert("Xato!"); }
         }
 
@@ -612,6 +618,58 @@
             } catch(e) { alert("Server bilan ulanishda xato!"); }
         }
 
+        const countries = [
+    { name: "Uzbekistan", code: "+998", flag: "🇺🇿" },
+    { name: "Russia", code: "+7", flag: "🇷🇺" },
+    { name: "USA", code: "+1", flag: "🇺🇸" },
+    { name: "Turkey", code: "+90", flag: "🇹🇷" },
+    { name: "Kazakhstan", code: "+7", flag: "🇰🇿" },
+    { name: "Germany", code: "+49", flag: "🇩🇪" },
+    { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
+    { name: "United Arab Emirates", code: "+971", flag: "🇦🇪" },
+    { name: "South Korea", code: "+82", flag: "🇰🇷" }
+    // Qo'shimcha davlatlarni shu yerga qo'shish mumkin
+];
+
+function openCountryModal() {
+    document.getElementById('countryModal').classList.remove('hidden');
+    renderCountries(countries);
+}
+
+function closeCountryModal() {
+    document.getElementById('countryModal').classList.add('hidden');
+}
+
+function renderCountries(list) {
+    const container = document.getElementById('countryList');
+    container.innerHTML = "";
+    list.forEach(c => {
+        const item = document.createElement('div');
+        item.className = "flex items-center justify-between p-4 border-b hover:bg-gray-50 cursor-pointer";
+        item.innerHTML = `
+            <div class="flex items-center gap-4">
+                <span class="text-2xl">${c.flag}</span>
+                <span class="font-medium">${c.name}</span>
+            </div>
+            <span class="text-gray-400 font-bold">${c.code}</span>
+        `;
+        item.onclick = () => selectCountry(c);
+        container.appendChild(item);
+    });
+}
+
+function selectCountry(c) {
+    document.getElementById('selectedFlag').innerText = c.flag;
+    document.getElementById('selectedCountryName').innerText = c.name;
+    document.getElementById('phoneCode').value = c.code;
+    closeCountryModal();
+}
+
+function filterCountries() {
+    const term = document.getElementById('countrySearch').value.toLowerCase();
+    const filtered = countries.filter(c => c.name.toLowerCase().includes(term));
+    renderCountries(filtered);
+}
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));

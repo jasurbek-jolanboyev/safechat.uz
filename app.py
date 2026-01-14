@@ -31,13 +31,12 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    ip_address = db.Column(db.String(50))
-    is_blocked = db.Column(db.Boolean, default=False)
-    blocked_users = db.Column(db.Text, default="")  # Vergul bilan ajratilgan username'lar
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    phone = db.Column(db.String(20), unique=True, nullable=True) # Telefon uchun ustun
+    avatar = db.Column(db.Text, nullable=True) # Profil rasmi uchun (Base64 yoki URL)
+    is_blocked = db.Column(db.Boolean, default=False) # Admin uchun bloklash holati
+    is_online = db.Column(db.Boolean, default=False)
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -119,42 +118,78 @@ def index():
 @app.route('/api/register', methods=['POST'])
 def register_api():
     data = request.json
+    # Tekshiruv: Username yoki Telefon bandmi?
     if User.query.filter_by(username=data['username']).first():
         return jsonify({"message": "Bu username band!"}), 400
-    
+    if User.query.filter_by(phone=data['phone']).first():
+        return jsonify({"message": "Bu telefon raqami ro'yxatdan o'tgan!"}), 400
+
+    hashed_p = generate_password_hash(data['password'])
     new_user = User(
-        email=data['email'],
         username=data['username'],
-        password=generate_password_hash(data['password']),
-        ip_address=request.remote_addr
+        password=hashed_p,
+        phone=data['phone']
     )
     db.session.add(new_user)
     db.session.commit()
-    return jsonify({"status": "success"}), 201
+    return jsonify({"status": "success", "message": "Ro'yxatdan o'tdingiz!"}), 201
 
 @app.route('/api/login', methods=['POST'])
 def login_api():
-    data = request.json
-    user = User.query.filter_by(username=data['username']).first()
-    if user and check_password_hash(user.password, data['password']):
-        if user.is_blocked: return jsonify({"message": "Profilingiz bloklangan!"}), 403
-        return jsonify({"status": "success", "username": user.username}), 200
-    return jsonify({"message": "Login yoki parol xato!"}), 401
+    try:
+        data = request.json
+        # Username ni tekshirish
+        user = User.query.filter_by(username=data['username']).first()
+        
+        if user and check_password_hash(user.password, data['password']):
+            if user.is_blocked:
+                return jsonify({"message": "Profilingiz bloklangan! CEO bilan bog'laning."}), 403
+            
+            # Login muvaffaqiyatli bo'lsa
+            user.is_online = True
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success", 
+                "username": user.username,
+                "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
+            }), 200
+            
+        return jsonify({"message": "Username yoki parol xato!"}), 401
+    except Exception as e:
+        return jsonify({"message": f"Server xatosi: {str(e)}"}), 500
 
 import json # Fayl tepasida borligiga ishonch hosil qiling
 
-@app.route('/api/admin/users')
-def get_admin_users():
-    # Faqat xavfsizlik uchun tekshiruv qo'shish mumkin
-    users = Entity.query.all()
-    user_list = []
-    for u in users:
-        user_list.append({
-            'name': u.name,
-            'is_blocked': False, # Agar bazada blocked ustuni bo'lsa shuni oling
-            'online': True # Socket orqali aniqlash mumkin
+@app.route('/api/admin/users', methods=['GET'])
+def admin_get_users():
+    # Bu yerda admin ekanligini tekshirish (auth) qo'shish tavsiya etiladi
+    users = User.query.all()
+    output = []
+    for user in users:
+        output.append({
+            "name": user.username,
+            "status": "ONLINE" if user.is_online else "OFFLINE",
+            "is_blocked": user.is_blocked,
+            "phone": user.phone
         })
-    return jsonify(user_list)
+    return jsonify(output)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    # Bu yerda foydalanuvchini aniqlab is_online = False qilish mumkin
+    print("Foydalanuvchi tarmoqdan uzildi")
+    
+# Foydalanuvchini bloklash uchun
+@app.route('/api/admin/block', methods=['POST'])
+def admin_block_user():
+    data = request.json
+    user = User.query.filter_by(username=data['username']).first()
+    if user:
+        user.is_blocked = not user.is_blocked # Bloklash yoki blokdan ochish
+        db.session.commit()
+        return jsonify({"message": "Muvaffaqiyatli!"}), 200
+    return jsonify({"message": "User topilmadi"}), 404
 
 @socketio.on('admin_action')
 def handle_admin_action(data):
@@ -165,7 +200,7 @@ def handle_admin_action(data):
     if action == 'ban':
         # Bazada userni blocklash kodi
         emit('user_banned', {'target': target}, broadcast=True)
-        
+
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
