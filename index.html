@@ -1038,20 +1038,23 @@ function confirmAndSendMedia() {
 // 4. Location yuborish (Preview shart emas, birdan ketadi)
 function sendLocation() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const data = {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const locData = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            
+            socket.emit('send_message', {
                 sender: currentUser,
                 receiver: activeChat,
-                content: `https://www.google.com/maps?q=${lat},${lon}`,
                 type: 'location',
-                lat: lat,
-                lon: lon,
-                timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-            };
-            socket.emit('send_message', data);
+                content: `Joylashuv: ${locData.lat}, ${locData.lng}`,
+                location: locData // Serverga obyekt sifatida yuboramiz
+            });
+            closeSheet('mediaSheet');
         });
+    } else {
+        alert("Geolokatsiya qurilmangizda qo'llab-quvvatlanmaydi.");
     }
 }
         function setEntityType(type) {
@@ -1648,10 +1651,11 @@ function handleForward() {
     const forwardText = selectedMsgText;
     const targetUser = prompt("Kimga yubormoqchisiz? (Username)");
     if(targetUser) {
+    // To'g'ri misol:
         socket.emit('send_message', {
             sender: currentUser,
-            receiver: targetUser,
-            content: `[Forwarded]: ${forwardText}`,
+            receiver: activeChat,
+            content: messageText,
             type: 'text'
         });
         alert("Yuborildi!");

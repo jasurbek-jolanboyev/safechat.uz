@@ -33,10 +33,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    phone = db.Column(db.String(20), unique=True, nullable=True) # Telefon uchun ustun
-    avatar = db.Column(db.Text, nullable=True) # Profil rasmi uchun (Base64 yoki URL)
-    is_blocked = db.Column(db.Boolean, default=False) # Admin uchun bloklash holati
+    phone = db.Column(db.String(20), unique=True, nullable=True)
+    avatar = db.Column(db.Text, nullable=True)
+    is_blocked = db.Column(db.Boolean, default=False)
     is_online = db.Column(db.Boolean, default=False)
+    blocked_users = db.Column(db.Text, default="") # SHU QATORNI QO'SHING
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -179,7 +180,7 @@ def admin_get_users():
 def handle_disconnect():
     # Bu yerda foydalanuvchini aniqlab is_online = False qilish mumkin
     print("Foydalanuvchi tarmoqdan uzildi")
-    
+
 # Foydalanuvchini bloklash uchun
 @app.route('/api/admin/block', methods=['POST'])
 def admin_block_user():
@@ -286,122 +287,93 @@ def get_entities():
             "creator": e.creator
         })
     return jsonify(result)
-
-# --- SOCKET.IO REAL-TIME ---
-@socketio.on('send_message')
-def handle_send(data):
-    try:
-        # Fayl yoki matn mazmuni
-        content = data.get('content', '')
-        msg_type = data.get('type', 'text')
-        file_data = data.get('file_data') # Base64 shu yerda keladi
-
-        new_msg = Message(
-            sender=data['sender'],
-            receiver=data['receiver'],
-            content=content,
-            msg_type=msg_type,
-            reply_info=json.dumps(data.get('reply_to')) if data.get('reply_to') else None
-        )
-        # Agar bazada multimedia uchun alohida ustun bo'lmasa, 
-        # file_data ni ham content kabi saqlash mumkin yoki alohida ustun qo'shing
-        
-        db.session.add(new_msg)
-        db.session.commit()
-        
-        data['id'] = new_msg.id
-        # Emit qilishda file_data ni ham qo'shib yuboramiz
-        emit('receive_message', data, to=data['receiver'])
-        if data['receiver'] != data['sender']:
-            emit('receive_message', data, to=data['sender'])
-            
-    except Exception as e:
-        print(f"Xatolik: {e}")
+# --- SOCKET.IO REAL-TIME (YAKUNIY TO'LIQ VARIANT) ---
 
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
-    join_room(username)
-    # Foydalanuvchi a'zo bo'lgan guruhlarga ham ulanish
-    entities = Entity.query.filter(Entity.members.contains(username)).all()
-    for ent in entities:
-        join_room(ent.name)
-
-import json # Faylning eng tepasiga, importlar qatoriga qo'shing
+    if username:
+        join_room(username)
+        # Foydalanuvchi a'zo bo'lgan guruhlarni topish va ularga ulanish
+        entities = Entity.query.filter(Entity.members.contains(username)).all()
+        for ent in entities:
+            join_room(ent.name)
+        print(f"DEBUG: {username} hamma xonalarga ulandi.")
 
 @socketio.on('send_message')
 def handle_send(data):
     try:
-        # 1. Bloklash tekshiruvi
-        if not Entity.query.filter_by(name=data['receiver']).first():
-            if user_is_blocked_by(data['receiver'], data['sender']):
+        sender_u = data.get('sender')
+        receiver_u = data.get('receiver')
+        msg_type = data.get('type', 'text') # text, image, video, file, location
+        content = data.get('content', '')
+        
+        # 1. Bloklash tekshiruvi (faqat shaxsiy chat bo'lsa)
+        is_entity = Entity.query.filter_by(name=receiver_u).first()
+        if not is_entity:
+            if user_is_blocked_by(receiver_u, sender_u):
+                print(f"BLOCKED: {sender_u} -> {receiver_u}")
                 return 
 
-        # 2. Multimedia ma'lumotlarini tayyorlash
-        # Agar rasm yoki video bo'lsa, contentda fayl nomi, file_data'da esa Base64 bo'ladi
-        msg_type = data.get('type', 'text')
-        file_payload = data.get('file_data') # Base64 formatidagi fayl
-
-        # 3. Reply ma'lumotini saqlash
+        # 2. Bazaga saqlash
         reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
-
-        # 4. Bazaga saqlash
+        
         new_msg = Message(
-            sender=data['sender'],
-            receiver=data['receiver'],
-            content=data['content'], # Matn yoki fayl nomi
+            sender=sender_u,
+            receiver=receiver_u,
+            content=content, # Bu yerda matn yoki fayl nomi bo'ladi
             msg_type=msg_type,
             reply_info=reply_json
         )
         db.session.add(new_msg)
         db.session.commit()
         
-        # 5. Front-end uchun ma'lumotlarni to'ldirish
+        # 3. Front-end uchun ma'lumotlarni to'ldirish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        # MUHIM: file_data ni data obyektiga qayta yuklaymiz (agar u bo'lsa)
-        # Shunda receive_message ni olgan odam rasmni ko'ra oladi
-        if file_payload:
-            data['file_data'] = file_payload
+        # Multimedia (Base64) yoki Location ma'lumotlari data ichida o'zi bilan ketadi
+        # Front-end ularni 'file_data' yoki 'location_data' sifatida qabul qiladi
 
-        # 6. Xabarni tarqatish
-        emit('receive_message', data, to=data['receiver'])
-        if data['receiver'] != data['sender']:
-            emit('receive_message', data, to=data['sender'])
+        # 4. Xabarni tarqatish
+        emit('receive_message', data, to=receiver_u)
+        if receiver_u != sender_u:
+            emit('receive_message', data, to=sender_u)
             
     except Exception as e:
-        print(f"Xatolik yuz berdi: {e}")
-        emit('error_notification', {'message': 'Xabar yuborilmadi'}, to=data['sender'])
+        print(f"ERROR_SEND: {e}")
+        db.session.rollback()
 
 @socketio.on('edit_message')
 def handle_edit(data):
-    msg = Message.query.get(data['id'])
-    if msg and msg.sender == data.get('sender', msg.sender):
-        msg.content = data['content']
-        msg.is_edited = True
-        db.session.commit()
-        emit('message_edited', {"id": data['id'], "content": data['content']}, to=data['receiver'])
-        emit('message_edited', {"id": data['id'], "content": data['content']}, to=msg.sender)
+    try:
+        msg = Message.query.get(data['id'])
+        if msg and msg.sender == data.get('sender'):
+            msg.content = data['content']
+            db.session.commit()
+            emit('message_edited', data, to=msg.receiver)
+            emit('message_edited', data, to=msg.sender)
+    except Exception as e:
+        print(f"EDIT_ERROR: {e}")
 
 @socketio.on('delete_message')
 def handle_delete(data):
-    msg = Message.query.get(data['id'])
-    if msg:
-        r, s = msg.receiver, msg.sender
-        db.session.delete(msg)
-        db.session.commit()
-        emit('message_deleted', data['id'], to=r)
-        emit('message_deleted', data['id'], to=s)
+    try:
+        msg = Message.query.get(data['id'])
+        if msg:
+            r, s = msg.receiver, msg.sender
+            db.session.delete(msg)
+            db.session.commit()
+            emit('message_deleted', data['id'], to=r)
+            emit('message_deleted', data['id'], to=s)
+    except Exception as e:
+        print(f"DELETE_ERROR: {e}")
 
 @socketio.on('create_entity')
 def handle_create_entity(data):
     name = data.get('name')
-    entity_type = data.get('type')
+    entity_type = data.get('type') # 'group' yoki 'channel'
     creator = data.get('creator')
-
-    if not name or entity_type not in ['group', 'channel']:
-        return
 
     if Entity.query.filter_by(name=name).first():
         emit('entity_error', {"message": "Bu nom band!"}, to=creator)
@@ -415,46 +387,27 @@ def handle_create_entity(data):
     )
     db.session.add(new_entity)
     db.session.commit()
-
     join_room(name)
-    
-    # MUHIM: Faqat yaratuvchiga "Yaratildi" deb javob berish
-    # Yoki hamma yangi guruhlarni ko'rsin desangiz broadcast=True qolaveradi
-    emit('entity_created', {
-        "name": name,
-        "type": entity_type,
-        "creator": creator
-    }, broadcast=True)
+    emit('entity_created', data, broadcast=True)
 
 @socketio.on('add_member')
-def add_member(data):
+def handle_add_member(data):
     group = Entity.query.filter_by(name=data['group']).first()
-    if not group:
-        return
-    
-    members = group.members.split(',') if group.members else []
-    if data['username'] not in members:
-        members.append(data['username'])
-        group.members = ",".join(members)
-        db.session.commit()
-
-    join_room(data['group'])
-    emit('member_added', data, to=data['group'])
-
-@socketio.on('block_user')
-def handle_block(data):
-    user = User.query.filter_by(username=data['sender']).first()
-    if user:
-        blocks = user.blocked_users.split(',') if user.blocked_users else []
-        if data['target'] not in blocks:
-            blocks.append(data['target'])
-            user.blocked_users = ",".join(blocks)
+    if group:
+        members = group.members.split(',') if group.members else []
+        if data['username'] not in members:
+            members.append(data['username'])
+            group.members = ",".join(members)
             db.session.commit()
+            join_room(data['group'])
+            emit('member_added', data, to=data['group'])
 
 @socketio.on('call_signal')
 def handle_call(data):
+    # WebRTC signalizatsiyasi uchun (Video/Audio qo'ng'iroq)
     emit('incoming_call', data, to=data['to'])
 
 if __name__ == '__main__':
+    # Render.com portini avtomatik aniqlash
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)
