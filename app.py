@@ -143,6 +143,29 @@ def login_api():
 
 import json # Fayl tepasida borligiga ishonch hosil qiling
 
+@app.route('/api/admin/users')
+def get_admin_users():
+    # Faqat xavfsizlik uchun tekshiruv qo'shish mumkin
+    users = Entity.query.all()
+    user_list = []
+    for u in users:
+        user_list.append({
+            'name': u.name,
+            'is_blocked': False, # Agar bazada blocked ustuni bo'lsa shuni oling
+            'online': True # Socket orqali aniqlash mumkin
+        })
+    return jsonify(user_list)
+
+@socketio.on('admin_action')
+def handle_admin_action(data):
+    # data: { action: 'ban', target: 'user1' }
+    action = data.get('action')
+    target = data.get('target')
+    
+    if action == 'ban':
+        # Bazada userni blocklash kodi
+        emit('user_banned', {'target': target}, broadcast=True)
+        
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
@@ -259,7 +282,7 @@ def handle_send(data):
             
     except Exception as e:
         print(f"Xatolik: {e}")
-        
+
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
