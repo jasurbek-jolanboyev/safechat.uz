@@ -139,27 +139,37 @@ def register_api():
 def login_api():
     try:
         data = request.json
-        user = User.query.filter_by(username=data['username']).first()
-        
-        if user and check_password_hash(user.password, data['password']):
-            if user.is_blocked:
-                return jsonify({"message": "Profilingiz bloklangan!"}), 403
-            
-            user.is_online = True
-            db.session.commit()
-            
-            return jsonify({
-                "status": "success", 
-                "username": user.username,
-                "phone": user.phone, # TELEFON RAQAMNI QAYTARAMIZ
-                "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
-            }), 200
-            
-        return jsonify({"message": "Username yoki parol xato!"}), 401
-    except Exception as e:
-        return jsonify({"message": f"Server xatosi: {str(e)}"}), 500
+        u_name = data.get('username', '').strip()
+        p_word = data.get('password', '').strip()
 
-import json # Fayl tepasida borligiga ishonch hosil qiling
+        # 1. Foydalanuvchini bazadan qidirish
+        user = User.query.filter_by(username=u_name).first()
+        
+        # 2. Agar topilmasa va oxirida .connect.uz bo'lmasa, uni qo'shib qayta qidirish
+        if not user and not u_name.endswith('.connect.uz'):
+            user = User.query.filter_by(username=u_name + '.connect.uz').first()
+
+        if user:
+            # 3. Parolni tekshirish
+            if check_password_hash(user.password, p_word):
+                user.is_online = True
+                db.session.commit()
+                return jsonify({
+                    "status": "success",
+                    "username": user.username,
+                    "phone": user.phone,
+                    "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
+                }), 200
+            else:
+                return jsonify({"message": "Parol noto'g'ri!"}), 401
+        else:
+            return jsonify({"message": "Foydalanuvchi topilmadi!"}), 401
+
+    except Exception as e:
+        print(f"Xato yuz berdi: {e}")
+        return jsonify({"message": "Server xatosi"}), 500
+    
+
 
 @app.route('/api/admin/users', methods=['GET'])
 def admin_get_users():
@@ -269,6 +279,7 @@ def submit_apply():
     return jsonify({"status": "success"})
 
 # 3. Statistika API (Faqat Admin uchun)
+
 @app.route('/api/admin/stats')
 def get_admin_stats():
     # Faqat ma'lum raqam uchun ruxsat berish xavfsizlikni kuchaytiradi

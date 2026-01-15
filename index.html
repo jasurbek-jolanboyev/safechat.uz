@@ -639,28 +639,43 @@ async function register() {
     }
 }
 
-        async function login() {
-            const u = document.getElementById('login_u').value.trim();
-            const p = document.getElementById('login_p').value.trim();
-            if(!u || !p) return alert("Ma'lumotlarni kiriting!");
-            try {
-                const res = await fetch(`${API}/api/login`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ username: u + ".connect.uz", password: p })
-                });
-                const d = await res.json();
-                if(res.ok) {
-                    currentUser = d.username;
-                    document.getElementById('authScreen').classList.add('hidden');
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    document.getElementById('display_u').innerText = currentUser;
-                    document.getElementById('myAvatar').src = `https://ui-avatars.com/api/?name=${u}&background=007aff&color=fff`;
-                    socket.emit('join', { username: currentUser });
-                    switchTab('chats');
-                } else alert(d.message);
-            } catch(e) { alert("Server bilan ulanishda xato!"); }
+async function login() {
+    let u = document.getElementById('login_u').value.trim();
+    const p = document.getElementById('login_p').value.trim();
+
+    if(!u || !p) return alert("To'ldiring!");
+
+    try {
+        const res = await fetch(`${API}/api/login`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ username: u, password: p })
+        });
+        
+        const d = await res.json();
+        
+        if (res.ok) { // 200 OK kelsa
+            localStorage.setItem('chat_user', d.username);
+            localStorage.setItem('user_phone', d.phone);
+            currentUser = d.username;
+            
+            // UI ni almashtirish
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            checkAdminAccess();
+            // Agar initApp funksiyasi bo'lsa chaqiramiz
+            if (typeof initApp === "function") initApp();
+        } else {
+            // 401 xato bo'lsa shu yerga tushadi
+            alert("Xato: " + d.message);
         }
+    } catch (err) {
+        // Agar internet bo'lmasa yoki server o'chgan bo'lsa shu yerga tushadi
+        console.error("Ulanish xatosi:", err);
+        alert("Server bilan ulanishda xato!");
+    }
+}
 
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
@@ -1771,10 +1786,8 @@ async function editValue(type) {
     let endpoint = type === 'password' ? '/api/update_password' : '/api/update_user';
     let body = { username: currentUser };
     
-    if(type === 'username') {
-        body = { old_username: currentUser, new_username: newVal + ".connect.uz" };
-    } else {
-        body[type] = newVal;
+if (!u.includes('.connect.uz')) {
+        u = u + '.connect.uz';
     }
 
     const res = await fetch(endpoint, {
