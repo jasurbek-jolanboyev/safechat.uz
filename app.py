@@ -25,7 +25,7 @@ os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- MA'LUMOTLAR BAZASI MODELLARI ---
 
@@ -139,21 +139,35 @@ def register_api():
 def login_api():
     try:
         data = request.json
-        u_name = data.get('username', '').strip()
-        p_word = data.get('password', '').strip()
+        if not data:
+            return jsonify({"message": "Ma'lumot yuborilmadi"}), 400
 
-        # 1. Foydalanuvchini bazadan qidirish
+        # Login va parolni olish va bo'shliqlardan tozalash
+        u_name = str(data.get('username', '')).strip()
+        p_word = str(data.get('password', '')).strip()
+
+        if not u_name or not p_word:
+            return jsonify({"message": "Username va parolni to'ldiring"}), 400
+
+        # 1. To'g'ridan-to'g'ri qidirish
         user = User.query.filter_by(username=u_name).first()
         
-        # 2. Agar topilmasa va oxirida .connect.uz bo'lmasa, uni qo'shib qayta qidirish
+        # 2. Agar topilmasa va foydalanuvchi .connect.uz ni yozishni unutgan bo'lsa
         if not user and not u_name.endswith('.connect.uz'):
             user = User.query.filter_by(username=u_name + '.connect.uz').first()
 
+        # 3. Foydalanuvchi topildimi?
         if user:
-            # 3. Parolni tekshirish
+            # 4. Parolni tekshirish (hash orqali)
             if check_password_hash(user.password, p_word):
+                # Login muvaffaqiyatli
                 user.is_online = True
-                db.session.commit()
+                try:
+                    db.session.commit()
+                except Exception as db_err:
+                    db.session.rollback()
+                    print(f"Database commit error: {db_err}")
+
                 return jsonify({
                     "status": "success",
                     "username": user.username,
@@ -161,13 +175,15 @@ def login_api():
                     "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
                 }), 200
             else:
-                return jsonify({"message": "Parol noto'g'ri!"}), 401
+                # Parol noto'g'ri bo'lsa
+                return jsonify({"message": "Kiritilgan parol noto'g'ri!"}), 401
         else:
-            return jsonify({"message": "Foydalanuvchi topilmadi!"}), 401
+            # Username umuman topilmasa
+            return jsonify({"message": "Bunday foydalanuvchi mavjud emas!"}), 401
 
     except Exception as e:
-        print(f"Xato yuz berdi: {e}")
-        return jsonify({"message": "Server xatosi"}), 500
+        print(f"LOGIN_CRITICAL_ERROR: {e}")
+        return jsonify({"message": "Serverda texnik xatolik yuz berdi"}), 500
     
 
 
@@ -356,6 +372,21 @@ def get_entities():
         })
     return jsonify(result)
 # --- SOCKET.IO REAL-TIME (YAKUNIY TO'LIQ VARIANT) ---
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return {"status": "error", "message": "Foydalanuvchi topilmadi"}, 400
+
+    if not check_password_hash(user.password, password):
+        return {"status": "error", "message": "Parol noto‘g‘ri!"}, 400
+
+    return {"status": "ok", "username": username}, 200
+
 
 @socketio.on('join')
 def handle_join(data):

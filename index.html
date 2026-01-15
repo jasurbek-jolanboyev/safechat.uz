@@ -451,29 +451,6 @@
         <input type="file" id="mediaInp" hidden onchange="handleFile(this)">
     </div>
 
-    <div id="settingsSheet" class="ios-sheet">
-        <div class="sheet-handle"></div>
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-8">
-                <h2 class="text-3xl font-extrabold">Sozlamalar</h2>
-                <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
-            </div>
-            <div class="bg-white rounded-3xl p-6 flex flex-col items-center mb-6 shadow-sm">
-                <div class="relative w-28 h-28 mb-4">
-                    <img id="settingsPic" src="https://ui-avatars.com/api/?name=U" class="w-full h-full rounded-full border-4 border-gray-50 object-cover">
-                    <label class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg">
-                        <i class="fa fa-camera text-sm"></i>
-                        <input type="file" id="avatarInput" hidden accept="image/*" onchange="previewAvatar(this)">
-                    </label>
-                </div>
-                <h3 id="display_u" class="text-xl font-bold text-gray-800">username.connect.uz</h3>
-            </div>
-            <button onclick="saveProfile()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold mb-4 shadow-lg active:scale-95 transition">Saqlash</button>
-            <button onclick="logout()" class="w-full py-4 bg-white text-red-500 rounded-2xl font-bold border border-red-100 active:scale-95 transition">Chiqish</button>
-        </div>
-    </div>
-
-    
         <div id="profileSheet" class="ios-sheet">
             <div class="sheet-handle"></div>
             <div class="p-6">
@@ -643,39 +620,64 @@ async function login() {
     let u = document.getElementById('login_u').value.trim();
     const p = document.getElementById('login_p').value.trim();
 
-    if(!u || !p) return alert("To'ldiring!");
+    // 1️⃣ Maydonlar bo‘sh bo‘lsa
+    if (!u || !p) {
+        alert("Iltimos, username va parolni to'ldiring!");
+        return;
+    }
 
     try {
+        // 2️⃣ API ga login so‘rovi
         const res = await fetch(`${API}/api/login`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ username: u, password: p })
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: u,
+                password: p
+            })
         });
-        
+
         const d = await res.json();
-        
-        if (res.ok) { // 200 OK kelsa
-            localStorage.setItem('chat_user', d.username);
-            localStorage.setItem('user_phone', d.phone);
+
+        // 3️⃣ Login muvaffaqiyatli bo'lsa
+        if (res.ok) {
             currentUser = d.username;
-            
-            // UI ni almashtirish
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            
-            checkAdminAccess();
-            // Agar initApp funksiyasi bo'lsa chaqiramiz
-            if (typeof initApp === "function") initApp();
+
+            // LocalStorage ga saqlaymiz
+            localStorage.setItem("chat_user", d.username);
+            if (d.phone) {
+                localStorage.setItem("user_phone", d.phone);
+            }
+
+            // UI ni yangilash
+            document.getElementById("authScreen").classList.add("hidden");
+            document.getElementById("mainApp").classList.remove("hidden");
+
+            // SOCKET orqali tizimga qo‘shish
+            socket.emit("join", { username: d.username });
+
+            // Admin tekshiruvi
+            if (typeof checkAdminAccess === "function") {
+                checkAdminAccess();
+            }
+
+            // Dastlabki yuklanish funksiyasi bo‘lsa chaqiramiz
+            if (typeof initApp === "function") {
+                initApp();
+            }
+
         } else {
-            // 401 xato bo'lsa shu yerga tushadi
-            alert("Xato: " + d.message);
+            // 4️⃣ Noaniq xatoda aniq habar
+            alert("Xato: " + (d.message || "Login amalga oshmadi!"));
         }
+
     } catch (err) {
-        // Agar internet bo'lmasa yoki server o'chgan bo'lsa shu yerga tushadi
+        // 5️⃣ Serverga ulanishda muammo — internet yoki API ishlamayapti
         console.error("Ulanish xatosi:", err);
-        alert("Server bilan ulanishda xato!");
+        alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
     }
 }
+
 
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
