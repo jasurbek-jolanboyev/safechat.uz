@@ -11,6 +11,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+
+            body {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            }
+
+            #mainApp aside header {
+                padding-top: env(safe-area-inset-top, 20px) !important;
+                /* pt-14 degan joylarni shu bilan almashtirdik */
+            }
             /* Asosiy chat konteyneri */
             :root {
                 --ios-bg: #f2f2f7;
@@ -295,24 +305,24 @@
     <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
         
         <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-[#f2f2f7] pb-[85px] md:pb-0">
-            <header class="p-6 pt-14 pb-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="tabTitle" class="text-3xl font-extrabold text-gray-900">Chatlar</h2>
-                    <div class="flex gap-4">
-                        <i class="fa-solid fa-plus-circle text-2xl text-blue-600 cursor-pointer" onclick="openSheet('createEntitySheet')"></i>
-                        <img id="myAvatar" src="https://ui-avatars.com/api/?name=U" onclick="openSheet('settingsSheet')" class="w-10 h-10 rounded-full border-2 border-blue-600 cursor-pointer object-cover shadow-sm">
+            <header class="p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
+                        <div class="flex gap-4">
+                            <i class="fa-solid fa-plus-circle text-2xl text-blue-600 cursor-pointer" onclick="openSheet('createEntitySheet')"></i>
+                            </div>
                     </div>
-                </div>
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-3 pl-12 bg-gray-200 rounded-xl outline-none focus:bg-white transition-all" placeholder="Qidiruv...">
-                </div>
-            </header>
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-2.5 pl-11 bg-gray-100 rounded-xl outline-none focus:bg-white transition-all text-sm" placeholder="Qidiruv...">
+                    </div>
+                </header>
 
             <div id="chatsTab" class="tab-content active flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
                 <div id="chatList" class="space-y-2"></div>
             </div>
             <div id="groupsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
+            
             <div id="channelsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
 
             <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 px-6 py-3 flex justify-between items-center z-50">
@@ -339,6 +349,7 @@
                 <i class="fa-solid fa-gear text-xl"></i>
                 <span class="text-[10px] font-medium">Sozlamalar</span>
             </button>
+            
         </nav>
         </aside>
 
@@ -462,21 +473,72 @@
         </div>
     </div>
 
-    <div id="ceoSheet" class="ios-sheet">
-        <div class="sheet-handle"></div>
-        <div class="p-8">
-            <div class="flex justify-between items-center mb-10"><h2 class="text-3xl font-black">CEO & Founders</h2><i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('ceoSheet')"></i></div>
-            <div class="bg-white rounded-[35px] p-8 text-center shadow-sm">
-                <div class="w-24 h-24 bg-blue-600 rounded-[30px] mx-auto mb-6 flex items-center justify-center text-white text-4xl font-black shadow-xl">JJ</div>
-                <h3 class="text-2xl font-black text-gray-800">Jasurbek Jo'lanboyev</h3>
-                <p class="text-gray-500 mb-4 italic">G'ayrat o'g'li | SafeChat CEO</p>
-                <div class="flex justify-center gap-6 mt-6">
-                    <a href="tel:+998958883851" class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-phone"></i></a>
-                    <a href="https://t.me/serinaqu" class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl"><i class="fa-brands fa-telegram"></i></a>
+    
+        <div id="profileSheet" class="ios-sheet">
+            <div class="sheet-handle"></div>
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-3xl font-extrabold">Profil</h2>
+                    <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('profileSheet')"></i>
+                </div>
+                <div class="bg-white rounded-[35px] p-8 flex flex-col items-center shadow-sm border border-gray-50 text-center">
+                    <img id="profileDisplayPic" src="https://ui-avatars.com/api/?name=U" class="w-28 h-28 rounded-full border-4 border-blue-100 mb-4 object-cover">
+                    <h3 id="profileNameDisplay" class="text-2xl font-black text-gray-800">User</h3>
+                    <p id="profilePhoneDisplay" class="text-gray-500 font-medium">+998 00 000 00 00</p>
                 </div>
             </div>
         </div>
+
+<div id="settingsSheet" class="ios-sheet overflow-y-auto">
+    <div class="sheet-handle"></div>
+    <div class="p-6 pb-24">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900">Sozlamalar</h2>
+            <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
+        </div>
+
+        <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
+            <div onclick="editValue('username')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">Usernameni o'zgartirish</span>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </div>
+            <div onclick="editValue('phone')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">Telefonni o'zgartirish</span>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </div>
+            <div onclick="editValue('password')" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">Parolni yangilash</span>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </div>
+        </div>
+
+        <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
+            <div onclick="window.open('https://t.me/serinaqu', '_blank')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">SafeChat Support</span>
+                <i class="fa-solid fa-headset text-blue-500"></i>
+            </div>
+            <div onclick="openSheet('applySheet')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">Dasturchilarga qo'shilish</span>
+                <i class="fa-solid fa-code text-orange-500"></i>
+            </div>
+            <div onclick="alert('Reklama tizimi tez kunda...')" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                <span class="font-medium text-gray-700">Reklama va Homiylik</span>
+                <i class="fa-solid fa-rectangle-ad text-green-500"></i>
+            </div>
+        </div>
+
+        <button id="adminAccessBtn" onclick="showAdminLogin()" class="hidden w-full py-4 bg-gray-900 text-green-400 rounded-2xl font-mono font-bold mb-6 border border-green-800 shadow-xl active:scale-95 transition">
+            <i class="fa-solid fa-terminal mr-2"></i> SYSTEM_ADMIN_PANEL
+        </button>
+
+        <button onclick="logout()" class="w-full py-4 bg-white text-red-500 rounded-2xl font-bold border border-red-100 mb-8 active:scale-95 transition">Chiqish</button>
+
+        <div class="text-center space-y-1 opacity-40 pb-10">
+            <p class="text-[10px] font-bold">SafeChat Connection v3.0 (2026)</p>
+            <p class="text-[9px]">CEO: Jasurbek Jo'lanboyev | G'ayrat o'g'li</p>
+        </div>
     </div>
+</div>
 
     <div id="adminPanel">
         <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
@@ -515,6 +577,18 @@
         </div>
 </div>
 
+<div id="applySheet" class="ios-sheet">
+    <div class="sheet-handle"></div>
+    <div class="p-6">
+        <h2 class="text-2xl font-black mb-4">Ariza topshirish</h2>
+        <div class="space-y-4">
+            <input type="text" id="app_name" placeholder="Ism Familiya" class="w-full p-4 bg-gray-100 rounded-2xl outline-none">
+            <input type="tel" id="app_phone" placeholder="Telefon raqam" class="w-full p-4 bg-gray-100 rounded-2xl outline-none">
+            <textarea id="app_reason" placeholder="Nima uchun bizga qo'shilmoqchisiz?" class="w-full p-4 bg-gray-100 rounded-2xl outline-none h-32"></textarea>
+            <button onclick="submitApplication()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold">Yuborish</button>
+        </div>
+    </div>
+</div>
     <div id="sheetOverlay" class="sheet-overlay" onclick="closeAllSheets()"></div>
 
     <script>
@@ -1674,6 +1748,84 @@ function bindContextEvents(element, data) {
         return false;
     };
 
+    // 1. Qurilmani aniqlash
+function updateDeviceInfo() {
+    const ua = navigator.userAgent;
+    let device = "Personal Computer";
+    if (/Android/i.test(ua)) device = "Android Smartphone";
+    if (/iPhone/i.test(ua)) device = "Apple iPhone";
+    document.getElementById('currentDevice').innerText = device;
+}
+
+// 2. Dark Mode
+function toggleDarkMode() {
+    document.body.classList.toggle('bg-slate-900');
+    // Bu yerga o'z xohishingizga ko'ra ranglarni o'zgartiruvchi kod qo'shishingiz mumkin
+}
+
+// 3. Ma'lumotlarni o'zgartirish (Prompt orqali)
+async function editValue(type) {
+    let newVal = prompt(`Yangi ${type}ni kiriting:`);
+    if(!newVal) return;
+
+    let endpoint = type === 'password' ? '/api/update_password' : '/api/update_user';
+    let body = { username: currentUser };
+    
+    if(type === 'username') {
+        body = { old_username: currentUser, new_username: newVal + ".connect.uz" };
+    } else {
+        body[type] = newVal;
+    }
+
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    });
+
+    if(res.ok) {
+        alert("Muvaffaqiyatli! Tizimga qayta kiring.");
+        logout();
+    }
+}
+
+async function loadAdminStats() {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    // Admin paneldagi HTML elementlarga qiymatlarni yozish
+    document.getElementById('stat_total').innerText = data.total;
+    document.getElementById('stat_online').innerText = data.online;
+}
+
+function submitApplication() {
+    const data = {
+        name: document.getElementById('app_name').value,
+        phone: document.getElementById('app_phone').value,
+        reason: document.getElementById('app_reason').value
+    };
+    fetch('/api/apply', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    }).then(() => {
+        alert("Ariza yuborildi!");
+        closeSheet('applySheet');
+    });
+}
+
+// 4. Admin tugmasini tekshirish (Faqat sizning raqam uchun)
+function checkAdminAccess() {
+    const phone = localStorage.getItem('user_phone');
+    if(phone === '958883851' || phone === '+998958883851') {
+        document.getElementById('adminAccessBtn').classList.remove('hidden');
+    }
+}
+
+// Sahifa yuklanganda barchasini ishga tushirish
+window.addEventListener('load', () => {
+    updateDeviceInfo();
+    checkAdminAccess();
+});
     // --- MOBILE: UZOQ BOSIB TURISH ---
     element.addEventListener('touchstart', function(e) {
         // Agar tanlash (select) rejimida bo'lsak, menyu chiqmasin

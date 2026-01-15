@@ -139,20 +139,19 @@ def register_api():
 def login_api():
     try:
         data = request.json
-        # Username ni tekshirish
         user = User.query.filter_by(username=data['username']).first()
         
         if user and check_password_hash(user.password, data['password']):
             if user.is_blocked:
-                return jsonify({"message": "Profilingiz bloklangan! CEO bilan bog'laning."}), 403
+                return jsonify({"message": "Profilingiz bloklangan!"}), 403
             
-            # Login muvaffaqiyatli bo'lsa
             user.is_online = True
             db.session.commit()
             
             return jsonify({
                 "status": "success", 
                 "username": user.username,
+                "phone": user.phone, # TELEFON RAQAMNI QAYTARAMIZ
                 "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
             }), 200
             
@@ -251,6 +250,64 @@ def get_messages():
     except Exception as e:
         print(f"Xabarlarni yuklashda xato: {e}")
         return jsonify({"message": "Xabarlarni yuklab bo'lmadi"}), 500
+
+# 1. Yangi model qo'shing
+class Application(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    reason = db.Column(db.Text)
+    status = db.Column(db.String(20), default='new') # new, accepted, rejected
+
+# 2. Arizani qabul qilish API
+@app.route('/api/apply', methods=['POST'])
+def submit_apply():
+    data = request.json
+    new_app = Application(name=data['name'], phone=data['phone'], reason=data['reason'])
+    db.session.add(new_app)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+# 3. Statistika API (Faqat Admin uchun)
+@app.route('/api/admin/stats')
+def get_admin_stats():
+    # Faqat ma'lum raqam uchun ruxsat berish xavfsizlikni kuchaytiradi
+    total_users = User.query.count()
+    online_now = User.query.filter_by(is_online=True).count()
+    # Ma'lumotlar bazasida Application modeli bo'lsa:
+    # pending_apps = Application.query.filter_by(status='pending').count()
+    return jsonify({
+        "total": total_users,
+        "online": online_now,
+        "server_time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    })
+# --- FOYDALANUVCHI MA'LUMOTLARINI YANGILASH ---
+
+@app.route('/api/update_user', methods=['POST'])
+def update_user():
+    data = request.json
+    user = User.query.filter_by(username=data.get('old_username')).first()
+    if not user:
+        return jsonify({"message": "User topilmadi"}), 404
+    
+    new_username = data.get('new_username')
+    if User.query.filter_by(username=new_username).first():
+        return jsonify({"message": "Bu username band!"}), 400
+
+    user.username = new_username
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/api/update_password', methods=['POST'])
+def update_password():
+    data = request.json
+    user = User.query.filter_by(username=data.get('username')).first()
+    if user:
+        user.password = generate_password_hash(data.get('password'))
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"message": "Xato!"}), 400
+
 
 @app.route('/api/users/search', methods=['GET'])
 def search_users():
