@@ -11,7 +11,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-
+/* Tab animatsiyasi uchun qo'shimcha */
+    .tab-btn i {
+        transition: transform 0.2s ease;
+    }
+    .tab-btn:active i {
+        transform: scale(0.85);
+    }
+    .tab-content {
+        animation: iosFade 0.3s ease-out;
+    }
+    @keyframes iosFade {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
             body {
             padding-top: 0 !important;
             margin-top: 0 !important;
@@ -304,54 +317,76 @@
 
     <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
         
-        <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-200 flex flex-col bg-[#f2f2f7] pb-[85px] md:pb-0">
+    <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-100 flex flex-col bg-[#f2f2f7] relative h-screen overflow-y-auto z-40">
+        
             <header class="p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
-                        <div class="flex gap-4">
-                            <i class="fa-solid fa-plus-circle text-2xl text-blue-600 cursor-pointer" onclick="openSheet('createEntitySheet')"></i>
-                            </div>
-                    </div>
-                    <div class="relative">
-                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="userSearch" oninput="liveSearch(this.value)" class="w-full p-2.5 pl-11 bg-gray-100 rounded-xl outline-none focus:bg-white transition-all text-sm" placeholder="Qidiruv...">
-                    </div>
-                </header>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
+                    <!-- Plus tugmasi olib tashlandi -->
+                    <button id="toggleSearch" class="text-gray-500 text-xl cursor-pointer">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <!-- Qidiruv oynasi dastlab yashirilgan -->
+                <div id="searchWrapper" class="relative hidden transition-all duration-300">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="userSearch" oninput="liveSearch(this.value)"
+                        class="w-full p-2.5 pl-11 bg-gray-100 rounded-xl outline-none focus:bg-white transition-all text-sm"
+                        placeholder="Qidiruv...">
+                </div>
+            </header>
 
-            <div id="chatsTab" class="tab-content active flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar">
-                <div id="chatList" class="space-y-2"></div>
+
+            <div class="flex-1 overflow-y-auto no-scrollbar pb-28">
+                <div id="chatsTab" class="tab-content p-4 space-y-2">
+                    <div id="chatList" class="space-y-1"></div>
+                </div>
+                <div id="groupsTab" class="tab-content hidden p-4 space-y-2">
+                    <div id="groupList" class="space-y-1"></div>
+                </div>
             </div>
-            <div id="groupsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
-            
-            <div id="channelsTab" class="tab-content hidden flex-1 overflow-y-auto p-4 space-y-2 no-scrollbar"></div>
 
-            <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-100 px-6 py-3 flex justify-between items-center z-50">
-            <button onclick="switchTab('chats')" id="nav-chats" class="nav-item active flex flex-col items-center gap-1">
-                <i class="fa-solid fa-message text-xl"></i>
-                <span class="text-[10px] font-medium">Chatlar</span>
-            </button>
+        <div class="absolute bottom-6 left-0 right-0 px-4 z-50">
+            <nav class="bg-white/80 backdrop-blur-2xl border border-white/20 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] p-2 flex justify-around items-center relative overflow-hidden">
+                
+                <!-- Indicator -->
+                <div id="navIndicator" class="absolute h-12 bg-[#007aff]/10 rounded-[24px] transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-0"></div>
 
-            <button onclick="switchTab('groups')" id="nav-groups" class="nav-item flex flex-col items-center gap-1">
-                <i class="fa-solid fa-user-group text-xl"></i>
-                <span class="text-[10px] font-medium">Guruhlar</span>
-            </button>
+                <!-- Chatlar -->
+            <button id="nav-chats" onclick="switchTab('chats')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-[#007aff]">
+                    <i class="fa-solid fa-comment-dots text-xl"></i>
+                    <span class="text-[9px] mt-0.5 font-bold">Chatlar</span>
+                </button>
 
-            <button onclick="openSheet('createEntitySheet')" class="bg-blue-600 w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-blue-200 -mt-8 border-4 border-white">
-                <i class="fa-solid fa-plus text-white text-xl"></i>
-            </button>
+                <!-- Guruhlar -->
+                <button id="nav-groups" onclick="switchTab('groups')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400">
+                    <i class="fa-solid fa-globe text-xl"></i>
+                    <span class="text-[9px] mt-0.5 font-bold">Ommaviy</span>
+                </button>
 
-            <button onclick="openSheet('profileSheet')" class="nav-item flex flex-col items-center gap-1">
-                <i class="fa-solid fa-circle-user text-xl"></i>
-                <span class="text-[10px] font-medium">Profil</span>
-            </button>
+                <!-- Plus -->
+                <button onclick="openSheet('createEntitySheet')" class="flex items-center justify-center w-12 h-12 bg-[#007aff] rounded-full shadow-lg shadow-blue-200 z-20 active:scale-90 transition">
+                    <i class="fa-solid fa-plus text-white text-xl"></i>
+                </button>
 
-            <button onclick="openSheet('settingsSheet')" class="nav-item flex flex-col items-center gap-1">
-                <i class="fa-solid fa-gear text-xl"></i>
-                <span class="text-[10px] font-medium">Sozlamalar</span>
-            </button>
-            
-        </nav>
-        </aside>
+
+
+                <!-- Sozlamalar -->
+                <button id="nav-settings" onclick="switchTab('settings')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400">
+                    <i class="fa-solid fa-gears text-xl"></i>
+                    <span class="text-[9px] mt-0.5 font-bold">Sozlamalar</span>
+                </button> 
+                
+                <!-- Profil -->
+            <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400">
+                    <i class="fa-solid fa-circle-user text-xl"></i>
+                    <span class="text-[9px] mt-0.5 font-bold">Profil</span>
+                </button>
+
+            </nav>
+        </div>
+
+    </aside>
 
         <main id="chatArea" class="flex flex-1 flex-col bg-white relative md:flex">
             <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
@@ -474,20 +509,56 @@
             <i class="fa-solid fa-circle-xmark text-2xl text-gray-300 cursor-pointer" onclick="closeSheet('settingsSheet')"></i>
         </div>
 
-        <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
-            <div onclick="editValue('username')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                <span class="font-medium text-gray-700">Usernameni o'zgartirish</span>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
-            </div>
-            <div onclick="editValue('phone')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                <span class="font-medium text-gray-700">Telefonni o'zgartirish</span>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
-            </div>
-            <div onclick="editValue('password')" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                <span class="font-medium text-gray-700">Parolni yangilash</span>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+<div id="settingsTab" class="hidden absolute inset-0 bg-[#f2f2f7] z-[40] overflow-y-auto pb-24">
+    <header class="sticky top-0 bg-white/80 backdrop-blur-md p-4 border-b border-gray-200 pt-12 flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Sozlamalar</h1>
+    </header>
+
+    <div class="bg-white m-4 rounded-2xl p-6 shadow-sm flex flex-col items-center">
+        <div class="relative group">
+            <img id="userAvatar" src="https://ui-avatars.com/api/?name=User" class="w-24 h-24 rounded-full border-4 border-blue-50 object-cover shadow-md">
+            <label for="avatarInput" class="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full cursor-pointer hover:bg-blue-700 transition">
+                <i class="fa-solid fa-camera"></i>
+            </label>
+            <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="uploadPhoto(this)">
+        </div>
+        <h2 id="displayUsername" class="text-xl font-bold mt-4">@username</h2>
+        <p id="displayBio" class="text-gray-500 text-sm italic">Bio hali yozilmagan...</p>
+        <button onclick="showEditProfile()" class="mt-4 text-blue-600 font-medium text-sm">Profilni tahrirlash</button>
+    </div>
+
+    <div class="m-4 space-y-2">
+        <div class="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <button class="w-full flex items-center p-4 hover:bg-gray-50 border-b border-gray-50" onclick="showDevices()">
+                <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fa-solid fa-laptop"></i>
+                </div>
+                <span class="flex-1 text-left">Faol qurilmalar</span>
+                <i class="fa-solid fa-chevron-right text-gray-300"></i>
+            </button>
+            
+            <div class="w-full flex items-center p-4">
+                <div class="w-8 h-8 bg-gray-100 text-gray-600 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fa-solid fa-moon"></i>
+                </div>
+                <span class="flex-1 text-left">Tungi rejim</span>
+                <input type="checkbox" onchange="toggleDarkMode(this)" class="w-10 h-5 bg-gray-300 rounded-full appearance-none checked:bg-blue-600 relative transition duration-200 cursor-pointer outline-none after:content-[''] after:absolute after:w-4 after:h-4 after:bg-white after:rounded-full after:top-0.5 after:left-0.5 after:transition-all checked:after:left-5">
             </div>
         </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+            <h4 class="text-sm font-semibold text-gray-400 mb-3 uppercase ml-1">Yuklab olish</h4>
+            <div class="flex gap-2">
+                <button onclick="installApp()" class="flex-1 bg-black text-white p-3 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-apple text-xl"></i> iOS
+                </button>
+                <button onclick="installApp()" class="flex-1 bg-black text-white p-3 rounded-xl flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-android text-xl"></i> Android
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
         <div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
             <div onclick="window.open('https://t.me/serinaqu', '_blank')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
@@ -678,24 +749,64 @@ async function login() {
     }
 }
 
+// Qidiruv maydonini ochish/yopish
+function toggleSearch() {
+    const searchContainer = document.getElementById('searchBarContainer');
+    searchContainer.classList.toggle('hidden');
+
+    // Agar qidiruv ochilsa, inputga fokus berish
+    if(!searchContainer.classList.contains('hidden')) {
+        document.getElementById('userSearch').focus();
+    }
+}
+
+// Universal search (chat, group, channel)
+function universalSearch(query) {
+    query = query.toLowerCase();
+
+    // Chatlarni filtrlash
+    document.querySelectorAll('#chatList .chat-item').forEach(chat => {
+        chat.style.display = chat.innerText.toLowerCase().includes(query) ? '' : 'none';
+    });
+
+    // Guruhlarni filtrlash
+    document.querySelectorAll('#groupList .group-item').forEach(group => {
+        group.style.display = group.innerText.toLowerCase().includes(query) ? '' : 'none';
+    });
+
+    // Kanallarni filtrlash
+    document.querySelectorAll('#channelsTab .channel-item').forEach(channel => {
+        channel.style.display = channel.innerText.toLowerCase().includes(query) ? '' : 'none';
+    });
+}
 
 // --- NAVIGATION & TABS ---
 function switchTab(tab) {
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    
+    // Barcha nav-item rangini default qilamiz
+    document.querySelectorAll('.nav-item').forEach(i => {
+        i.classList.remove('text-[#007aff]');
+        i.classList.add('text-gray-400');
+    });
+
+    // Tanlangan tab rangini ko‘k qilamiz
     const navBtn = document.getElementById(`nav-${tab}`);
-    if (navBtn) navBtn.classList.add('active');
-    
+    if(navBtn) {
+        navBtn.classList.remove('text-gray-400');
+        navBtn.classList.add('text-[#007aff]');
+    }
+
+    // Tab content hide/show
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     const tabCont = document.getElementById(`${tab}Tab`);
-    if (tabCont) tabCont.classList.remove('hidden');
-    
-    // Sarlavhani yangilash
-    const titles = { 'chats': 'Chatlar', 'groups': 'Guruhlar', 'channels': 'Kanallar' };
+    if(tabCont) tabCont.classList.remove('hidden');
+
+    // Title update
+    const titles = { 'chats': 'Chatlar', 'groups': 'Guruhlar', 'profile': 'Profil', 'settings': 'Sozlamalar' };
     document.getElementById('tabTitle').innerText = titles[tab] || 'SafeChat';
-    
-    loadList(tab);
+
+    loadList(tab); // agar kerak bo‘lsa
 }
+
 
 async function loadList(tab) {
     const list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById(`${tab}Tab`);
@@ -789,36 +900,49 @@ async function loadList(tab) {
 }
 
 // QIDIRUV FUNKSIYASI (O'zgarishsiz qoladi, lekin openChat ni to'g'ri chaqiradi)
-async function liveSearch(val) {
-    const list = document.getElementById('chatList');
-    if (val.length < 1) { loadList('chats'); return; }
+const toggleBtn = document.getElementById('toggleSearch');
+    const searchWrapper = document.getElementById('searchWrapper');
 
-    try {
-        const res = await fetch(`${API}/api/users/search`);
-        const users = await res.json();
-        const filtered = users.filter(u => u.username.toLowerCase().includes(val.toLowerCase()) && u.username !== currentUser);
-
-        list.innerHTML = "";
-        if(filtered.length === 0) {
-            list.innerHTML = `<p class="text-center text-red-400 mt-10 text-sm">Foydalanuvchi topilmadi</p>`;
-            return;
+    toggleBtn.addEventListener('click', () => {
+        // Qidiruv oynasini ochish/yopish
+        searchWrapper.classList.toggle('hidden');
+        // focus input, agar ochilgan bo'lsa
+        if(!searchWrapper.classList.contains('hidden')){
+            document.getElementById('userSearch').focus();
         }
+    });
 
-        filtered.forEach(u => {
-            const div = document.createElement('div');
-            div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
-            div.innerHTML = `
-                <img src="https://ui-avatars.com/api/?name=${u.username}&background=007aff&color=fff" class="w-12 h-12 rounded-full">
-                <div class="flex-1">
-                    <h5 class="font-bold text-sm text-gray-800">${u.username}</h5>
-                    <p class="text-[10px] text-blue-500 font-medium">Yangi suhbat boshlash</p>
-                </div>
-            `;
-            div.onclick = () => openChat(u.username);
-            list.appendChild(div);
-        });
-    } catch(e) { console.error("Search error", e); }
-}
+    // QIDIRUV FUNKSIYASI (o'zgarmadi)
+    async function liveSearch(val) {
+        const list = document.getElementById('chatList');
+        if (val.length < 1) { loadList('chats'); return; }
+
+        try {
+            const res = await fetch(`${API}/api/users/search`);
+            const users = await res.json();
+            const filtered = users.filter(u => u.username.toLowerCase().includes(val.toLowerCase()) && u.username !== currentUser);
+
+            list.innerHTML = "";
+            if(filtered.length === 0) {
+                list.innerHTML = `<p class="text-center text-red-400 mt-10 text-sm">Foydalanuvchi topilmadi</p>`;
+                return;
+            }
+
+            filtered.forEach(u => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
+                div.innerHTML = `
+                    <img src="https://ui-avatars.com/api/?name=${u.username}&background=007aff&color=fff" class="w-12 h-12 rounded-full">
+                    <div class="flex-1">
+                        <h5 class="font-bold text-sm text-gray-800">${u.username}</h5>
+                        <p class="text-[10px] text-blue-500 font-medium">Yangi suhbat boshlash</p>
+                    </div>
+                `;
+                div.onclick = () => openChat(u.username);
+                list.appendChild(div);
+            });
+        } catch(e) { console.error("Search error", e); }
+    }
 
 async function openChat(name) {
     activeChat = name;
@@ -1769,38 +1893,89 @@ function bindContextEvents(element, data) {
 function updateDeviceInfo() {
     const ua = navigator.userAgent;
     let device = "Personal Computer";
+
     if (/Android/i.test(ua)) device = "Android Smartphone";
     if (/iPhone/i.test(ua)) device = "Apple iPhone";
-    document.getElementById('currentDevice').innerText = device;
-}
+    if (/iPad/i.test(ua)) device = "Apple iPad";
+    if (/Windows/i.test(ua)) device = "Windows Kompyuter";
+    if (/Macintosh/i.test(ua)) device = "MacOS Kompyuter";
 
+    document.getElementById("currentDevice").innerText = device;
+
+    // Saqlab qo'yish (ixtiyoriy)
+    localStorage.setItem("device", device);
+}
 // 2. Dark Mode
 function toggleDarkMode() {
-    document.body.classList.toggle('bg-slate-900');
-    // Bu yerga o'z xohishingizga ko'ra ranglarni o'zgartiruvchi kod qo'shishingiz mumkin
+    const isDark = document.body.classList.toggle("dark-mode");
+
+    // Holatni saqlaymiz
+    localStorage.setItem("theme", isDark ? "dark" : "light");
 }
+
+function loadTheme() {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+}
+loadTheme(); // birinchi chaqirilishi
+
 
 // 3. Ma'lumotlarni o'zgartirish (Prompt orqali)
 async function editValue(type) {
     let newVal = prompt(`Yangi ${type}ni kiriting:`);
-    if(!newVal) return;
 
-    let endpoint = type === 'password' ? '/api/update_password' : '/api/update_user';
-    let body = { username: currentUser };
-    
-if (!u.includes('.connect.uz')) {
-        u = u + '.connect.uz';
+    if (!newVal || newVal.trim() === "") {
+        alert("Qiymat bo'sh bo‘la olmaydi!");
+        return;
     }
 
-    const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-    });
+    // Username bo‘lsa, domain qo‘shamiz
+    if (type === "username") {
+        if (!newVal.includes(".connect.uz")) {
+            newVal = newVal + ".connect.uz";
+        }
+    }
 
-    if(res.ok) {
-        alert("Muvaffaqiyatli! Tizimga qayta kiring.");
-        logout();
+    // API endpoint
+    const endpoint =
+        type === "password"
+            ? "/api/update_password"
+            : "/api/update_user";
+
+    // Yuboriladigan ma'lumot
+    const body = {
+        user: currentUser,
+        field: type,
+        value: newVal
+    };
+
+    try {
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            alert("Ma'lumotlar muvaffaqiyatli yangilandi!");
+
+            // Username yangilanganda localStorage yangilaymiz
+            if (type === "username") {
+                localStorage.setItem("user", newVal);
+            }
+
+            // Logout qilish
+            alert("Iltimos, tizimga qaytadan kiring.");
+            logout();
+        } else {
+            alert("Xatolik yuz berdi, yana urinib ko‘ring.");
+        }
+    } catch (err) {
+        console.error("Xato:", err);
+        alert("Server bilan ulanishda muammo!");
     }
 }
 

@@ -38,6 +38,8 @@ class User(db.Model):
     is_blocked = db.Column(db.Boolean, default=False)
     is_online = db.Column(db.Boolean, default=False)
     blocked_users = db.Column(db.Text, default="") # SHU QATORNI QO'SHING
+    bio = db.Column(db.String(200), default="Hello! I am using SafeChat.")
+    devices = db.Column(db.Text, default="[]") # JSON formatida qurilmalar ro'yxati
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -309,6 +311,16 @@ def get_admin_stats():
         "server_time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     })
 # --- FOYDALANUVCHI MA'LUMOTLARINI YANGILASH ---
+@app.route('/api/update_profile', methods=['POST'])
+def update_profile():
+    data = request.json
+    user = User.query.filter_by(username=data['username']).first()
+    if user:
+        user.bio = data.get('bio', user.bio)
+        # Boshqa ma'lumotlarni yangilash...
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"message": "User topilmadi"}), 404
 
 @app.route('/api/update_user', methods=['POST'])
 def update_user():
@@ -343,15 +355,25 @@ def search_users():
     return jsonify([{"username": u.username, "is_blocked": u.is_blocked} for u in users])
 
 @app.route('/api/upload_avatar', methods=['POST'])
-def upload_file_api():
-    if 'file' not in request.files: return jsonify({"message": "Fayl yo'q"}), 400
+def upload_avatar():
+    if 'file' not in request.files:
+        return jsonify({"message": "Fayl topilmadi"}), 400
+    
     file = request.files['file']
-    ext = file.filename.split('.')[-1]
-    filename = secure_filename(f"{secrets.token_hex(8)}.{ext}")
-    save_path = os.path.join(app.config['UPLOAD_FOLDER'], 'media', filename)
-    file.save(save_path)
-    # Front-end API manzili bilan qo'shib olishi uchun URL qaytaramiz
-    return jsonify({"url": f"/uploads/media/{filename}"})
+    u_name = request.form.get('username')
+    
+    if file and u_name:
+        filename = secure_filename(f"avatar_{u_name}_{file.filename}")
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'media', filename)
+        file.save(filepath)
+        
+        user = User.query.filter_by(username=u_name).first()
+        # Biz rasmga URL beramiz (Server manzili bilan)
+        user.avatar = f"/uploads/media/{filename}"
+        db.session.commit()
+        
+        return jsonify({"status": "success", "url": user.avatar})
+    return jsonify({"message": "Xato"}), 400
 
 @app.route('/uploads/<path:type>/<path:filename>')
 def serve_files(type, filename):
@@ -371,6 +393,8 @@ def get_entities():
             "creator": e.creator
         })
     return jsonify(result)
+
+
 # --- SOCKET.IO REAL-TIME (YAKUNIY TO'LIQ VARIANT) ---
 @app.route('/login', methods=['POST'])
 def login():
@@ -505,6 +529,38 @@ def handle_add_member(data):
 def handle_call(data):
     # WebRTC signalizatsiyasi uchun (Video/Audio qo'ng'iroq)
     emit('incoming_call', data, to=data['to'])
+
+
+@app.route('/api/search', methods=['GET'])
+def search_entities():
+    query = request.args.get('q', '').strip().lower()
+    if not query:
+        return jsonify([])
+
+    results = []
+    # 1. Foydalanuvchilarni qidirish
+    users = User.query.filter(User.username.ilike(f'%{query}%')).limit(10).all()
+    for u in users:
+        results.append({
+            "display_name": u.username,
+            "subtext": "SafeChat foydalanuvchisi",
+            "type": "user",
+            "avatar_name": u.username
+        })
+
+    # 2. Guruh va Kanallarni qidirish
+    entities = Entity.query.filter(Entity.name.ilike(f'%{query}%')).limit(10).all()
+    for e in entities:
+        m_count = len(e.members.split(',')) if e.members else 0
+        results.append({
+            "display_name": e.name,
+            "subtext": f"{m_count} a'zolar",
+            "type": e.entity_type,
+            "avatar_name": e.name
+        })
+
+    return jsonify(results)
+
 
 if __name__ == '__main__':
     # Render.com portini avtomatik aniqlash
