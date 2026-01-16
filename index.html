@@ -11,6 +11,80 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+        :root {
+    --vh: 1vh;
+        }
+
+        #mainApp {
+            /* vh o'rniga dinamik o'lcham */
+            height: calc(var(--vh, 1vh) * 100);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Navigatsiya uchun maxsus joy ajratish */
+        nav {
+            /* iPhone va yangi Androidlardagi pastki "Home bar" ni hisobga oladi */
+            padding-bottom: env(safe-area-inset-bottom, 12px) !important;
+        }
+
+        /* Tablar balandligini to'g'irlash */
+        .tab-content {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* Tablar o'tganda silliq chiqishi va ko'rinishi uchun */
+        #profileTab, #settingsTab {
+            padding: 20px;
+            color: #000; /* Matn qora bo'lishi shart */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        :root {
+            /* Mobil brauzer balandligini to'g'ri hisoblash uchun */
+            --vh: 1vh;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Skrolni faqat kerakli qismlarda qoldiramiz */
+            background-color: #f2f2f7; /* iOS fon rangi */
+        }
+
+        #mainApp {
+            /* vh o'rniga dinamik balandlik */
+            height: calc(var(--vh, 1vh) * 100);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigatsiya (Menu) pastga tushib ketmasligi uchun */
+        nav {
+            padding-bottom: env(safe-area-inset-bottom, 15px); /* iPhone pastki qismi uchun */
+            height: auto !important;
+            min-height: 70px;
+        }
+
+        /* Profil va Sozlamalar ko'rinishi uchun */
+        .tab-content {
+            height: 100%;
+            overflow-y: auto;
+            background: #f2f2f7;
+            -webkit-overflow-scrolling: touch;
+        }
 /* Tab animatsiyasi uchun qo'shimcha */
     .tab-btn i {
         transition: transform 0.2s ease;
@@ -980,6 +1054,15 @@ async function openChat(name) {
     // 4. Ochiq turgan barcha menyularni yopish
     closeAllSheets();
 }
+/////menuni tepaga chiqaradi 
+function fixMobileHeight() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+window.addEventListener('resize', fixMobileHeight);
+window.addEventListener('load', fixMobileHeight);
+fixMobileHeight();
 
 function sendMsg(type = 'text', content = null) {
     const inp = document.getElementById('msgInp');
@@ -1031,6 +1114,15 @@ function sendMsg(type = 'text', content = null) {
         inp.focus();
     }
 }
+
+function updateHeight() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+window.addEventListener('resize', updateHeight);
+window.addEventListener('load', updateHeight);
+updateHeight();
 
 function appendMessage(data) {
     const box = document.getElementById('msgBox');
