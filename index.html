@@ -11,189 +11,240 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
-    .dark body { background-color: #1c1c1e; color: white; }
-    .dark .bg-white { background-color: #2c2c2e !important; color: white !important; }
-    @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-    }
-    .animate-slide-up {
-        animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    #navIndicator {
+/* =========================================================
+   0. ROOT VA ASOSIY SOZLAMALAR
+========================================================= */
+:root {
+    --ios-bg: #f2f2f7;
+    --ios-accent: #007aff;
+    --glass: rgba(255, 255, 255, 0.85);
+    --radius-xl: 32px;
+    --vh: 1vh;
+}
+
+* { 
+    -webkit-tap-highlight-color: transparent; 
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Skrol faqat ichki elementlarda bo'ladi */
+    background-color: var(--ios-bg);
+}
+
+/* Dark Mode asosiy tana ranglari */
+.dark body { background-color: #1c1c1e; color: white; }
+.dark .bg-white { background-color: #2c2c2e !important; color: white !important; }
+
+#mainApp {
+    height: calc(var(--vh, 1vh) * 100);
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================================================
+   1. ANIMATSIYALAR
+========================================================= */
+@keyframes slideUpFull {
+    from { transform: translateY(100%); opacity: 0.8; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up { animation: slideUpFull 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+/* =========================================================
+   2. NAVIGATSIYA & INDIKATOR
+========================================================= */
+#navIndicator {
     position: absolute;
-    bottom: 8px; /* Pastdan masofa */
+    bottom: 8px;
     height: 52px;
     background: rgba(0, 122, 255, 0.1);
     border-radius: 28px;
-    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1); /* iOS uslubidagi silliq harakat */
+    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
     z-index: 0;
-    }
-    /* 1. O'ZGARUVCHILAR VA ASOSIY SOZLAMALAR */
-    :root {
-        --ios-bg: #f2f2f7;
-        --ios-accent: #007aff;
-        --glass: rgba(255, 255, 255, 0.85);
-        --radius-xl: 32px;
-        --vh: 1vh;
-    }
+}
 
-    * { 
-        -webkit-tap-highlight-color: transparent; 
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
-        box-sizing: border-box;
-    }
+.bottom-nav { 
+    position: fixed; bottom: 0; left: 0; right: 0; 
+    height: 85px; background: var(--glass); 
+    backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); 
+    display: flex; justify-content: space-around; 
+    padding-top: 10px; z-index: 100; 
+}
 
-    body, html {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: hidden; /* Skrol faqat ichki elementlarda bo'ladi */
-        background-color: var(--ios-bg);
-    }
+.nav-item { 
+    display: flex; flex-direction: column; align-items: center; 
+    color: #8e8e93; font-size: 11px; flex: 1; transition: 0.2s; 
+}
+.nav-item.active { color: var(--ios-accent); }
+.nav-item i { font-size: 24px; margin-bottom: 4px; }
 
-    #mainApp {
-        height: calc(var(--vh, 1vh) * 100);
-        display: flex;
-        flex-direction: column;
-    }
+/* =========================================================
+   3. CHAT AREA & XABARLAR
+========================================================= */
+#chatArea {
+    position: fixed;
+    inset: 0;
+    background: #F2F2F7;
+    z-index: 5000; 
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
 
-    /* 2. TABLAR VA KARTALAR (PROFIL/SOZLAMALAR) */
-    .tab-content {
-        height: 100%;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        background: var(--ios-bg);
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        animation: iosFade 0.3s ease-out;
-    }
+#msgBox {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background: #e5ddd5;
+    display: flex;
+    flex-direction: column;
+    -webkit-overflow-scrolling: touch;
+}
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in {
-        animation: fadeIn 0.4s ease-out forwards;
-    }
+.bubble { 
+    max-width: 75%; 
+    padding: 10px 14px; 
+    border-radius: 18px; 
+    font-size: 16px; 
+    margin-bottom: 8px; 
+    line-height: 1.4; 
+    word-wrap: break-word; 
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
 
-    .profile-card {
-        background: white;
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        color: #000;
-    }
+.bubble.sent { 
+    background: var(--ios-accent); 
+    color: white; 
+    align-self: flex-end; 
+    border-bottom-right-radius: 4px; 
+}
 
-    /* 3. CHAT AREA VA XABARLAR */
-    #chatArea {
-        position: fixed;
-        inset: 0;
-        background: #F2F2F7;
-        z-index: 5000; 
-        display: none;
-        flex-direction: column;
-        width: 100%;
-        height: 100%;
-    }
+.bubble.received { 
+    background: white; 
+    color: black; 
+    align-self: flex-start; 
+    border-bottom-left-radius: 4px; 
+}
 
-    #msgBox {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 15px;
-        background: #e5ddd5; /* WhatsApp uslubidagi fon */
-        display: flex;
-        flex-direction: column;
-        -webkit-overflow-scrolling: touch;
-    }
+.bubble:active { transform: scale(0.97); }
 
-    .bubble { 
-        max-width: 75%; 
-        padding: 10px 14px; 
-        border-radius: 18px; 
-        font-size: 16px; 
-        margin-bottom: 8px; 
-        line-height: 1.4; 
-        word-wrap: break-word; 
-        position: relative;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
+/* =========================================================
+   4. EMPTY STATE (Telegram-style)
+========================================================= */
+.empty-state {
+    opacity: 1 !important;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #1c1c1e;
+}
 
-    .bubble.sent { 
-        background: var(--ios-accent); 
-        color: white; 
-        align-self: flex-end; 
-        border-bottom-right-radius: 4px; 
-    }
+.empty-state p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: #4b5563; /* kontrast gray */
+}
 
-    .bubble.received { 
-        background: white; 
-        color: black; 
-        align-self: flex-start; 
-        border-bottom-left-radius: 4px; 
-    }
+.empty-state button {
+    margin-top: 12px;
+    background-color: #007aff;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    transition: 0.2s all;
+    cursor: pointer;
+}
+.empty-state button:hover { transform: scale(1.05); }
 
-    .bubble:active { transform: scale(0.97); }
+/* =========================================================
+   5. FULL PROFILE
+========================================================= */
+#profileCircle {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+#profileCircle:active { transform: scale(0.9) rotate(-2deg); }
 
-    /* 4. IOS SHEETS (PASTKI PANELLAR) */
-    .ios-sheet {
-        position: fixed;
-        bottom: -100%;
-        left: 0;
-        right: 0;
-        background: white;
-        z-index: 6000; 
-        transition: bottom 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-        border-radius: 24px 24px 0 0;
-        padding-bottom: env(safe-area-inset-bottom, 20px);
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-        max-height: 90%;
-        overflow-y: auto;
-    }
+#fullUserProfile { background-color: #ffffff; }
+#fullProfileScrollArea { background-color: #f2f2f7; }
 
-    .ios-sheet.active { bottom: 0; }
+.dark #fullUserProfile { background-color: #000000 !important; }
+.dark #fullProfileScrollArea { background-color: #000000 !important; }
+.dark #fullUserProfile .bg-white { background-color: #1c1c1e !important; color: #ffffff !important; }
+.dark #fullUserProfile .text-gray-800, .dark #fullUserProfile .text-gray-900 { color: #ffffff !important; }
+.dark #fullUserProfile .text-gray-600, .dark #fullUserProfile .text-gray-700 { color: #a1a1a6 !important; }
+.dark #fullUserProfile .text-gray-400 { color: #8e8e93 !important; }
+.dark #fullUserProfile .border-gray-50, .dark #fullUserProfile .divide-gray-50 > * { border-color: #2c2c2e !important; }
 
-    .sheet-handle { 
-        width: 36px; height: 5px; background: #c7c7cc; 
-        border-radius: 3px; margin: 12px auto; 
-    }
+/* =========================================================
+   6. IOS SHEETS & OVERLAY
+========================================================= */
+.ios-sheet {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    right: 0;
+    background: white;
+    z-index: 6000; 
+    transition: bottom 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    border-radius: 24px 24px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+    max-height: 90%;
+    overflow-y: auto;
+}
+.ios-sheet.active { bottom: 0; }
 
-    .sheet-overlay { 
-        position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-        z-index: 5500; display: none; backdrop-filter: blur(2px); 
-    }
+.sheet-handle { width: 36px; height: 5px; background: #c7c7cc; border-radius: 3px; margin: 12px auto; }
 
-    .sheet-overlay.active { display: block; }
+.sheet-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+    z-index: 5500; display: none; backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease;
+}
+.sheet-overlay.active { display: block; }
 
-    /* 5. NAVIGATSIYA */
-    .bottom-nav { 
-        position: fixed; bottom: 0; left: 0; right: 0; 
-        height: 85px; background: var(--glass); 
-        backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); 
-        display: flex; justify-content: space-around; 
-        padding-top: 10px; z-index: 100; 
-    }
+/* =========================================================
+   7. QO'SHIMCHA ELEMENTLAR
+========================================================= */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    .nav-item { 
-        display: flex; flex-direction: column; align-items: center; 
-        color: #8e8e93; font-size: 11px; flex: 1; transition: 0.2s; 
-    }
+.media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; display: block; }
 
-    .nav-item.active { color: var(--ios-accent); }
-    .nav-item i { font-size: 24px; margin-bottom: 4px; }
+#adminPanel { 
+    display: none; background: #1c1c1e; color: #32d74b; 
+    position: fixed; inset: 0; z-index: 9999; padding: 20px; 
+}
 
-    /* 6. QO'SHIMCHA ELEMENTLAR */
-    .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; display: block; }
-    
-    #adminPanel { 
-        display: none; background: #1c1c1e; color: #32d74b; 
-        position: fixed; inset: 0; z-index: 9999; padding: 20px; 
-    }
+/* =========================================================
+   8. DARK MODE ADDITIONAL
+========================================================= */
+.dark .ios-sheet { background: #1c1c1e !important; color: white; }
+.dark .ios-sheet .bg-gray-50 { background: #2c2c2e !important; }
+.dark .ios-sheet span { color: white !important; }
 
-    .no-scrollbar::-webkit-scrollbar { display: none; }
+
 </style>
 </head>
 <body>
@@ -317,7 +368,7 @@
         <h2 id="profileName" class="mt-4 text-2xl font-black text-gray-900 leading-tight">Loading...</h2>
         <p id="profileUsername" class="text-blue-600 font-bold text-sm tracking-wide">@username</p>
         
-        <div onclick="openSheet('statusSheet')" class="mt-2 px-4 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition">
+        <div onclick="openStatusSheet()" class="mt-2 px-4 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition">
             <span id="profileStatusDisplay" class="text-xs text-gray-500 italic font-medium">Status o'rnatish...</span>
         </div>
 
@@ -333,7 +384,7 @@
 
     <div class="mt-6 space-y-4 px-4">
         <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
-            <div onclick="openSheet('savedMessages')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 transition cursor-pointer">
+            <div onclick="alert('Saqlangan xabarlar tez kunda!')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 transition cursor-pointer">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bookmark"></i></div>
                     <span class="font-bold text-gray-800 text-sm">Saqlangan xabarlar</span>
@@ -354,7 +405,7 @@
         </div>
 
         <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
-            <div onclick="openSheet('deviceSheet')" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
+            <div onclick="openDeviceSheet()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-laptop"></i></div>
                     <span class="font-bold text-gray-800 text-sm">Faol seanslar (Devices)</span>
@@ -385,7 +436,7 @@
 
         <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
             <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Xavfsizlik</p>
-            <div onclick="openSheet('twoFASheet')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+            <div onclick="openTwoFASheet()" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
                 <span class="font-bold text-gray-700 text-sm">2-Step Verification</span>
                 <span id="twoFAStatusLabel" class="text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg">OFF</span>
             </div>
@@ -625,6 +676,112 @@
             </button>
         </div>
     </div>
+</div>
+<!-- FULL USER PROFILE OVERLAY -->
+<div id="fullUserProfile" class="fixed inset-0 z-[9999] bg-white/90 hidden flex-col animate-slide-up overflow-hidden backdrop-blur-lg">
+  
+  <!-- PROFILE HEADER -->
+  <div class="relative w-full h-[40vh] bg-gray-900 flex items-center justify-center overflow-hidden">
+    <!-- BACKGROUND BLUR IMAGE -->
+    <img id="bgBlurImg" src="" class="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40 transition-all duration-700">
+
+    <!-- PROFILE CIRCLE -->
+    <div id="profileCircle" class="relative w-36 h-36 rounded-full border-4 border-white/50 shadow-2xl overflow-hidden cursor-pointer active:scale-95 transition-all duration-300 z-10" onclick="expandImage()">
+      <img id="fullProfileImg" src="" class="w-full h-full object-cover">
+    </div>
+
+    <!-- TOP BUTTONS -->
+    <div class="absolute top-12 left-4 right-4 flex justify-between z-20">
+      <button onclick="closeFullProfile()" class="w-10 h-10 bg-black/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <div class="flex gap-2">
+        <button onclick="downloadProfileImg()" class="w-10 h-10 bg-black/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-download"></i>
+        </button>
+        <button onclick="shareUserProfile()" class="w-10 h-10 bg-black/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCROLLABLE CONTENT -->
+  <div id="fullProfileScrollArea" class="flex-1 bg-[#f2f2f7]/95 overflow-y-auto p-4 space-y-4 no-scrollbar">
+
+    <!-- NAME & STATUS -->
+    <div class="bg-white rounded-[28px] p-6 text-center shadow-sm">
+      <h2 id="fullProfileName" class="text-2xl font-black text-gray-800">...</h2>
+      <p id="fullProfileStatus" class="text-blue-500 font-bold text-sm">online</p>
+    </div>
+
+    <!-- MEDIA / FILES / LINKS TAB -->
+    <div class="bg-white rounded-[28px] overflow-hidden shadow-sm">
+      <div class="flex border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400">
+        <button onclick="switchMediaTab('media', this)" class="flex-1 py-4 text-blue-600 border-b-2 border-blue-600 active-tab">Media</button>
+        <button onclick="switchMediaTab('files', this)" class="flex-1 py-4">Fayllar</button>
+        <button onclick="switchMediaTab('links', this)" class="flex-1 py-4">Linklar</button>
+      </div>
+      <div id="sharedMediaContent" class="p-3 grid grid-cols-3 gap-2 min-h-[180px]"></div>
+    </div>
+
+    <!-- CONTACT INFO -->
+    <div class="bg-white rounded-[28px] shadow-sm divide-y divide-gray-50 overflow-hidden">
+
+      <!-- PHONE ACTION -->
+      <div onclick="openPhoneActions()" class="p-5 flex justify-between items-center active:bg-gray-50 cursor-pointer relative">
+        <div>
+          <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Telefon</p>
+          <p id="fullProfilePhone" class="font-bold text-gray-800">+998 00 000 00 00</p>
+        </div>
+        <i class="fa-solid fa-phone-flip text-blue-500"></i>
+      </div>
+
+      <!-- USERNAME -->
+      <div onclick="copyInfo('username')" class="p-5 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+        <div>
+          <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Username</p>
+          <p id="fullProfileUsername" class="text-blue-600 font-bold">@user</p>
+        </div>
+        <i class="fa-solid fa-at text-gray-300"></i>
+      </div>
+
+      <!-- BIO -->
+      <div class="p-5">
+        <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Bio</p>
+        <p id="fullProfileBio" class="text-gray-600 text-sm leading-relaxed">...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO VIEWER OVERLAY -->
+<div id="photoViewer" class="fixed inset-0 z-[10000] bg-black/95 hidden flex-col animate-fade-in">
+  <div class="absolute top-12 left-0 right-0 px-6 flex justify-between items-center z-[10001]">
+    <span id="viewerName" class="text-white font-bold">Rasm</span>
+    <button onclick="closePhotoViewer()" class="w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center backdrop-blur-lg">
+      <i class="fa-solid fa-xmark text-xl"></i>
+    </button>
+  </div>
+  <img id="expandedImg" src="" class="w-full h-full object-contain">
+</div>
+
+<!-- PHONE ACTION SHEET -->
+<div id="phoneActionOverlay" class="sheet-overlay fixed inset-0 bg-black/40 hidden z-[10001]" onclick="closePhoneMenu()"></div>
+<div id="phoneActionSheet" class="ios-sheet fixed bottom-0 left-0 right-0 bg-white rounded-t-[28px] shadow-2xl transform translate-y-full transition-all duration-300 z-[10002]">
+  <div class="sheet-handle w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-2"></div>
+  <div class="p-4 space-y-3">
+    <h4 id="actionSheetNumber" class="text-center text-gray-400 text-[10px] font-black uppercase mb-4 tracking-widest">+998 00 000 00 00</h4>
+    <a id="callBtn" href="#" class="flex items-center justify-between w-full p-5 bg-gray-50 rounded-3xl active:scale-95 transition">
+      <span class="font-bold text-gray-800">Qo'ng'iroq qilish</span>
+      <i class="fa-solid fa-phone text-green-500"></i>
+    </a>
+    <button onclick="copyPhoneNumber()" class="flex items-center justify-between w-full p-5 bg-gray-50 rounded-3xl active:scale-95 transition">
+      <span class="font-bold text-gray-800">Nusxa olish</span>
+      <i class="fa-solid fa-copy text-blue-500"></i>
+    </button>
+    <button onclick="closePhoneMenu()" class="w-full p-5 text-red-500 font-black text-center">Bekor qilish</button>
+  </div>
 </div>
     <script>
         const API = "https://safe-chat-60ot.onrender.com";
@@ -2212,27 +2369,11 @@ function toggleDarkMode(checkbox) {
     if (checkbox.checked) {
         document.documentElement.classList.add('dark');
         localStorage.setItem('theme', 'dark');
-        // Tailwind ishlatsangiz pastdagilar shart emas, lekin oddiy CSS uchun:
-        document.body.style.backgroundColor = "#1c1c1e";
-        document.body.style.color = "#ffffff";
+        document.body.style.backgroundColor = '#1c1c1e';
     } else {
         document.documentElement.classList.remove('dark');
         localStorage.setItem('theme', 'light');
-        document.body.style.backgroundColor = "#f2f2f7";
-        document.body.style.color = "#000000";
-    }
-}
-
-// Dark Mode funksiyasi
-function toggleDarkMode(checkbox) {
-    if (checkbox.checked) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark-mode'); // Sizning eski kodingiz uchun
-        localStorage.setItem("theme", "dark");
-    } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem("theme", "light");
+        document.body.style.backgroundColor = '#f2f2f7';
     }
 }
 
@@ -2531,7 +2672,13 @@ function updateAllUI() {
         document.body.classList.remove('dark-mode');
         if (themeToggle) themeToggle.checked = false;
     }
+    const savedTheme = localStorage.getItem('theme');
 
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        if (themeToggle) themeToggle.checked = true;
+        document.body.style.backgroundColor = '#1c1c1e';
+    }
     // 8. Faol seanslar sonini ko'rsatish
     const deviceBadge = document.querySelector('#profileTab span.bg-green-100');
     if (deviceBadge) {
@@ -2671,6 +2818,261 @@ function loadStatus() {
     const el = document.getElementById("profileStatusDisplay");
     if (el) el.innerText = status;
 }
+// Global o'zgaruvchi: Hozirgi ko'rilayotgan foydalanuvchi ma'lumotlarini saqlash uchun
+let currentViewedUser = null;
+
+// --- 1. PROFILNI OCHISH (Socket/Data bilan) ---
+function openUserMenu(userData = null) {
+    // Agar data kelmasa, chat headerdan ma'lumotlarni yig'ish
+    if (!userData) {
+        currentViewedUser = {
+            id: document.getElementById('activeChatImg').getAttribute('data-user-id'),
+            name: document.getElementById('activeName').innerText,
+            img: document.getElementById('activeChatImg').src,
+            phone: "+998 90 123 45 67", // Bularni bazadan chaqirish kerak
+            username: "@" + document.getElementById('activeName').innerText.toLowerCase().replace(/\s/g, ''),
+            bio: "SafeChat Connection Connection a'zosi",
+            status: "online"
+        };
+    } else {
+        currentViewedUser = userData;
+    }
+
+    renderProfileUI(currentViewedUser);
+
+    document.getElementById('fullUserProfile').classList.remove('hidden');
+    document.getElementById('fullUserProfile').classList.add('flex');
+    
+    loadSharedMedia();
+}
+
+// UI-ni yangilash funksiyasi
+function renderProfileUI(user) {
+    document.getElementById('fullProfileName').innerText = user.name;
+    document.getElementById('fullProfileImg').src = user.img;
+    document.getElementById('bgBlurImg').src = user.img;
+    document.getElementById('fullProfileStatus').innerText = user.status;
+    document.getElementById('fullProfilePhone').innerText = user.phone;
+    document.getElementById('fullProfileUsername').innerText = user.username;
+    document.getElementById('fullProfileBio').innerText = user.bio;
+}
+
+// --- 2. SOCKET.IO REAL-TIME YANGILASH ---
+// Serverdan socket.on('user_update') kelsa
+if (typeof socket !== 'undefined') {
+    socket.on('user_update', (data) => {
+        if (currentViewedUser && currentViewedUser.id === data.userId) {
+            currentViewedUser = { ...currentViewedUser, ...data.fields };
+            renderProfileUI(currentViewedUser);
+        }
+    });
+}
+
+// --- 3. TELEFON AMALLARI ---
+function openPhoneActions() {
+    const phone = document.getElementById('fullProfilePhone').innerText;
+    document.getElementById('actionSheetNumber').innerText = phone;
+    document.getElementById('callBtn').href = "tel:" + phone;
+    
+    document.getElementById('phoneActionOverlay').classList.add('active');
+    document.getElementById('phoneActionSheet').classList.add('active');
+}
+
+function closePhoneMenu() {
+    document.getElementById('phoneActionOverlay').classList.remove('active');
+    document.getElementById('phoneActionSheet').classList.remove('active');
+}
+
+
+// --- 4. RASM VA MEDIA ---
+function expandImage() {
+    const src = document.getElementById('fullProfileImg').src;
+    if (src.includes('ui-avatars')) return; // Rasm bo'lmasa ochmaydi
+
+    document.getElementById('expandedImg').src = src;
+    document.getElementById('viewerName').innerText = currentViewedUser.name;
+    document.getElementById('photoViewer').classList.remove('hidden');
+    document.getElementById('photoViewer').classList.add('flex');
+}
+
+function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
+function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
+
+async function downloadProfileImg() {
+    const link = document.createElement('a');
+    link.href = document.getElementById('fullProfileImg').src;
+    link.download = 'profile.jpg';
+    link.click();
+}
+
+function loadSharedMedia() {
+    const container = document.getElementById('sharedMediaContent');
+    container.innerHTML = '';
+    const images = document.querySelectorAll('#msgBox img');
+    images.forEach(img => {
+        const div = document.createElement('div');
+        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100";
+        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
+        container.appendChild(div);
+    });
+}
+/**
+ * 2. UI-NI YANGILASH (Real-time uchun alohida funksiya)
+ */
+function renderProfileData(user) {
+    if (!user) return;
+    
+    document.getElementById('fullProfileName').innerText = user.name;
+    document.getElementById('fullProfileImg').src = user.img;
+    document.getElementById('bgBlurImg').src = user.img;
+    document.getElementById('fullProfileStatus').innerText = user.status || "online";
+    document.getElementById('fullProfilePhone').innerText = user.phone || "Mavjud emas";
+    document.getElementById('fullProfileUsername').innerText = user.username || "@user";
+    document.getElementById('fullProfileBio').innerText = user.bio || "Bio kiritilmagan";
+}
+
+/**
+ * 3. SOCKET.IO ORQALI REAL-TIME YANGILANISHNI ESHITISH
+ */
+socket.on('user_update', (data) => {
+    // data = { userId: "123", updatedFields: { name: "Yangi Ism", img: "yangi_url", ... } }
+    
+    // Agar hozirda shu foydalanuvchining profili ochiq bo'lsa
+    if (currentViewedUser && currentViewedUser.id === data.userId) {
+        currentViewedUser = { ...currentViewedUser, ...data.updatedFields };
+        renderProfileData(currentViewedUser); // Profil oynasini yangilash
+    }
+
+    // Chat headerini ham yangilash
+    const headerImg = document.getElementById('activeChatImg');
+    if (headerImg && headerImg.getAttribute('data-user-id') === data.userId) {
+        if (data.updatedFields.name) document.getElementById('activeName').innerText = data.updatedFields.name;
+        if (data.updatedFields.img) headerImg.src = data.updatedFields.img;
+    }
+});
+
+
+// Rasmni yuklab olish
+async function downloadProfileImg() {
+    const url = document.getElementById('fullProfileImg').src;
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `SafeChat_${currentViewedUser.name}.jpg`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+        alert("Rasmni yuklab bo'lmadi.");
+    }
+}
+
+// --- 1. TELEFON MENYUSINI OCHISH ---
+function copyInfo(type) {
+    if (type === 'phone') {
+        const phone = document.getElementById('fullProfilePhone').innerText;
+        document.getElementById('actionSheetNumber').innerText = phone;
+        document.getElementById('callBtn').href = "tel:" + phone; // Haqiqiy qo'ng'iroq uchun
+        
+        // Menyuni ko'rsatish
+        document.getElementById('phoneActionOverlay').classList.add('active');
+        document.getElementById('phoneActionSheet').classList.add('active');
+    } else {
+        // Username uchun oddiy nusxalash
+        const username = document.getElementById('fullProfileUsername').innerText;
+        navigator.clipboard.writeText(username).then(() => alert("Username nusxalandi!"));
+    }
+}
+
+
+// --- 3. MENYUNI YOPISH ---
+function closePhoneMenu() {
+    document.getElementById('phoneActionOverlay').classList.remove('active');
+    document.getElementById('phoneActionSheet').classList.remove('active');
+}
+
+// Ulashish (Share)
+function shareUserProfile() {
+    if (navigator.share) {
+        navigator.share({
+            title: currentViewedUser.name,
+            text: `SafeChat'da ${currentViewedUser.name} bilan bog'laning`,
+            url: window.location.href
+        });
+    }
+}
+
+// Profilni va Photo Viewerni yopish
+function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
+function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
+
+function loadSharedMedia(userId) {
+    const container = document.getElementById('sharedMediaContent');
+    container.innerHTML = ''; // Tozalash
+
+    // Bu yerda chatBox (msgBox) ichidagi barcha rasmlarni qidiramiz
+    const allMessages = document.querySelectorAll('#msgBox img');
+    let count = 0;
+
+    allMessages.forEach(img => {
+        count++;
+        const div = document.createElement('div');
+        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer active:scale-95 transition";
+        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover" onclick="openFullImage('${img.src}')">`;
+        container.appendChild(div);
+    });
+
+    if (count === 0) {
+        container.innerHTML = `<p class="col-span-3 text-center text-gray-400 text-[10px] py-10">Media mavjud emas</p>`;
+    }
+}
+
+function switchMediaTab(type, btn) {
+    // Tab rangini o'zgartirish
+    document.querySelectorAll('.active-tab').forEach(el => {
+        el.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
+        el.classList.add('text-gray-400');
+    });
+    btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
+    
+    // Kontentni filterlash (Bu yerda fayl yoki linklarni yuklash mantiqi bo'ladi)
+    loadSharedMedia(currentViewedUser.id);
+}
+///
+// OPEN / CLOSE FULL PROFILE
+  function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
+  
+  // PHOTO VIEWER
+  function expandImage() { document.getElementById('photoViewer').classList.remove('hidden'); }
+  function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
+
+  // PHONE ACTION SHEET
+  function openPhoneActions() {
+    document.getElementById('phoneActionOverlay').classList.remove('hidden');
+    document.getElementById('phoneActionSheet').classList.add('active');
+  }
+  function closePhoneMenu() {
+    document.getElementById('phoneActionOverlay').classList.add('hidden');
+    document.getElementById('phoneActionSheet').classList.remove('active');
+  }
+
+  // COPY PHONE / INFO
+  function copyPhoneNumber() { navigator.clipboard.writeText(document.getElementById('fullProfilePhone').textContent); alert("Raqam nusxalandi!"); }
+  function copyInfo(type) {
+    let val = type === 'username' ? document.getElementById('fullProfileUsername').textContent : '';
+    navigator.clipboard.writeText(val); alert(type + " nusxalandi!");
+  }
+
+  // MEDIA TABS
+  function switchMediaTab(tab, el) {
+    const buttons = el.parentElement.querySelectorAll('button');
+    buttons.forEach(b => b.classList.remove('text-blue-600', 'border-b-2'));
+    el.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
+    // TODO: load media/files/links based on tab
+    console.log("Active Tab:", tab);
+  }
 
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
 window.addEventListener('appinstalled', () => {
