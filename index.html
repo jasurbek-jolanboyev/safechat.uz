@@ -11,6 +11,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
+    .dark body { background-color: #1c1c1e; color: white; }
+    .dark .bg-white { background-color: #2c2c2e !important; color: white !important; }
     @keyframes slideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
@@ -793,7 +795,7 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-    // 1. Aktiv tugmani belgilash
+    // 1. Aktiv tugmani vizual o'zgartirish
     document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.remove('text-[#007aff]');
         i.classList.add('text-gray-400');
@@ -804,7 +806,7 @@ function switchTab(tab) {
         navBtn.classList.remove('text-gray-400');
         navBtn.classList.add('text-[#007aff]');
 
-        // 2. SUZUVCHI ANIMATSIYA (Indikatorni surish)
+        // Indikator (ko'k fon) harakati
         const indicator = document.getElementById('navIndicator');
         if (indicator) {
             indicator.style.width = `${navBtn.offsetWidth}px`;
@@ -812,18 +814,24 @@ function switchTab(tab) {
         }
     }
 
-    // 3. Tab kontentini almashtirish
+    // 2. Tab kontentini almashtirish
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     const tabCont = document.getElementById(`${tab}Tab`);
-    if (tabCont) tabCont.classList.remove('hidden');
+    if (tabCont) {
+        tabCont.classList.remove('hidden');
+    }
 
-    // 4. Sarlavhani yangilash
+    // 3. Sarlavhani yangilash
     const titles = { 'chats': 'Chatlar', 'groups': 'Ommaviy', 'profile': 'Profil', 'settings': 'Sozlamalar' };
-    document.getElementById('tabTitle').innerText = titles[tab] || 'SafeChat';
+    const titleEl = document.getElementById('tabTitle');
+    if(titleEl) titleEl.innerText = titles[tab] || 'SafeChat';
 
-    // 5. Ro'yxatni yuklash (Faqat chats va groups uchun)
+    // 4. Ma'lumotlarni yuklash (Muhim joyi!)
     if (tab === 'chats' || tab === 'groups') {
         loadList(tab);
+    } else if (tab === 'profile' || tab === 'settings') {
+        updateAllUI(); // Profil va Sozlamalar ochilganda ma'lumotlarni yangilaymiz
+        if(typeof updateDeviceInfo === 'function') updateDeviceInfo(); // Qurilmani tekshirish
     }
 }
 
@@ -2181,20 +2189,36 @@ function toggleDarkMode(checkbox) {
     }
 }
 
-// 1. Profil ma'lumotlarini yuklash
-function updateProfileUI() {
-    const user = localStorage.getItem('username') || 'Mehmon';
-    const phone = localStorage.getItem('user_phone') || '+998 00 000 00 00';
-    
-    document.getElementById('profileNameDisplay').innerText = user;
-    document.getElementById('displayUsername').innerText = '@' + user;
-    document.getElementById('profilePhoneDisplay').innerText = phone;
-    
-    // Avatar rasm yuklash (UI uchun)
-    const avatarUrl = `https://ui-avatars.com/api/?name=${user}&background=007aff&color=fff&size=128`;
-    document.getElementById('profileDisplayPic').src = avatarUrl;
-    document.getElementById('userAvatar').src = avatarUrl;
+// Dark Mode funksiyasi
+function toggleDarkMode(checkbox) {
+    if (checkbox.checked) {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark-mode'); // Sizning eski kodingiz uchun
+        localStorage.setItem("theme", "dark");
+    } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem("theme", "light");
+    }
 }
+
+// Sahifa yuklanganda barcha sozlamalarni tiklash
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Dark mode holatini tekshirish
+    const savedTheme = localStorage.getItem("theme");
+    const darkSwitch = document.querySelector('input[onchange="toggleDarkMode(this)"]');
+    
+    if (savedTheme === "dark") {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark-mode');
+        if (darkSwitch) darkSwitch.checked = true;
+    }
+
+    // 2. Profilni yuklash (agar login qilingan bo'lsa)
+    if (localStorage.getItem('username')) {
+        updateAllUI();
+    }
+});
 
 // 2. Tab almashtirishda Profilni yangilash
 const originalSwitchTab = switchTab; // Agar switchTab avval e'lon qilingan bo'lsa
@@ -2370,6 +2394,7 @@ window.addEventListener('load', () => {
         clearTimeout(pressTimer); // Skrol qilinganda menyuni chiqarmaslik
     });
 }
+
 function updateAllUI() {
     const user = {
         name: localStorage.getItem('username') || 'Mehmon',
@@ -2377,28 +2402,34 @@ function updateAllUI() {
         bio: localStorage.getItem('user_bio') || 'Bio ma\'lumotlar yo\'q'
     };
 
-    // Profil va Sozlamalardagi barcha matnlarni yangilash
-    const elements = {
-        'profileNameDisplay': user.name,
-        'profilePhoneDisplay': user.phone,
-        'displayUsername': '@' + user.name.toLowerCase().replace(/\s/g, ''),
-        'displayBio': user.bio,
-        'editNameInp': user.name, // Agar input qo'shsangiz
-        'editBioInp': user.bio     // Agar input qo'shsangiz
+    // Matnlarni xavfsiz yangilash uchun yordamchi funksiya
+    const setSafeData = (id, value, isInput = false) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (isInput) el.value = value;
+            else el.innerText = value;
+        }
     };
 
-    for (let id in elements) {
-        let el = document.getElementById(id);
-        if (el) {
-            if (el.tagName === 'INPUT') el.value = elements[id];
-            else el.innerText = elements[id];
-        }
-    }
+    // Profil qismidagi ma'lumotlar
+    setSafeData('profileNameDisplay', user.name);
+    setSafeData('profilePhoneDisplay', user.phone);
+    setSafeData('displayUsername', '@' + user.name.toLowerCase().replace(/\s/g, ''));
+    setSafeData('displayBio', user.bio);
 
-    // Rasmlarni yangilash
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
-    if(document.getElementById('profileDisplayPic')) document.getElementById('profileDisplayPic').src = avatarUrl;
-    if(document.getElementById('userAvatar')) document.getElementById('userAvatar').src = avatarUrl;
+    // Sozlamalar qismidagi Inputlar
+    setSafeData('editNameInp', user.name, true);
+    setSafeData('editBioInp', user.bio, true);
+
+    // Avatarlarni yangilash
+    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff&size=128`;
+    const pic = document.getElementById('profileDisplayPic');
+    const av = document.getElementById('userAvatar');
+    
+    if (pic) pic.src = avatarUrl;
+    if (av) av.src = avatarUrl;
+
+    console.log("UI muvaffaqiyatli yangilandi.");
 }
 
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
