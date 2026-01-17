@@ -11,6 +11,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
+
+    #navIndicator {
+    position: absolute;
+    bottom: 8px; /* Pastdan masofa */
+    height: 52px;
+    background: rgba(0, 122, 255, 0.1);
+    border-radius: 28px;
+    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1); /* iOS uslubidagi silliq harakat */
+    z-index: 0;
+    }
     /* 1. O'ZGARUVCHILAR VA ASOSIY SOZLAMALAR */
     :root {
         --ios-bg: #f2f2f7;
@@ -747,40 +757,38 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-    // 1. Pastki navigatsiya ikonkalari rangini yangilash
+    // 1. Barcha tugmalardan faol rangni olib tashlash
     document.querySelectorAll('.nav-item').forEach(i => {
-        // Avval hamma ranglarni o'chiramiz
-        i.classList.remove('text-[#007aff]', 'active');
+        i.classList.remove('text-[#007aff]');
         i.classList.add('text-gray-400');
     });
 
-    // Tanlangan tugmani faollashtirish
+    // 2. Tanlangan tugmani faollashtirish
     const navBtn = document.getElementById(`nav-${tab}`);
-    if(navBtn) {
+    if (navBtn) {
         navBtn.classList.remove('text-gray-400');
-        navBtn.classList.add('text-[#007aff]', 'active');
+        navBtn.classList.add('text-[#007aff]');
+
+        // --- ANIMATSIYA (INDICATOR) QISMI ---
+        const indicator = document.getElementById('navIndicator');
+        if (indicator) {
+            // Indikator kengligini va joylashuvini tugmaga qarab moslash
+            indicator.style.width = `${navBtn.offsetWidth}px`;
+            indicator.style.left = `${navBtn.offsetLeft}px`;
+        }
     }
 
-    // 2. Tab kontentlarini yashirish va tanlanganini ko'rsatish
-    document.querySelectorAll('.tab-content').forEach(c => {
-        c.classList.add('hidden'); // hidden klassini qo'shish
-        c.style.display = 'none';  // Ishonch hosil qilish uchun display none
-    });
-
+    // 3. Kontentni almashtirish (Hidden klassini boshqarish)
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     const tabCont = document.getElementById(`${tab}Tab`);
-    if(tabCont) {
+    if (tabCont) {
         tabCont.classList.remove('hidden');
-        tabCont.style.display = 'block'; // Yoki flex, dizaynga qarab
     }
 
-    // 3. Sarlavhani yangilash
-    const titles = { 'chats': 'Chatlar', 'groups': 'Guruhlar', 'profile': 'Profil', 'settings': 'Sozlamalar' };
-    const titleEl = document.getElementById('tabTitle');
-    if(titleEl) titleEl.innerText = titles[tab] || 'SafeChat';
-
-    // 4. Ma'lumotlarni yuklash
-    if (tab === 'profile' || tab === 'settings') {
-        updateAllUI(); // Profil ma'lumotlarini localStorage'dan olib ekranga chiqaradi
+    // 4. Sarlavhani yangilash
+    const titles = { 'chats': 'Chatlar', 'groups': 'Ommaviy', 'settings': 'Sozlamalar', 'profile': 'Profil' };
+    if(document.getElementById('tabTitle')) {
+        document.getElementById('tabTitle').innerText = titles[tab] || 'SafeChat';
     }
 }
 
