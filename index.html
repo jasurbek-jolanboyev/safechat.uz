@@ -11,7 +11,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
-
+    @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+    }
+    .animate-slide-up {
+        animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
     #navIndicator {
     position: absolute;
     bottom: 8px; /* Pastdan masofa */
@@ -609,6 +615,33 @@
         <i class="fa-brands fa-apple mr-2"></i> iOS uchun o'rnatish
     </button>
 </div>
+
+<div id="deleteActionSheet" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-end sm:items-center justify-center transition-all duration-300">
+    <div class="absolute inset-0" onclick="closeDeleteSheet()"></div>
+    
+    <div class="w-full sm:w-[400px] bg-white rounded-t-[30px] sm:rounded-[30px] p-6 relative animate-slide-up shadow-2xl">
+        <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-trash-can text-2xl text-red-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800">Tasdiqlang</h3>
+            <p class="text-gray-400 text-sm px-4 mt-1">
+                Siz rostdan ham <span id="deleteTargetName" class="text-red-600 font-bold"></span> ni o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.
+            </p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="executeDelete()" class="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-red-100">
+                <i class="fa-solid fa-check mr-2"></i><span id="deleteBtnText">O'chirish</span>
+            </button>
+            <button onclick="closeDeleteSheet()" class="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-bold transition-all active:scale-95">
+                Bekor qilish
+            </button>
+        </div>
+    </div>
+</div>
     <script>
         const API = "https://safe-chat-60ot.onrender.com";
         const socket = io(API);
@@ -801,13 +834,12 @@ async function loadList(tab) {
     if (tab === 'chats') {
         list = document.getElementById('chatList');
     } else {
-        // Ommaviy bo'limi uchun (groupsTab yoki boshqa)
         list = document.getElementById(`${tab}Tab`);
     }
 
     if (!list) return;
 
-    // Yuklanish indikatori (Pulse animatsiyasi bilan)
+    // Yuklanish indikatori
     if (list.innerHTML.trim() === "" || list.innerHTML.includes('text-red-400')) {
         list.innerHTML = `
             <div class="flex flex-col items-center justify-center py-20 animate-pulse">
@@ -855,7 +887,35 @@ async function loadList(tab) {
                             </div>
                         </div>
                     `;
-                    div.onclick = () => openChat(name);
+
+                    // --- O'CHIRISH FUNKSIYALARI (CHATS) ---
+                    let pressTimer;
+                    let isLongPress = false;
+
+                    // O'ng tugma (Desktop)
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        openDeleteActionSheet(name, 'chat');
+                    };
+
+                    // Uzoq bosish (Mobile)
+                    const startPress = () => {
+                        isLongPress = false;
+                        pressTimer = setTimeout(() => {
+                            isLongPress = true;
+                            openDeleteActionSheet(name, 'chat');
+                        }, 800);
+                    };
+                    const cancelPress = () => clearTimeout(pressTimer);
+
+                    div.addEventListener('touchstart', startPress);
+                    div.addEventListener('touchend', cancelPress);
+                    div.addEventListener('mousedown', startPress);
+                    div.addEventListener('mouseup', cancelPress);
+
+                    div.onclick = () => {
+                        if (!isLongPress) openChat(name);
+                    };
                     list.appendChild(div);
                 });
             }
@@ -901,7 +961,33 @@ async function loadList(tab) {
                             <i class="fa-solid fa-chevron-right text-[10px]"></i>
                         </div>
                     `;
-                    div.onclick = () => openChat(ent.name);
+
+                    // --- O'CHIRISH FUNKSIYALARI (GROUPS/CHANNELS) ---
+                    let groupTimer;
+                    let groupLongPress = false;
+
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        openDeleteActionSheet(ent.name, 'group');
+                    };
+
+                    const gStart = () => {
+                        groupLongPress = false;
+                        groupTimer = setTimeout(() => {
+                            groupLongPress = true;
+                            openDeleteActionSheet(ent.name, 'group');
+                        }, 800);
+                    };
+                    const gCancel = () => clearTimeout(groupTimer);
+
+                    div.addEventListener('touchstart', gStart);
+                    div.addEventListener('touchend', gCancel);
+                    div.addEventListener('mousedown', gStart);
+                    div.addEventListener('mouseup', gCancel);
+
+                    div.onclick = () => {
+                        if (!groupLongPress) openChat(ent.name);
+                    };
                     list.appendChild(div);
                 });
             }
@@ -956,6 +1042,68 @@ const toggleBtn = document.getElementById('toggleSearch');
             });
         } catch(e) { console.error("Search error", e); }
     }
+
+    // O'chirilayotgan narsani vaqtinchalik saqlash
+let currentDeleteTarget = { name: '', type: '' };
+
+// Menyuni ochish
+function openDeleteActionSheet(name, type) {
+    currentDeleteTarget = { name, type };
+    const sheet = document.getElementById('deleteActionSheet');
+    
+    // Matnlarni to'g'rilash
+    document.getElementById('deleteTargetName').innerText = name;
+    document.getElementById('deleteBtnText').innerText = (type === 'chat') ? "Chatni o'chirish" : "Guruhdan chiqish";
+    
+    // Ko'rsatish
+    sheet.classList.remove('hidden');
+    
+    // Haptic feedback (Mobil qurilmalarda tebranish)
+    if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(40);
+    }
+}
+
+// Menyuni yopish
+function closeDeleteSheet() {
+    document.getElementById('deleteActionSheet').classList.add('hidden');
+}
+
+// O'chirishni amalga oshirish
+async function executeDelete() {
+    // currentTarget bu yerda {name: '...', type: '...'} shaklida bo'lishi kerak
+    if (!currentTarget.name) return;
+
+    try {
+        const res = await fetch(`${API}/api/delete_entity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: currentUser, // localStorage.getItem('username')
+                target: currentTarget.name,
+                type: currentTarget.type
+            })
+        });
+
+        // Server javob bermasa (masalan 404 yoki 500), res.ok false bo'ladi
+        if (!res.ok) throw new Error('Server xatosi');
+
+        const data = await res.json();
+        
+        if (data.success) {
+            closeDeleteSheet();
+            // Ro'yxatni yangilash
+            loadList(currentTarget.type === 'chat' ? 'chats' : 'groups');
+            // Muvaffaqiyat xabari (ixtiyoriy)
+            console.log(data.message);
+        } else {
+            alert("Xatolik: " + data.message);
+        }
+    } catch (e) {
+        console.error("Fetch xatosi:", e);
+        alert("Server bilan ulanishda xato!");
+    }
+}
 
 async function openChat(name) {
     activeChat = name;
@@ -1062,6 +1210,37 @@ function updateHeight() {
 window.addEventListener('resize', updateHeight);
 window.addEventListener('load', updateHeight);
 updateHeight();
+
+let pressTimer;
+let currentTarget = { name: '', type: '' };
+
+function setupLongPress(element, name, type) {
+    // Mobil va Desktop uchun hodisalar
+    ['touchstart', 'mousedown'].forEach(evt => {
+        element.addEventListener(evt, (e) => {
+            pressTimer = setTimeout(() => {
+                showActionSheet(name, type);
+            }, 700); // 0.7 soniya bosib tursa
+        });
+    });
+
+    ['touchend', 'mouseup', 'mouseleave'].forEach(evt => {
+        element.addEventListener(evt, () => clearTimeout(pressTimer));
+    });
+}
+
+function showActionSheet(name, type) {
+    currentTarget = { name, type };
+    const sheet = document.getElementById('deleteActionSheet');
+    const title = document.getElementById('deleteTargetName');
+    const btnText = document.getElementById('deleteBtnText');
+
+    title.innerText = name;
+    btnText.innerText = type === 'chat' ? "Chatni o'chirish" : "Guruhdan chiqish";
+    
+    sheet.classList.remove('hidden');
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+}
 
 function appendMessage(data) {
     const box = document.getElementById('msgBox');

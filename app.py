@@ -116,7 +116,7 @@ def get_recent_chats():
 @app.route('/')
 def index():
     return "SafeChat V3 Server is Running!"
-
+  
 @app.route('/api/register', methods=['POST'])
 def register_api():
     data = request.json
@@ -560,6 +560,41 @@ def search_entities():
 
     return jsonify(results)
 
+@app.route('/api/delete_entity', methods=['POST'])
+def delete_entity():
+    data = request.json
+    username = data.get('username')
+    target = data.get('target')
+    target_type = data.get('type')
+
+    try:
+        if target_type == 'chat':
+            # Chat xabarlarini o'chirish (Userlar o'rtasidagi)
+            Message.query.filter(
+                ((Message.sender == username) & (Message.receiver == target)) |
+                ((Message.sender == target) & (Message.receiver == username))
+            ).delete()
+            db.session.commit()
+            return jsonify({"success": True, "message": "Chat o'chirildi"})
+        
+        elif target_type == 'group':
+            # Guruhdan chiqish (Entity a'zolaridan o'chirish)
+            entity = Entity.query.filter_by(name=target).first()
+            if entity:
+                members = entity.members.split(',')
+                if username in members:
+                    members.remove(username)
+                    entity.members = ",".join(members)
+                    db.session.commit()
+                    return jsonify({"success": True, "message": "Guruhdan chiqdingiz"})
+            return jsonify({"success": False, "message": "Guruh topilmadi"}), 404
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+    
+   
+   
 
 if __name__ == '__main__':
     # Render.com portini avtomatik aniqlash
