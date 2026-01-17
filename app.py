@@ -37,9 +37,9 @@ class User(db.Model):
     avatar = db.Column(db.Text, nullable=True)
     is_blocked = db.Column(db.Boolean, default=False)
     is_online = db.Column(db.Boolean, default=False)
-    blocked_users = db.Column(db.Text, default="") # SHU QATORNI QO'SHING
+    blocked_users = db.Column(db.Text, default="") 
     bio = db.Column(db.String(200), default="Hello! I am using SafeChat.")
-    devices = db.Column(db.Text, default="[]") # JSON formatida qurilmalar ro'yxati
+    devices = db.Column(db.Text, default="[]") 
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -88,7 +88,6 @@ def serve_logo():
 def serve_sw():
     return send_from_directory(os.getcwd(), 'sw.js')
 
-# ... qolgan barcha endpointlar (register, login, etc.) ...
 
 @app.route('/api/recent_chats', methods=['GET'])
 def get_recent_chats():
