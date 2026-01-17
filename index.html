@@ -794,20 +794,27 @@ function switchTab(tab) {
 
 
 async function loadList(tab) {
-    const list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById(`${tab}Tab`);
-    
-    // Yuklanish indikatori (faqat ro'yxat bo'sh bo'lsa ko'rsatamiz)
-    if (list.innerHTML === "") {
-        list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs animate-pulse">Yuklanmoqda...</div>`;
+    // 1. To'g'ri konteynerni tanlash (Ommaviy va Chatlar uchun)
+    let list;
+    if (tab === 'chats') {
+        list = document.getElementById('chatList');
+    } else {
+        list = document.getElementById(`${tab}Tab`);
+    }
+
+    if (!list) return; // Agar element topilmasa funksiyani to'xtatish
+
+    // Yuklanish indikatori
+    if (list.innerHTML.trim() === "") {
+        list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs animate-pulse">Ma'lumotlar yuklanmoqda...</div>`;
     }
 
     try {
         if (tab === 'chats') {
-            // 1. SERVERTAN OXIRGI SUHBATLARNI OLISH
             const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
             const contacts = await res.json();
 
-            list.innerHTML = ""; // Ro'yxatni yangilash uchun tozalash
+            list.innerHTML = ""; 
 
             if (contacts.length === 0) {
                 list.innerHTML = `
@@ -816,60 +823,67 @@ async function loadList(tab) {
                             <i class="fa-solid fa-comments text-3xl text-blue-500"></i>
                         </div>
                         <p class="text-gray-800 text-sm font-bold">Suhbatlar hali yo'q</p>
-                        <p class="text-gray-400 text-[11px] px-10">Kimnidir topish uchun qidiruvdan foydalaning yoki do'stlaringizga yozing.</p>
+                        <p class="text-gray-400 text-[11px] px-10">Kimnidir topish uchun qidiruvdan foydalaning.</p>
                     </div>`;
             } else {
-                contacts.forEach(name => {
+                contacts.forEach(contact => {
                     const div = document.createElement('div');
-                    // Har bir chat elementi uchun chiroyli dizayn
                     div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition-all duration-200 shadow-sm mb-2 active:scale-[0.98] border border-gray-50 group";
                     
+                    // contact ob'ekt yoki string bo'lishiga qarab ism olish
+                    const name = typeof contact === 'object' ? contact.username : contact;
+                    const isOnline = typeof contact === 'object' ? contact.is_online : false;
+
                     div.innerHTML = `
                         <div class="relative">
-                            <img src="https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff" class="w-13 h-13 rounded-full border-2 border-white shadow-sm">
-                            <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff" class="w-13 h-13 rounded-full border-2 border-white shadow-sm">
+                            ${isOnline ? '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-center mb-0.5">
                                 <h5 class="font-bold text-[14px] text-gray-800 truncate">${name}</h5>
-                                <span class="text-[10px] text-gray-400 group-hover:text-blue-500 transition-colors">Hozir</span>
+                                <span class="text-[10px] text-gray-400">Hozir</span>
                             </div>
                             <div class="flex justify-between items-center">
-                                <p class="text-[12px] text-gray-400 truncate pr-4">Suhbatni boshlash uchun bosing</p>
-                                <div class="w-2 h-2 bg-blue-600 rounded-full hidden" id="unread-${name}"></div>
+                                <p class="text-[12px] text-gray-400 truncate pr-4">Suhbatni boshlash...</p>
+                                <div class="w-2 h-2 bg-blue-600 rounded-full ${typeof contact === 'object' && contact.unread ? '' : 'hidden'}" id="unread-${name}"></div>
                             </div>
                         </div>
                     `;
                     
-                    div.onclick = () => {
-                        openChat(name);
-                        // Bosilganda bildirishnoma nuqtasini yashirish
-                        const dot = document.getElementById(`unread-${name}`);
-                        if(dot) dot.classList.add('hidden');
-                    };
+                    div.onclick = () => openChat(name);
                     list.appendChild(div);
                 });
             }
-        } else {
-            // GURUH VA KANALLAR (Sizning kodingiz, biroz chiroyliroq qilingan)
+        } else if (tab === 'groups') {
             const res = await fetch(`${API}/api/entities?username=${currentUser}`);
             const entities = await res.json();
-            const filtered = entities.filter(e => e.type === (tab === 'groups' ? 'group' : 'channel'));
+            const filtered = entities.filter(e => e.type === 'group');
 
             list.innerHTML = "";
             if (filtered.length === 0) {
-                list.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">Hozircha hech qanday ${tab === 'groups' ? 'guruhga' : 'kanalga'} a'zo emassiz.</div>`;
+                list.innerHTML = `
+                    <div class="text-center py-10">
+                        <p class="text-gray-400 text-xs mb-4">Hozircha guruhlar yo'q.</p>
+                        <button onclick="openSheet('createEntitySheet')" class="text-blue-600 font-bold text-xs uppercase">+ Guruh yaratish</button>
+                    </div>`;
             } else {
+                // Sarlavha qo'shish (ixtiyoriy)
+                const header = document.createElement('h2');
+                header.className = "text-xl font-black p-4 text-gray-800";
+                header.innerText = "Guruhlar";
+                list.appendChild(header);
+
                 filtered.forEach(ent => {
                     const div = document.createElement('div');
-                    div.className = "p-4 bg-white rounded-2xl shadow-sm mb-2 cursor-pointer hover:bg-gray-50 transition flex items-center gap-4";
+                    div.className = "p-4 bg-white rounded-2xl shadow-sm mb-2 cursor-pointer hover:bg-gray-50 transition flex items-center gap-4 mx-4";
                     div.innerHTML = `
                         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-lg">
-                            <i class="fa-solid ${tab === 'groups' ? 'fa-users' : 'fa-bullhorn'}"></i>
+                            <i class="fa-solid fa-users"></i>
                         </div>
                         <div class="flex-1">
                             <h3 class="font-bold text-sm text-gray-800">${ent.name}</h3>
-                            <p class="text-[11px] text-gray-400">${tab === 'groups' ? 'Guruh suhbati' : 'Rasmiy kanal'}</p>
+                            <p class="text-[11px] text-gray-400">Guruh suhbati • ${ent.member_count || 0} a'zo</p>
                         </div>
                         <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
                     `;
@@ -879,8 +893,8 @@ async function loadList(tab) {
             }
         }
     } catch (e) {
-        console.error("Yuklashda xato:", e);
-        list.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Ulanishda xato yuz berdi.</div>`;
+        console.error("Xatolik:", e);
+        list.innerHTML = `<div class="text-center py-10 text-red-400 text-xs">Xatolik: Serverga ulanib bo'lmadi.</div>`;
     }
 }
 
