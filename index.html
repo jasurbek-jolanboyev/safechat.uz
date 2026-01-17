@@ -795,7 +795,7 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-    // 1. Aktiv tugmani vizual o'zgartirish
+
     document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.remove('text-[#007aff]');
         i.classList.add('text-gray-400');
@@ -806,7 +806,6 @@ function switchTab(tab) {
         navBtn.classList.remove('text-gray-400');
         navBtn.classList.add('text-[#007aff]');
 
-        // Indikator (ko'k fon) harakati
         const indicator = document.getElementById('navIndicator');
         if (indicator) {
             indicator.style.width = `${navBtn.offsetWidth}px`;
@@ -814,26 +813,40 @@ function switchTab(tab) {
         }
     }
 
-    // 2. Tab kontentini almashtirish
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     const tabCont = document.getElementById(`${tab}Tab`);
     if (tabCont) {
         tabCont.classList.remove('hidden');
     }
 
-    // 3. Sarlavhani yangilash
-    const titles = { 'chats': 'Chatlar', 'groups': 'Ommaviy', 'profile': 'Profil', 'settings': 'Sozlamalar' };
+    const titles = { 
+        chats: 'Chatlar', 
+        groups: 'Ommaviy', 
+        profile: 'Profil', 
+        settings: 'Sozlamalar' 
+    };
+
     const titleEl = document.getElementById('tabTitle');
     if(titleEl) titleEl.innerText = titles[tab] || 'SafeChat';
 
-    // 4. Ma'lumotlarni yuklash (Muhim joyi!)
+    // 🔥 MUHIM QISM
     if (tab === 'chats' || tab === 'groups') {
         loadList(tab);
-    } else if (tab === 'profile' || tab === 'settings') {
-        updateAllUI(); // Profil va Sozlamalar ochilganda ma'lumotlarni yangilaymiz
-        if(typeof updateDeviceInfo === 'function') updateDeviceInfo(); // Qurilmani tekshirish
+    } 
+    
+    if (tab === 'profile' || tab === 'settings') {
+        updateAllUI(); 
+        if(typeof updateDeviceInfo === 'function') updateDeviceInfo();
+
+        // 🔥 Eski funksiyalardagi qismlar
+        if(typeof updateProfileUI === 'function') updateProfileUI();
+        if(typeof checkAdminAccess === 'function') checkAdminAccess();
     }
+
+    // 🔥 Nav UI yangilanishi
+    if(typeof updateNavUI === 'function') updateNavUI(tab);
 }
+
 
 
 async function loadList(tab) {
@@ -2220,22 +2233,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 2. Tab almashtirishda Profilni yangilash
-const originalSwitchTab = switchTab; // Agar switchTab avval e'lon qilingan bo'lsa
-switchTab = function(tabName) {
-    // Eski switchTab funksiyasini chaqirish
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-    document.getElementById(tabName + 'Tab').classList.remove('hidden');
+// // 2. Tab almashtirishda Profilni yangilash
+// const originalSwitchTab = switchTab; // Agar switchTab avval e'lon qilingan bo'lsa
+// switchTab = function(tabName) {
+//     // Eski switchTab funksiyasini chaqirish
+//     document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+//     document.getElementById(tabName + 'Tab').classList.remove('hidden');
     
-    // Profil yoki Sozlamalar ochilganda UI ni yangilash
-    if(tabName === 'profile' || tabName === 'settings') {
-        updateProfileUI();
-        checkAdminAccess(); // Admin tugmasini tekshirish
-    }
+//     // Profil yoki Sozlamalar ochilganda UI ni yangilash
+//     if(tabName === 'profile' || tabName === 'settings') {
+//         updateProfileUI();
+//         checkAdminAccess(); // Admin tugmasini tekshirish
+//     }
     
-    // Navigatsiyani yangilash (Oldingi kodingizga moslash)
-    updateNavUI(tabName); 
-}
+//     // Navigatsiyani yangilash (Oldingi kodingizga moslash)
+//     updateNavUI(tabName); 
+// }
 
 // 3. Admin Panelni ochish (Haqiqiy interfeys)
 function showAdminPanel() {
