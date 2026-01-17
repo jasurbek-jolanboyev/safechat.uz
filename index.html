@@ -269,72 +269,188 @@
 </div>
 
     <div id="mainApp" class="hidden h-full flex flex-col md:flex-row overflow-hidden">
-        
-    <aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-100 flex flex-col bg-[#f2f2f7] relative h-screen overflow-y-auto z-40">
-        
-            <header class="p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
-                    <!-- Plus tugmasi olib tashlandi -->
-                    <button id="toggleSearch" class="text-gray-500 text-xl cursor-pointer">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                </div>
-                <!-- Qidiruv oynasi dastlab yashirilgan -->
-                <div id="searchWrapper" class="relative hidden transition-all duration-300">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="userSearch" oninput="liveSearch(this.value)"
-                        class="w-full p-2.5 pl-11 bg-gray-100 rounded-xl outline-none focus:bg-white transition-all text-sm"
-                        placeholder="Qidiruv...">
-                </div>
-            </header>
+<aside class="w-full md:w-[380px] flex-shrink-0 border-r border-gray-100 flex flex-col bg-[#f2f2f7] relative h-screen overflow-y-auto z-40">
 
-
-            <div class="flex-1 overflow-y-auto no-scrollbar pb-28">
-                <div id="chatsTab" class="tab-content p-4 space-y-2">
-                    <div id="chatList" class="space-y-1"></div>
-                </div>
-                <div id="groupsTab" class="tab-content hidden p-4 space-y-2">
-    <div id="groupList" class="space-y-1"></div>
-</div>
-
-<div class="fixed bottom-5 left-0 right-0 px-5 pb-[env(safe-area-inset-bottom,24px)] pt-6 z-50 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none">
-    <nav class="pointer-events-auto bg-white/70 backdrop-blur-[25px] border border-white/40 rounded-[38px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] p-2 flex justify-around items-center relative overflow-hidden ring-1 ring-black/[0.03]">
-        
-        <div id="navIndicator" class="absolute h-[52px] bg-[#007aff]/10 rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] z-0"></div>
-
-        <button id="nav-chats" onclick="switchTab('chats')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-[#007aff] transition-all duration-300 active:scale-90">
-            <i class="fa-solid fa-comment-dots text-[22px]"></i>
-            <span class="text-[10px] mt-1 font-semibold tracking-tight">Chatlar</span>
-        </button>
-
-        <button id="nav-groups" onclick="switchTab('groups')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-            <i class="fa-solid fa-globe text-[22px]"></i>
-            <span class="text-[10px] mt-1 font-semibold tracking-tight">Ommaviy</span>
-        </button>
-
-        <div class="flex items-center justify-center px-2">
-            <button onclick="openSheet('createEntitySheet')" class="flex items-center justify-center w-[54px] h-[54px] bg-[#007aff] rounded-full shadow-[0_8px_20px_rgba(0,122,255,0.3)] z-20 active:scale-[0.85] transition-all duration-300 hover:brightness-110">
-                <i class="fa-solid fa-plus text-white text-2xl"></i>
+    <!-- HEADER -->
+    <header class="p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
+            <button id="toggleSearch" class="text-gray-500 text-xl cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass"></i>
             </button>
         </div>
 
-        <button id="nav-settings" onclick="switchTab('settings')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-            <i class="fa-solid fa-gears text-[22px]"></i>
-            <span class="text-[10px] mt-1 font-semibold tracking-tight">Sozlamalar</span>
-        </button>
+        <div id="searchWrapper" class="relative hidden transition-all duration-300">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="userSearch" oninput="liveSearch(this.value)"
+                class="w-full p-2.5 pl-11 bg-gray-100 rounded-xl outline-none focus:bg-white transition-all text-sm"
+                placeholder="Qidiruv...">
+        </div>
+    </header>
+
+    <!-- TABLAR ZONA -->
+    <div class="flex-1 overflow-y-auto no-scrollbar pb-28">
+
+        <!-- CHAT TAB -->
+        <div id="chatsTab" class="tab-content p-4 space-y-2">
+            <div id="chatList" class="space-y-1"></div>
+        </div>
+
+        <!-- GROUP TAB -->
+        <div id="groupsTab" class="tab-content hidden p-4 space-y-2">
+            <div id="groupList" class="space-y-1"></div>
+        </div>
+
+        <!-- PROFILE TAB (TO‘G‘RI JOYDA!) -->
+       <div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="flex flex-col items-center py-10 bg-white border-b border-gray-200">
+        <div class="relative group">
+            <img id="profileAvatar" src="https://ui-avatars.com/api/?name=U" 
+                class="w-28 h-28 rounded-full shadow-lg object-cover border-4 border-white cursor-pointer transition active:scale-95"
+                onclick="triggerAvatarUpload()">
+            <div class="absolute bottom-0 right-0 bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white text-xs">
+                <i class="fa-solid fa-camera"></i>
+            </div>
+            <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="handleAvatarSelection(event)">
+        </div>
+
+        <h2 id="profileName" class="mt-4 text-2xl font-black text-gray-900 leading-tight">Loading...</h2>
+        <p id="profileUsername" class="text-blue-600 font-bold text-sm tracking-wide">@username</p>
         
-        <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-            <i class="fa-solid fa-circle-user text-[22px]"></i>
-            <span class="text-[10px] mt-1 font-semibold tracking-tight">Profil</span>
-        </button>
+        <div onclick="openSheet('statusSheet')" class="mt-2 px-4 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition">
+            <span id="profileStatusDisplay" class="text-xs text-gray-500 italic font-medium">Status o'rnatish...</span>
+        </div>
 
- 
+        <div class="flex gap-2 mt-5">
+            <button onclick="switchTab('settings')" class="px-8 py-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 font-bold active:scale-95 transition text-sm">
+                Edit Profile
+            </button>
+            <button onclick="copyMyID()" class="px-4 py-2.5 bg-white text-gray-700 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition">
+                <i class="fa-solid fa-share-nodes"></i>
+            </button>
+        </div>
+    </div>
 
-    </nav>
+    <div class="mt-6 space-y-4 px-4">
+        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
+            <div onclick="openSheet('savedMessages')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bookmark"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Saqlangan xabarlar</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </div>
+
+            <div onclick="unlockHiddenChats()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-eye-slash"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Yashirin chatlar</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i id="lockStatusIcon" class="fa-solid fa-lock text-gray-300 text-xs"></i>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
+            <div onclick="openSheet('deviceSheet')" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-laptop"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Faol seanslar (Devices)</span>
+                </div>
+                <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full">3 active</span>
+            </div>
+        </div>
+    </div>
 </div>
 
-    </aside>
+<div id="settingsTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="px-4 pt-8 space-y-6">
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Hisob ma'lumotlari</p>
+            <div onclick="editField('Name')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Ism</span>
+                <span id="settingsName" class="text-gray-400 text-sm font-medium">Loading...</span>
+            </div>
+            <div onclick="editField('Username')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Username</span>
+                <span id="settingsUsername" class="text-blue-500 text-sm font-bold">@username</span>
+            </div>
+            <div onclick="editField('Bio')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Bio</span>
+                <span id="settingsBio" class="text-gray-400 text-sm italic">No bio</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Xavfsizlik</p>
+            <div onclick="openSheet('twoFASheet')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">2-Step Verification</span>
+                <span id="twoFAStatusLabel" class="text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg">OFF</span>
+            </div>
+            <div onclick="openSheet('hiddenPinSheet')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Hidden Chats PIN</span>
+                <i class="fa-solid fa-key text-gray-300"></i>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-moon"></i></div>
+                    <span class="font-bold text-gray-700 text-sm">Tungi rejim</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" onchange="toggleDarkMode(this)" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
+                </label>
+            </div>
+        </div>
+
+        <button onclick="logout()" class="w-full py-4 bg-white text-red-600 rounded-2xl font-black shadow-sm active:scale-[0.98] transition border border-red-50 mt-4 mb-10">
+            Hisobdan chiqish
+        </button>
+    </div>
+</div>
+
+    <!-- BOTTOM NAVBAR -->
+    <div class="fixed bottom-5 left-0 right-0 px-5 pb-[env(safe-area-inset-bottom,24px)] pt-6 z-50 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none">
+        <nav class="pointer-events-auto bg-white/70 backdrop-blur-[25px] border border-white/40 rounded-[38px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] p-2 flex justify-around items-center relative overflow-hidden ring-1 ring-black/[0.03]">
+
+            <div id="navIndicator" class="absolute h-[52px] bg-[#007aff]/10 rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] z-0"></div>
+
+            <button id="nav-chats" onclick="switchTab('chats')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-[#007aff] transition-all duration-300 active:scale-90">
+                <i class="fa-solid fa-comment-dots text-[22px]"></i>
+                <span class="text-[10px] mt-1 font-semibold tracking-tight">Chatlar</span>
+            </button>
+
+            <button id="nav-groups" onclick="switchTab('groups')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+                <i class="fa-solid fa-globe text-[22px]"></i>
+                <span class="text-[10px] mt-1 font-semibold tracking-tight">Ommaviy</span>
+            </button>
+
+            <div class="flex items-center justify-center px-2">
+                <button onclick="openSheet('createEntitySheet')" class="flex items-center justify-center w-[54px] h-[54px] bg-[#007aff] rounded-full shadow-[0_8px_20px_rgba(0,122,255,0.3)] z-20 active:scale-[0.85] transition-all duration-300 hover:brightness-110">
+                    <i class="fa-solid fa-plus text-white text-2xl"></i>
+                </button>
+            </div>
+
+            <button id="nav-settings" onclick="switchTab('settings')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+                <i class="fa-solid fa-gears text-[22px]"></i>
+                <span class="text-[10px] mt-1 font-semibold tracking-tight">Sozlamalar</span>
+            </button>
+
+            <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+                <i class="fa-solid fa-circle-user text-[22px]"></i>
+                <span class="text-[10px] mt-1 font-semibold tracking-tight">Profil</span>
+            </button>
+
+        </nav>
+    </div>
+
+</aside>
+
 
         <main id="chatArea" class="flex flex-1 flex-col bg-white relative md:flex">
             <header class="p-4 pt-14 flex justify-between items-center border-b glass-panel sticky top-0 z-20">
@@ -433,141 +549,7 @@
         </div>
         <input type="file" id="mediaInp" hidden onchange="handleFile(this)">
     </div>
-<!-- ozgatrish kere 1 -->
-<div id="profileTab" class="tab-content hidden animate-fade-in bg-[#f2f2f7] min-h-screen pb-32">
-    <header class="p-6 pt-12 flex justify-between items-end">
-        <div>
-            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Mening hisobim</p>
-            <h1 class="text-3xl font-black text-gray-900">Profil</h1>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="copyMyID()" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm active:scale-90 transition">
-                <i class="fa-solid fa-fingerprint text-gray-400"></i>
-            </button>
-        </div>
-    </header>
 
-    <div class="px-4 space-y-4">
-        <div class="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center">
-            <div class="relative mb-4">
-                <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full"></div>
-                <img id="profileDisplayPic" src="https://ui-avatars.com/api/?name=U&background=007aff&color=fff" class="relative w-28 h-28 rounded-full border-4 border-white object-cover shadow-xl">
-                <div class="absolute bottom-1 right-1 w-7 h-7 bg-green-500 border-4 border-white rounded-full"></div>
-            </div>
-            <h3 id="profileNameDisplay" class="text-2xl font-black text-gray-800">Yuklanmoqda...</h3>
-            <p id="profilePhoneDisplay" class="text-gray-400 font-medium text-sm">+998 00 000 00 00</p>
-            
-            <div class="grid grid-cols-3 gap-4 mt-8 w-full border-t border-gray-50 pt-6">
-                <div class="flex flex-col">
-                    <span class="text-lg font-black text-gray-800">124</span>
-                    <span class="text-[10px] text-gray-400 uppercase font-bold">Xabarlar</span>
-                </div>
-                <div class="flex flex-col border-x border-gray-50">
-                    <span class="text-lg font-black text-gray-800">12</span>
-                    <span class="text-[10px] text-gray-400 uppercase font-bold">Guruhlar</span>
-                </div>
-                <div class="flex flex-col">
-                    <span class="text-lg font-black text-gray-800">8d</span>
-                    <span class="text-[10px] text-gray-400 uppercase font-bold">Online</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
-            <div onclick="openSheet('savedMessages')" class="p-4 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-bookmark"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Saqlangan xabarlar</span>
-                </div>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-[10px]"></i>
-            </div>
-            <div onclick="openSheet('archiveSheet')" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-gray-500 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-box-archive"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Arxivlangan chatlar</span>
-                </div>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-[10px]"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="settingsTab" class="tab-content hidden animate-fade-in bg-[#f2f2f7] min-h-screen pb-32">
-    <header class="p-6 pt-12 flex justify-between items-center">
-        <h1 class="text-3xl font-black text-gray-900">Sozlamalar</h1>
-        <button onclick="switchTab('profile')" class="bg-white px-4 py-2 rounded-full shadow-sm text-blue-600 font-bold text-xs active:scale-90 transition">Tayyor</button>
-    </header>
-
-    <div class="px-4 space-y-6">
-        <div class="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="relative">
-                    <img id="userAvatar" src="" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-md">
-                    <label for="avatarInput" class="absolute -bottom-1 -right-1 bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center cursor-pointer border-2 border-white">
-                        <i class="fa-solid fa-pen text-[10px]"></i>
-                    </label>
-                </div>
-                <div class="flex-1">
-                    <input id="editNameInp" type="text" placeholder="Ism sharif" class="w-full font-bold text-gray-800 bg-transparent border-none focus:ring-0 p-0 text-lg">
-                    <input id="editBioInp" type="text" placeholder="Bio qo'shish..." class="w-full text-gray-400 bg-transparent border-none focus:ring-0 p-0 text-xs mt-1">
-                </div>
-            </div>
-            <button onclick="updateAccountInfo()" class="w-full py-2 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs uppercase tracking-wider transition hover:bg-blue-100">O'zgarishlarni saqlash</button>
-        </div>
-
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm">
-            <p class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Xavfsizlik</p>
-            <div class="p-4 flex items-center justify-between border-b border-gray-50 active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-red-100 text-red-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-lock"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Ikki bosqichli tekshiruv</span>
-                </div>
-                <span class="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-md text-nowrap">O'CHIK</span>
-            </div>
-            <div class="p-4 flex items-center justify-between active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-eye-slash"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Oxirgi ko'rinish</span>
-                </div>
-                <span class="text-xs text-gray-400 italic">Hamma</span>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm">
-             <p class="px-4 py-3 text-[10px] font-bold text-gray-400 uppercase">Interfeys</p>
-             <div class="p-4 flex items-center justify-between border-b border-gray-50">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-palette"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Tungi rejim</span>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" onchange="toggleDarkMode(this)" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
-                </label>
-            </div>
-            <div class="p-4 flex items-center justify-between active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-green-100 text-green-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-globe"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Tilni o'zgartirish</span>
-                </div>
-                <span class="text-xs text-gray-500">O'zbekcha</span>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm">
-            <div onclick="clearCache()" class="p-4 flex items-center justify-between active:bg-gray-50 cursor-pointer">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-database"></i></div>
-                    <span class="font-bold text-gray-700 text-sm">Keshni tozalash</span>
-                </div>
-                <span id="cacheSize" class="text-[10px] text-gray-400 font-bold">24.5 MB</span>
-            </div>
-        </div>
-
-        <button onclick="logout()" class="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black shadow-sm active:scale-95 transition border border-red-100 mb-20">Hisobdan chiqish</button>
-    </div>
-</div>
-<!-- ozgartirish kere  -->
 <div id="mediaPreviewModal" class="hidden fixed inset-0 z-[5500] bg-black flex flex-col">
     <div class="p-4 flex justify-between items-center text-white">
         <i class="fa-solid fa-xmark text-2xl cursor-pointer" onclick="closeMediaPreview()"></i>
@@ -795,17 +777,19 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-
+    // 1. Navigatsiya tugmalarining vizual holatini yangilash (Ranglar)
     document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.remove('text-[#007aff]');
         i.classList.add('text-gray-400');
     });
 
+    // 2. Tanlangan navigatsiya tugmasini aktiv (ko'k) qilish
     const navBtn = document.getElementById(`nav-${tab}`);
     if (navBtn) {
         navBtn.classList.remove('text-gray-400');
         navBtn.classList.add('text-[#007aff]');
 
+        // iOS uslubidagi ko'k indikatorni harakatlantirish
         const indicator = document.getElementById('navIndicator');
         if (indicator) {
             indicator.style.width = `${navBtn.offsetWidth}px`;
@@ -813,12 +797,14 @@ function switchTab(tab) {
         }
     }
 
+    // 3. Tab kontentlarini almashtirish (Hidden/Visible)
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     const tabCont = document.getElementById(`${tab}Tab`);
     if (tabCont) {
         tabCont.classList.remove('hidden');
     }
 
+    // 4. Yuqori sarlavha (Header Title) matnini yangilash
     const titles = { 
         chats: 'Chatlar', 
         groups: 'Ommaviy', 
@@ -827,26 +813,65 @@ function switchTab(tab) {
     };
 
     const titleEl = document.getElementById('tabTitle');
-    if(titleEl) titleEl.innerText = titles[tab] || 'SafeChat';
-
-    // 🔥 MUHIM QISM
-    if (tab === 'chats' || tab === 'groups') {
-        loadList(tab);
-    } 
-    
-    if (tab === 'profile' || tab === 'settings') {
-        updateAllUI(); 
-        if(typeof updateDeviceInfo === 'function') updateDeviceInfo();
-
-        // 🔥 Eski funksiyalardagi qismlar
-        if(typeof updateProfileUI === 'function') updateProfileUI();
-        if(typeof checkAdminAccess === 'function') checkAdminAccess();
+    if (titleEl) {
+        titleEl.innerText = titles[tab] || 'SafeChat';
     }
 
-    // 🔥 Nav UI yangilanishi
-    if(typeof updateNavUI === 'function') updateNavUI(tab);
-}
+    // 5. Chatlar va Guruhlar bo'limi uchun ro'yxatni yuklash
+    if (tab === 'chats' || tab === 'groups') {
+        if (typeof loadList === 'function') {
+            loadList(tab);
+        }
+    } 
+    
+    // 6. Profil va Sozlamalar bo'limi uchun barcha ma'lumotlarni yangilash
+    if (tab === 'profile' || tab === 'settings') {
+        
+        // --- Siz so'ragan asosiy yangilash funksiyalari ---
+        if (typeof updateAllUI === 'function') {
+            updateAllUI(); // Barcha matnlar, ism, bio va rasmlarni yuklash
+        }
 
+        if (typeof updateDeviceInfo === 'function') {
+            updateDeviceInfo(); // Faol seanslar (Devices) ro'yxatini yuklash
+        }
+
+        // --- Qo'shimcha Premium funksiyalar ---
+        if (typeof loadStatus === 'function') {
+            loadStatus(); // Foydalanuvchi statusini yuklash
+        }
+
+        if (typeof updateProfileUI === 'function') {
+            updateProfileUI(); // Eski mantiqdan qolgan UI yangilanishi
+        }
+
+        if (typeof checkAdminAccess === 'function') {
+            checkAdminAccess(); // Admin huquqlarini tekshirish
+        }
+    }
+
+    // 7. Navigatsiya UI qo'shimcha yangilanishi (FaceID/PIN holati)
+    if (typeof updateNavUI === 'function') {
+        updateNavUI(tab);
+    }
+
+    // 8. Yashirin chatlar uchun PIN lock belgisini boshqarish
+    if (tab === 'chats') {
+        const lockIcon = document.getElementById('lockStatusIcon');
+        if (lockIcon) {
+            // Agar PIN o'rnatilgan bo'lsa qulf belgisini ko'rsatish
+            const hasPin = localStorage.getItem("hiddenPin");
+            if (hasPin) {
+                lockIcon.classList.remove('hidden');
+            } else {
+                lockIcon.classList.add('hidden');
+            }
+        }
+    }
+
+    // Konsolga ma'lumot chiqarish (Tekshirish uchun)
+    console.log(`[SafeChat] Tab switched to: ${tab}`);
+}
 
 
 async function loadList(tab) {
@@ -1349,11 +1374,7 @@ function refreshProfileUI() {
     document.getElementById('userAvatar').src = avatar;
 }
 
-function copyMyID() {
-    const myID = "SC-" + Math.floor(Math.random() * 900000 + 100000);
-    navigator.clipboard.writeText(myID);
-    alert("Sizning SafeChat ID-ingiz nusxalandi: " + myID);
-}
+
         // --- CONTEXT MENU ACTIONS ---
         function showContextMenu(e, msgId) {
             selectedMsgId = msgId;
@@ -2189,16 +2210,16 @@ function updateDeviceInfo() {
 // 2. Dark Mode
 function toggleDarkMode(checkbox) {
     if (checkbox.checked) {
-        document.body.classList.add('dark-mode');
-        // Maxsus ranglar o'zgarishi
-        document.querySelectorAll('.bg-white').forEach(el => el.style.backgroundColor = '#2c2c2e');
-        document.querySelectorAll('.text-gray-900').forEach(el => el.style.color = '#ffffff');
-        document.querySelectorAll('.text-gray-800').forEach(el => el.style.color = '#f2f2f7');
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        // Tailwind ishlatsangiz pastdagilar shart emas, lekin oddiy CSS uchun:
+        document.body.style.backgroundColor = "#1c1c1e";
+        document.body.style.color = "#ffffff";
     } else {
-        document.body.classList.remove('dark-mode');
-        document.querySelectorAll('.bg-white').forEach(el => el.style.backgroundColor = '#ffffff');
-        document.querySelectorAll('.text-gray-900').forEach(el => el.style.color = '#111827');
-        document.querySelectorAll('.text-gray-800').forEach(el => el.style.color = '#1f2937');
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        document.body.style.backgroundColor = "#f2f2f7";
+        document.body.style.color = "#000000";
     }
 }
 
@@ -2408,41 +2429,247 @@ window.addEventListener('load', () => {
     });
 }
 
+function saveStatus() {
+    const val = prompt("Yangi status kiriting:", localStorage.getItem("userStatus") || "");
+    if (val !== null) {
+        localStorage.setItem("userStatus", val);
+        loadStatus();
+    }
+}
+
+
+// --- 3. DEVICE SESSIONS ---
+function updateDeviceInfo() {
+    const currentDevice = navigator.userAgent.split(')')[0].split('(')[1] || "Noma'lum qurilma";
+    const sessions = [
+        { device: currentDevice, time: "Hozir faol", ip: "94.158.xx.xx (Siz)" },
+        { device: "Telegram Desktop / Windows", time: "2 soat oldin", ip: "178.218.xx.xx" },
+        { device: "iPhone 15 Pro / Safari", time: "Kecha, 22:45", ip: "213.230.xx.xx" }
+    ];
+    // Bu ma'lumotlarni sheet ochilganda innerHTML qilib chiqarsangiz bo'ladi
+    console.log("Sessions updated", sessions);
+}
+
+// --- 5. 2FA (TWO-STEP VERIFICATION) ---
+function setup2FA() {
+    const pass = prompt("Ikki bosqichli himoya parolini yarating:");
+    if(pass && pass.length >= 4) {
+        localStorage.setItem("twoFA", pass);
+        document.getElementById('twoFAStatusLabel').innerText = "ON";
+        document.getElementById('twoFAStatusLabel').className = "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg";
+        alert("2FA faollashtirildi!");
+    }
+}
+
+// --- BARCHA UI ELEMENTLARINI YANGILASH (PROFIL VA SOZLAMALAR) ---
 function updateAllUI() {
+    // 1. Ma'lumotlarni localStorage'dan yig'ib olish
     const user = {
-        name: localStorage.getItem('username') || 'Mehmon',
-        phone: localStorage.getItem('user_phone') || 'Raqam kiritilmagan',
-        bio: localStorage.getItem('user_bio') || 'Bio ma\'lumotlar yo\'q'
+        name: localStorage.getItem('username') || 'Foydalanuvchi',
+        phone: localStorage.getItem('user_phone') || '+998 00 000 00 00',
+        bio: localStorage.getItem('user_bio') || 'Bio ma\'lumot kiritilmagan',
+        status: localStorage.getItem('userStatus') || 'Status o\'rnatish...',
+        username: (localStorage.getItem('username') || 'user').toLowerCase().replace(/\s/g, ''),
+        twoFA: localStorage.getItem('twoFA'),
+        theme: localStorage.getItem('theme') || 'light',
+        hiddenPin: localStorage.getItem('hiddenPin')
     };
 
-    // Matnlarni xavfsiz yangilash uchun yordamchi funksiya
-    const setSafeData = (id, value, isInput = false) => {
+    // 2. Yordamchi funksiya: Elementni xavfsiz yangilash
+    const safeUpdate = (id, value, type = 'innerText') => {
         const el = document.getElementById(id);
-        if (el) {
-            if (isInput) el.value = value;
-            else el.innerText = value;
-        }
+        if (el) el[type] = value;
     };
 
-    // Profil qismidagi ma'lumotlar
-    setSafeData('profileNameDisplay', user.name);
-    setSafeData('profilePhoneDisplay', user.phone);
-    setSafeData('displayUsername', '@' + user.name.toLowerCase().replace(/\s/g, ''));
-    setSafeData('displayBio', user.bio);
+    // 3. Matnli ma'lumotlarni joylashtirish
+    safeUpdate('profileName', user.name);
+    safeUpdate('settingsName', user.name);
+    safeUpdate('profileUsername', '@' + user.username);
+    safeUpdate('settingsUsername', '@' + user.username);
+    safeUpdate('profileStatusDisplay', user.status);
+    safeUpdate('settingsBio', user.bio);
+    safeUpdate('profilePhone', user.phone);
 
-    // Sozlamalar qismidagi Inputlar
-    setSafeData('editNameInp', user.name, true);
-    setSafeData('editBioInp', user.bio, true);
+    // 4. Avatar (Profil rasmi) boshqaruvi
+    const savedAvatar = localStorage.getItem('userAvatarBase64');
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+    const finalAvatar = savedAvatar || defaultAvatar;
 
-    // Avatarlarni yangilash
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff&size=128`;
-    const pic = document.getElementById('profileDisplayPic');
-    const av = document.getElementById('userAvatar');
+    safeUpdate('profileAvatar', finalAvatar, 'src');
+    safeUpdate('userAvatar', finalAvatar, 'src'); // Navbardagi kichik rasm
+
+    // 5. 2-Step Verification (2FA) Statusi
+    const twoFALabel = document.getElementById('twoFAStatusLabel');
+    if (twoFALabel) {
+        if (user.twoFA) {
+            twoFALabel.innerText = "ON";
+            twoFALabel.className = "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg border border-green-100";
+        } else {
+            twoFALabel.innerText = "OFF";
+            twoFALabel.className = "text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg border border-red-100";
+        }
+    }
+
+    // 6. Yashirin Chatlar (PIN) Ikonkasi
+    const lockIcon = document.getElementById('lockStatusIcon');
+    if (lockIcon) {
+        if (user.hiddenPin) {
+            lockIcon.classList.replace('text-gray-300', 'text-purple-600');
+        } else {
+            lockIcon.classList.replace('text-purple-600', 'text-gray-300');
+        }
+    }
+
+    // 7. Dark Mode Holatini tiklash
+    const themeToggle = document.querySelector('input[onchange="toggleDarkMode(this)"]');
+    if (user.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.body.classList.add('dark-mode');
+        if (themeToggle) themeToggle.checked = true;
+    } else {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark-mode');
+        if (themeToggle) themeToggle.checked = false;
+    }
+
+    // 8. Faol seanslar sonini ko'rsatish
+    const deviceBadge = document.querySelector('#profileTab span.bg-green-100');
+    if (deviceBadge) {
+        // Haqiqiy mantiqda bu yerda session list uzunligi olinadi
+        deviceBadge.innerText = "1 active"; 
+    }
+
+    console.log("🚀 Barcha interfeys elementlari yangilandi!");
+}
+
+// --- 2. YASHIRIN CHATLAR (PIN LOCK) ---
+function unlockHiddenChats() {
+    const savedPin = localStorage.getItem("hiddenPin");
+    if (!savedPin) {
+        alert("Avval Sozlamalar bo'limida PIN-kod o'rnating!");
+        switchTab('settings');
+        return;
+    }
+    const entered = prompt("Yashirin chatlar uchun PIN kiriting:");
+    if (entered === savedPin) {
+        alert("Xush kelibsiz! Yashirin chatlar ro'yxati ochilmoqda...");
+        // Bu yerda chatList filtrlanadi
+    } else {
+        alert("PIN noto'g'ri!");
+    }
+}
+
+
+// --- 5. RASMNI ALMASHTIRISH (AVATAR) ---
+function triggerAvatarUpload() {
+    document.getElementById('avatarInput').click();
+}
+
+function handleAvatarSelection(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localStorage.setItem('userAvatarBase64', e.target.result);
+            updateAllUI();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+ 
+// --- 1. STATUS FUNKSIYASI ---
+function openStatusSheet() {
+    const currentStatus = localStorage.getItem("userStatus") || "";
+    const newStatus = prompt("Yangi status kiriting (masalan: Band, O'qishda):", currentStatus);
     
-    if (pic) pic.src = avatarUrl;
-    if (av) av.src = avatarUrl;
+    if (newStatus !== null) {
+        localStorage.setItem("userStatus", newStatus.trim());
+        updateAllUI(); // Profil sahifasidagi matnni yangilaydi
+    }
+}
 
-    console.log("UI muvaffaqiyatli yangilandi.");
+// --- 2. PROFILNI ULASHISH (SHARE/COPY ID) ---
+function copyMyID() {
+    const username = localStorage.getItem('username') || "User";
+    const profileLink = `https://safechat.uz/user/${username.toLowerCase()}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'SafeChat Profili',
+            text: `${username} bilan SafeChat'da bog'laning!`,
+            url: profileLink,
+        }).catch(console.error);
+    } else {
+        // Share ishlamasa, clipboard'ga nusxalash
+        navigator.clipboard.writeText(profileLink).then(() => {
+            alert("Profil havolasi nusxalandi: " + profileLink);
+        });
+    }
+}
+
+// --- 3. IKKI BOSQICHLI TEKSHIRUV (2FA) ---
+function openTwoFASheet() {
+    const isEnabled = localStorage.getItem("twoFA");
+    
+    if (isEnabled) {
+        const confirmDisable = confirm("Ikki bosqichli tekshiruv yoqilgan. Uni o'chirmoqchimisiz?");
+        if (confirmDisable) {
+            const pass = prompt("O'chirish uchun joriy 2FA parolini kiriting:");
+            if (pass === isEnabled) {
+                localStorage.removeItem("twoFA");
+                alert("Xavfsizlik o'chirildi.");
+            } else {
+                alert("Parol noto'g'ri!");
+            }
+        }
+    } else {
+        const newPass = prompt("Yangi 2FA parolini o'rnating (kamida 4 ta belgi yoki raqam):");
+        if (newPass && newPass.trim().length >= 4) {
+            localStorage.setItem("twoFA", newPass.trim());
+            alert("🔒 Ikki bosqichli himoya faollashtirildi!");
+        } else if (newPass !== null) {
+            alert("Xato: Parol kamida 4 ta belgidan iborat bo'lishi kerak!");
+        }
+    }
+    updateAllUI(); // ON/OFF belgisini yangilash uchun
+}
+
+// --- 4. FAOL SEANSLAR (DEVICES) ---
+function openDeviceSheet() {
+    const platform = navigator.platform;
+    const browser = navigator.userAgent.includes("Chrome") ? "Chrome" : "Safari";
+    const now = new Date().toLocaleTimeString();
+    
+    // Kelajakda bu yerda haqiqiy Sheet ochilishi kerak, hozircha alert:
+    alert(`📱 Joriy seans:\nQurilma: ${platform}\nBrauzer: ${browser}\nIP: 94.158.52.xx\nStatus: Faol (Hozir)\n\nBarcha boshqa seanslar yakunlandi.`);
+}
+
+// --- 5. SAQLANGAN XABARLAR ---
+function openSavedMessages() {
+    // Chat bo'limiga yo'naltirish yoki maxsus chatni ochish
+    alert("Saqlangan xabarlar bo'limi yuklanmoqda...");
+    // switchTab('chats'); // Misol uchun chatlar bo'limiga o'tkazish
+}
+
+// --- 6. FIELDLARNI TAHRIRLASH (Name, Bio, Username) ---
+function editField(fieldName) {
+    const keys = { 'Name': 'username', 'Username': 'username', 'Bio': 'user_bio' };
+    const key = keys[fieldName];
+    const currentVal = localStorage.getItem(key) || "";
+    
+    let newVal = prompt(`${fieldName}ni kiriting:`, currentVal);
+    if (newVal !== null) {
+        localStorage.setItem(key, newVal);
+        updateAllUI();
+    }
+}
+
+// --- 7. LOAD STATUS (Tab o'zgarganda chaqiriladi) ---
+function loadStatus() {
+    const status = localStorage.getItem("userStatus") || "Status o'rnatish...";
+    const el = document.getElementById("profileStatusDisplay");
+    if (el) el.innerText = status;
 }
 
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
