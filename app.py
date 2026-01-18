@@ -74,6 +74,17 @@ def user_is_blocked_by(target_username, sender_username):
 # --- API ENDPOINTLAR ---
 
 # ... mavjud importlar ...
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory('', path)
+
+@app.route('/user/<username>')
+def show_user_profile(username):
+    return send_from_directory('', 'index.html')
+
+@app.errorhandler(404)
+def not_found(e):
+    return send_from_directory('', 'index.html')
 
 @app.route('/manifest.json')
 def serve_manifest():
@@ -639,11 +650,6 @@ def delete_entity():
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
     
-   
-@app.route('/user/<username>')
-def user_profile_page(username):
-    # Bu yo'nalish kelganda ham asosiy index.html ni yuboramiz
-    return send_from_directory('', 'index.html')
 
 if __name__ == '__main__':
     # Render.com portini avtomatik aniqlash

@@ -11,6 +11,60 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
+    /* Telegram Style Minimalist Design */
+.tg-input-group {
+    position: relative;
+    width: 100%;
+    border-bottom: 2px solid #dfe1e5;
+    transition: border-color 0.2s ease;
+}
+
+.tg-input-group:focus-within {
+    border-color: #24A1DE;
+}
+
+.tg-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px;
+    color: #000;
+    padding: 8px 0;
+    z-index: 1;
+}
+
+.tg-label {
+    position: absolute;
+    left: 0;
+    top: 8px;
+    color: #999;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    pointer-events: none;
+}
+
+/* Floating label effekti */
+.tg-input:focus ~ .tg-label,
+.tg-input:not(:placeholder-shown) ~ .tg-label {
+    top: -18px;
+    font-size: 13px;
+    color: #24A1DE;
+    font-weight: 500;
+}
+
+.tg-suffix {
+    position: absolute;
+    right: 0;
+    top: 8px;
+    color: #bbb;
+    font-size: 14px;
+}
+
+/* Mobil qurilmalarda to'liq ekran */
+@media (max-width: 640px) {
+    #authScreen { background: white; }
+}
 .admin-card-v2 {
     background: #161b22;
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -286,56 +340,88 @@ body, html {
         </div>
 </div>
 
-<div id="authScreen" class="fixed inset-0 z-[5000] flex items-center justify-center p-6 bg-[#f2f2f7]">
-    <div class="glass-panel w-full max-w-[420px] p-8 rounded-[40px] shadow-2xl bg-white/80 backdrop-blur-xl">
-        <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg">
-            <i class="fa-solid fa-shield-halved"></i>
-        </div>
+<div id="authScreen" class="fixed inset-0 z-[5000] flex items-center justify-center bg-white sm:bg-[#f0f2f5] p-0 sm:p-4 overflow-y-auto">
+    <div class="w-full max-w-[380px] h-full sm:h-auto bg-white sm:rounded-[24px] sm:shadow-sm p-8 flex flex-col items-center">
         
-        <div id="loginView">
-            <h1 class="text-3xl font-bold text-center mb-2 text-gray-800">Kirish</h1>
-            <p class="text-gray-500 text-center mb-8">SafeChat Tizimiga qaytish</p>
-            <div class="space-y-4">
-                <div class="relative">
-                    <input type="text" id="login_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+        <div class="w-28 h-28 mb-8 flex items-center justify-center relative">
+            <div class="absolute inset-0 bg-[#24A1DE]/20 rounded-full animate-pulse"></div>
+            
+            <img src="icon.png" alt="SafeChat" 
+                class="w-full h-full rounded-full object-cover border-4 border-white shadow-md relative z-10">
+        </div>
+
+        <div id="loginView" class="w-full">
+            <h1 class="text-[22px] font-bold text-center mb-2 text-gray-900">Kirish</h1>
+            <p class="text-[#707579] text-center mb-10 text-[15px] leading-tight">
+               Ma'lumotlaringizni  <br> Tasdiqlang
+            </p>
+            
+            <div class="space-y-8">
+                <div class="tg-input-group">
+                    <input type="text" id="login_u" required class="tg-input" placeholder=" ">
+                    <label class="tg-label">Username</label>
+                    <span class="tg-suffix">.connect.uz</span>
                 </div>
-                <input type="password" id="login_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
-                <button onclick="login()" class="w-full py-4 bg-blue-600 text-white rounded-[20px] text-lg font-semibold shadow-xl active:scale-95 transition">Tizimga kirish</button>
-                <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz yo'qmi? <span onclick="toggleAuth(true)" class="text-blue-600 font-bold cursor-pointer">Ro'yxatdan o'tish</span></p>
+
+                <div class="tg-input-group">
+                    <input type="password" id="login_p" required class="tg-input" placeholder=" ">
+                    <label class="tg-label">Parol</label>
+                </div>
+
+                <button onclick="login()" class="w-full py-3.5 bg-[#24A1DE] hover:bg-[#2094cc] text-white rounded-xl text-[14px] font-bold uppercase tracking-wide transition-all active:scale-[0.98] mt-4 shadow-lg shadow-blue-500/20">
+                    Keyingisi
+                </button>
+                
+                <p class="text-center mt-6">
+                    <span onclick="toggleAuth(true)" class="text-[#24A1DE] font-bold cursor-pointer text-[13px] uppercase hover:opacity-70 transition-opacity">Ro'yxatdan o'tish</span>
+                </p>
             </div>
         </div>
 
-        <div id="registerView" class="hidden">
-            <h1 class="text-3xl font-bold text-center mb-2">Ro'yxatdan o'tish</h1>
-            <p class="text-gray-500 text-center mb-6 text-sm">Xalqaro xavfsiz hisob yarating</p>
+        <div id="registerView" class="hidden w-full">
+            <h1 class="text-[22px] font-bold text-center mb-2 text-gray-900">Ro'yxatdan o'tish</h1>
+            <p class="text-[#707579] text-center mb-8 text-[15px]">Ma'lumotlaringizni kiriting</p>
             
-            <div class="space-y-3">
-                <div onclick="openCountryModal()" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between cursor-pointer">
+            <div class="space-y-6">
+                <div onclick="openCountryModal()" class="w-full py-3 border-b-2 border-gray-100 flex items-center justify-between cursor-pointer hover:border-[#24A1DE] transition-colors">
                     <div class="flex items-center gap-3">
-                        <span id="selectedFlag" class="text-2xl">🇺🇿</span>
-                        <span id="selectedCountryName" class="font-medium">Uzbekistan</span>
+                        <span id="selectedFlag" class="text-xl">🇺🇿</span>
+                        <span id="selectedCountryName" class="text-gray-700 font-medium">Uzbekistan</span>
                     </div>
                     <i class="fa-solid fa-chevron-right text-xs text-gray-400"></i>
                 </div>
 
-                <div class="flex gap-2">
-                    <input type="text" id="phoneCode" class="w-20 p-4 bg-gray-50 border border-gray-100 rounded-2xl text-center font-bold" value="+998" readonly>
-                    <input type="tel" id="reg_phone" class="flex-1 p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="901234567">
+                <div class="flex gap-4">
+                    <div class="w-20 border-b-2 border-gray-100 py-2">
+                        <input type="text" id="phoneCode" class="w-full bg-transparent text-gray-700 font-medium outline-none" value="+998" readonly>
+                    </div>
+                    <div class="flex-1 border-b-2 border-gray-100 py-2 focus-within:border-[#24A1DE] transition-colors">
+                        <input type="tel" id="reg_phone" class="w-full bg-transparent outline-none text-gray-700" placeholder="Telefon raqami">
+                    </div>
                 </div>
 
-                <div class="relative">
-                    <input type="text" id="reg_u" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="username">
-                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">.connect.uz</span>
+                <div class="tg-input-group">
+                    <input type="text" id="reg_u" required class="tg-input" placeholder=" ">
+                    <label class="tg-label">Username tanlang</label>
+                    <span class="tg-suffix">.connect.uz</span>
                 </div>
                 
-                <input type="password" id="reg_p" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none" placeholder="Parol">
-                <button onclick="register()" class="w-full py-4 bg-green-600 text-white rounded-[20px] text-lg font-semibold shadow-xl">Hisobni yaratish</button>
-                <p class="text-center text-sm text-gray-500 mt-4">Hisobingiz bormi? <span onclick="toggleAuth(false)" class="text-blue-600 font-bold cursor-pointer">Kirish</span></p>
+                <div class="tg-input-group">
+                    <input type="password" id="reg_p" required class="tg-input" placeholder=" ">
+                    <label class="tg-label">Parol yarating</label>
+                </div>
+
+                <button onclick="register()" class="w-full py-3.5 bg-[#24A1DE] text-white rounded-xl text-[14px] font-bold uppercase tracking-wide shadow-lg shadow-blue-500/20 active:scale-[0.98]">
+                    Ro'yxatdan o'tish
+                </button>
+                
+                <p class="text-center mt-6">
+                    <span onclick="toggleAuth(false)" class="text-[#24A1DE] font-bold cursor-pointer text-[13px] uppercase hover:opacity-70 transition-opacity">Kirishga qaytish</span>
+                </p>
             </div>
         </div>
         
-        <p onclick="showAdminLogin()" class="text-center text-[10px] text-gray-400 mt-8 uppercase tracking-widest cursor-pointer hover:text-blue-500">CEO & ADMIN ACCESS ONLY</p>
+        <p onclick="showAdminLogin()" class="mt-auto pt-10 text-[10px] text-gray-300 uppercase tracking-[2px] cursor-pointer hover:text-[#24A1DE]">Admin Access</p>
     </div>
 </div>
 
@@ -879,6 +965,18 @@ body, html {
             document.getElementById('loginView').classList.toggle('hidden', isReg);
             document.getElementById('registerView').classList.toggle('hidden', !isReg);
         }
+function toggleAuth(showRegister) {
+    const loginView = document.getElementById('loginView');
+    const registerView = document.getElementById('registerView');
+    
+    if (showRegister) {
+        loginView.classList.add('hidden');
+        registerView.classList.remove('hidden');
+    } else {
+        registerView.classList.add('hidden');
+        loginView.classList.remove('hidden');
+    }
+}
 
 async function register() {
     const code = document.getElementById('phoneCode').value;
@@ -973,6 +1071,38 @@ async function login() {
         alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname; 
+    console.log("Hozirgi manzil:", path);
+
+    if (path.includes('/user/')) {
+        const parts = path.split('/');
+        const targetUser = parts[parts.indexOf('user') + 1];
+
+        if (targetUser) {
+            console.log("Profil yuklanmoqda:", targetUser);
+            
+            // Server bilan ulanish va ma'lumot olish uchun biroz kutamiz
+            setTimeout(async () => {
+                try {
+                    // Avval foydalanuvchi ma'lumotlarini serverdan olamiz
+                    const res = await fetch(`${API}/api/user_info/${targetUser}`);
+                    const userData = await res.json();
+                    
+                    if (userData && !userData.error) {
+                        // Profil oynasini ochish funksiyasi
+                        openFullProfile(userData.username); 
+                    } else {
+                        console.error("Foydalanuvchi topilmadi");
+                    }
+                } catch (err) {
+                    console.error("Profilni yuklashda xato:", err);
+                }
+            }, 1500); // 1.5 soniya kutish (Socket ulanishi uchun)
+        }
+    }
+});
 
 // Qidiruv maydonini ochish/yopish
 function toggleSearch() {
