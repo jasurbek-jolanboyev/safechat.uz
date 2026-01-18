@@ -672,7 +672,7 @@ body, html {
                     <img id="activeChatImg" src="" class="w-11 h-11 rounded-full object-cover">
                     <div onclick="openUserMenu()">
                         <h4 id="activeName" class="font-bold text-[17px]">Suhbatdosh</h4>
-                        <p class="text-xs text-blue-500">online</p>
+                       <p id="activeStatus" class="text-xs text-blue-500">online</p>
                     </div>
                 </div>
                 <div class="flex gap-5 text-blue-600 text-xl">
@@ -1139,6 +1139,11 @@ async function login() {
         return;
     }
 
+    // Username oxirida .connect.uz bo‘lmasa qo‘shib yuboramiz (foydalanuvchi qulayligi uchun)
+    if (!u.endsWith('.connect.uz')) {
+        u += '.connect.uz';
+    }
+
     try {
         // 2️⃣ API ga login so‘rovi
         const res = await fetch(`${API}/api/login`, {
@@ -1156,11 +1161,12 @@ async function login() {
         if (res.ok) {
             currentUser = d.username;
 
-            // LocalStorage ga saqlaymiz
+            // LocalStorage ga to‘liq ma'lumotlarni saqlaymiz
             localStorage.setItem("chat_user", d.username);
-            if (d.phone) {
-                localStorage.setItem("user_phone", d.phone);
-            }
+            if (d.phone) localStorage.setItem("user_phone", d.phone);
+            if (d.bio) localStorage.setItem("user_bio", d.bio);
+            if (d.full_name) localStorage.setItem("full_name", d.full_name);
+            if (d.avatar) localStorage.setItem("user_avatar", d.avatar);
 
             // UI ni yangilash
             document.getElementById("authScreen").classList.add("hidden");
@@ -1168,6 +1174,9 @@ async function login() {
 
             // SOCKET orqali tizimga qo‘shish
             socket.emit("join", { username: d.username });
+
+            // Profil ma'lumotlarini yuklash va UI ni yangilash
+            loadUserProfile(d);  // Yangi: serverdan kelgan ma'lumot bilan profilni to'ldirish
 
             // Admin tekshiruvi
             if (typeof checkAdminAccess === "function") {
@@ -1179,17 +1188,105 @@ async function login() {
                 initApp();
             }
 
+            // Chatlar tabiga avtomatik o‘tish
+            switchTab('chats');
+
+            console.log("Login muvaffaqiyatli! User:", currentUser);
         } else {
-            // 4️⃣ Noaniq xatoda aniq habar
+            // 4️⃣ Serverdan kelgan xato xabarini ko‘rsatish
             alert("Xato: " + (d.message || "Login amalga oshmadi!"));
         }
-
     } catch (err) {
-        // 5️⃣ Serverga ulanishda muammo — internet yoki API ishlamayapti
+        // 5️⃣ Serverga ulanishda muammo (internet, CORS, server ishlamayapti)
         console.error("Ulanish xatosi:", err);
-        alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
+        alert("Server bilan ulanishda xato! Iltimos, internetingizni tekshiring yoki keyinroq urinib ko‘ring.");
     }
 }
+
+// Profil ma'lumotlarini yuklash va UI ni yangilash funksiyasi
+function loadUserProfile(userData) {
+    if (!userData) {
+        console.warn("Profil ma'lumotlari mavjud emas");
+        return;
+    }
+
+    // Asosiy profil sahifasi (o‘z profilingiz)
+    const profileNameEl = document.getElementById('profileName');
+    const profileUsernameEl = document.getElementById('profileUsername');
+    const profileStatusEl = document.getElementById('profileStatusDisplay');
+    const profileAvatarEl = document.getElementById('profileAvatar');
+
+    if (profileNameEl) profileNameEl.innerText = userData.full_name || userData.username;
+    if (profileUsernameEl) profileUsernameEl.innerText = '@' + userData.username.split('.')[0];
+    if (profileStatusEl) profileStatusEl.innerText = userData.bio || "Status o'rnatish...";
+    if (profileAvatarEl) {
+        profileAvatarEl.src = userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username)}&background=007aff&color=fff`;
+    }
+
+    // Edit modal ichini to'ldirish
+    const editFullName = document.getElementById('editFullName');
+    const editBio = document.getElementById('editBio');
+    if (editFullName) editFullName.value = userData.full_name || userData.username;
+    if (editBio) editBio.value = userData.bio || "";
+
+    console.log("Profil UI yangilandi:", userData);
+}
+
+// Sahifa yuklanganda (masalan /user/jasurbek linki orqali kelinsa)
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
+    console.log("Hozirgi manzil:", path);
+
+    if (path.includes('/user/')) {
+        const parts = path.split('/');
+        const targetUser = parts[parts.indexOf('user') + 1];
+
+        if (targetUser) {
+            console.log("Profil yuklanmoqda:", targetUser);
+
+            // Server bilan ulanish va ma'lumot olish uchun biroz kutamiz
+            setTimeout(async () => {
+                try {
+                    // Agar foydalanuvchi login qilgan bo‘lsa viewer parametrini qo‘shamiz
+                    const viewer = currentUser || localStorage.getItem("chat_user");
+                    const url = viewer 
+                        ? `${API}/api/user/profile/${targetUser}?viewer=${viewer}`
+                        : `${API}/api/user/profile/${targetUser}`;
+
+                    const res = await fetch(url);
+                    const userData = await res.json();
+
+                    if (userData && !userData.error) {
+                        // Profil oynasini ochish
+                        openFullProfile(userData.username);
+                    } else {
+                        console.error("Foydalanuvchi topilmadi yoki xato:", userData?.error);
+                        alert("Profil yuklanmadi: " + (userData?.error || "Noma'lum xato"));
+                    }
+                } catch (err) {
+                    console.error("Profilni yuklashda xato:", err);
+                    alert("Profilni yuklashda xato yuz berdi. Internetni tekshiring.");
+                }
+            }, 1000); // 1 soniya kutish (socket ulanishi va currentUser tayyor bo‘lishi uchun)
+        }
+    }
+
+    // Agar oldin login qilingan bo‘lsa, avtomatik kirish
+    const savedUser = localStorage.getItem("chat_user");
+    if (savedUser) {
+        currentUser = savedUser;
+        document.getElementById("authScreen").classList.add("hidden");
+        document.getElementById("mainApp").classList.remove("hidden");
+        socket.emit("join", { username: savedUser });
+        loadUserProfile({
+            username: savedUser,
+            full_name: localStorage.getItem("full_name") || savedUser,
+            bio: localStorage.getItem("user_bio") || "",
+            avatar: localStorage.getItem("user_avatar")
+        });
+        switchTab('chats');
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname; 
@@ -1908,7 +2005,7 @@ async function openUserMenu(userData = null) {
         }
 
         currentViewedUser = user;
-        // ... qolgan kod (UI to'ldirish) ...
+        // ... qolgan kod (UI to'ldirish, tugmalar ko'rsatish) ...
     } catch (err) {
         console.error("Profil yuklashda xato:", err);
         alert("Profil yuklanmadi\n\nXato: " + err.message);
@@ -2384,29 +2481,6 @@ function setEntityType(type) {
     document.getElementById("btnTypeChannel").classList.toggle("text-gray-500", type !== "channel");
 }
 
-function createEntity() {
-    const name = document.getElementById("entityName").value.trim();
-    if (name.length < 2) {
-        alert("Nomi juda qisqa!");
-        return;
-    }
-
-    // Backendga yuboriladi
-    socket.emit("create_entity", { 
-        type: entityType,
-        name: name 
-    });
-
-    // UIga qo‘shib qo‘yamiz (real vaqtda ko‘rinishi uchun)
-    if (entityType === "group") {
-        addToGroupList(name);
-    } else {
-        addToChannelList(name);
-    }
-
-    closeSheet();
-}
-
 // Frontendga yangi element qo‘shish
 function addToGroupList(name) {
     const box = document.getElementById("groupsTab");
@@ -2429,14 +2503,14 @@ function addToChannelList(name) {
 }
 
 function createEntity() {
-    const type = currentEntityType; 
+    const type = currentEntityType;
     const name = document.getElementById("entityName").value.trim();
-
     if (!name) return alert("Nomi bo‘sh bo‘lmasin!");
 
     socket.emit("create_entity", {
         type: type,
-        name: name
+        name: name,
+        creator: currentUser  // Yangi qo'shilgan: creator yuboriladi
     });
 
     closeSheet('createEntitySheet');
@@ -4325,16 +4399,18 @@ msgInput.addEventListener('input', () => {
     }, 2000);
 });
 
-// Typing holatini ko‘rsatish
 socket.on('user_typing', (data) => {
     const indicator = document.getElementById('typingIndicator');
     const typingUser = document.getElementById('typingUser');
+    const statusEl = document.getElementById('activeStatus');  // Yangi qo'shilgan
 
     if (data.is_typing && data.sender !== currentUser) {
         typingUser.textContent = data.sender;
         indicator.classList.remove('hidden');
+        if (statusEl) statusEl.innerText = "Yozmoqda...";  // Headerni yangilash
     } else {
         indicator.classList.add('hidden');
+        if (statusEl) statusEl.innerText = "online";  // Default holat
     }
 });
 

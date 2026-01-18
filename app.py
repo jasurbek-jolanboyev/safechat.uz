@@ -336,11 +336,13 @@ def login_api():
                     db.session.rollback()
                     print(f"Database commit error: {db_err}")
                 return jsonify({
-                    "status": "success",
-                    "username": user.username,
-                    "phone": user.phone,
-                    "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
-                }), 200
+                "status": "success",
+                "username": user.username,
+                "phone": user.phone,
+                "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}",
+                "bio": user.bio or "Bio hali yozilmagan",
+                "full_name": user.username  # Hozircha username ni full_name sifatida ishlatamiz
+            }), 200
             else:
                 return jsonify({"message": "Kiritilgan parol noto'g'ri!"}), 401
         else:
@@ -349,66 +351,87 @@ def login_api():
         print(f"LOGIN_CRITICAL_ERROR: {e}")
         return jsonify({"message": "Serverda texnik xatolik yuz berdi"}), 500
 
-# --- REELS YUKLASH (YANGI) ---
 @app.route('/api/upload_reel', methods=['POST'])
 def upload_reel():
-    if 'reel' not in request.files:
-        return jsonify({"success": False, "message": "Video fayl topilmadi"}), 400
-    
-    file = request.files['reel']
-    caption = request.form.get('caption', '')
+    if 'files' not in request.files:
+        return jsonify({"success": False, "message": "Hech qanday fayl yuborilmadi"}), 400
+
+    files = request.files.getlist('files')  # Bir nechta faylni qabul qilish
+    caption = request.form.get('caption', '').strip()
     username = request.form.get('username')
-    
+
     if not username:
         return jsonify({"success": False, "message": "Username talab qilinadi"}), 400
-    
-    if file.filename == '':
-        return jsonify({"success": False, "message": "Fayl tanlanmagan"}), 400
-    
-    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-    if ext not in ALLOWED_EXTENSIONS:
-        return jsonify({"success": False, "message": "Faqat mp4, mov, avi, mkv, webm formatlari qabul qilinadi"}), 400
-    
-    filename = secure_filename(f"reel_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}")
-    filepath = os.path.join(app.config['REELS_UPLOAD_FOLDER'], filename)
-    
-    try:
-        file.save(filepath)
-        reel_url = f"/uploads/reels/{filename}"
-        
-        new_reel = Reel(
-            username=username,
-            url=reel_url,
-            caption=caption
-        )
-        db.session.add(new_reel)
-        db.session.commit()
-        
-        # REALTIME: Yangi reel yuklanganda barcha foydalanuvchilarga emit qilish
-        socketio.emit('new_reel_uploaded', {
-            "id": new_reel.id,
-            "username": username,
-            "url": reel_url,
-            "caption": caption,
-            "created_at": new_reel.created_at.strftime("%Y-%m-%d %H:%M"),
-            "likes": 0,
-            "views": 0
-        }, broadcast=True)
-        
-        return jsonify({
-            "success": True,
-            "message": "Reel muvaffaqiyatli yuklandi",
-            "reel": {
+
+    if not files or all(file.filename == '' for file in files):
+        return jsonify({"success": False, "message": "Hech qanday fayl tanlanmagan"}), 400
+
+    uploaded = []
+    errors = []
+
+    for file in files:
+        if file.filename == '':
+            continue
+
+        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if ext not in ALLOWED_EXTENSIONS:
+            errors.append(f"{file.filename}: ruxsat etilmagan format")
+            continue
+
+        # Fayl nomini xavfsiz va noyob qilish
+        unique_suffix = secrets.token_hex(6)
+        filename = secure_filename(f"reel_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_suffix}.{ext}")
+        filepath = os.path.join(app.config['REELS_UPLOAD_FOLDER'], filename)
+
+        try:
+            file.save(filepath)
+            reel_url = f"/uploads/reels/{filename}"
+
+            new_reel = Reel(
+                username=username,
+                url=reel_url,
+                caption=caption,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(new_reel)
+            db.session.flush()  # ID ni olish uchun flush
+
+            uploaded.append({
                 "id": new_reel.id,
                 "url": reel_url,
                 "caption": caption,
-                "username": username
-            }
+                "username": username,
+                "created_at": new_reel.created_at.strftime("%Y-%m-%d %H:%M"),
+                "likes": 0,
+                "views": 0
+            })
+
+        except Exception as e:
+            errors.append(f"{file.filename}: {str(e)}")
+            continue
+
+    if uploaded:
+        db.session.commit()
+
+        # Realtime: yangi yuklangan reel(lar) haqida xabar
+        socketio.emit('new_reel_uploaded', {
+            "reels": uploaded,  # Bir nechta reel ma'lumotlari
+            "count": len(uploaded)
+        }, broadcast=True)
+
+        return jsonify({
+            "success": True,
+            "message": f"{len(uploaded)} ta reel muvaffaqiyatli yuklandi",
+            "uploaded": uploaded,
+            "errors": errors if errors else None
         })
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
-    
+
+    db.session.rollback()
+    return jsonify({
+        "success": False,
+        "message": "Hech qanday fayl yuklanmadi",
+        "errors": errors
+    }), 400
 
 # Yangi model maydonlari allaqachon bor deb hisoblaymiz:
 # class Reel(db.Model):
@@ -640,13 +663,10 @@ def update_profile():
     if user:
         user.bio = data.get('bio', user.bio)
         db.session.commit()
-        socketio.emit('user_update', {
+        socketio.emit('user_update', {  # Yangi emit qo'shilgan
             "userId": user.username,
-            "updatedFields": {
-                "bio": user.bio,
-                "name": user.username
-            }
-        })
+            "updatedFields": {"bio": user.bio}
+        }, broadcast=True)
         return jsonify({"status": "success"})
     return jsonify({"message": "User topilmadi"}), 404
 
@@ -790,7 +810,7 @@ def handle_create_entity(data):
         name=name,
         creator=creator,
         entity_type=entity_type,
-        members=creator
+        members=creator  # Yangi qo'shilgan: members ga creator qo'shiladi
     )
     db.session.add(new_entity)
     db.session.commit()
