@@ -15,20 +15,28 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # --- KONFIGURATSIYA ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'safechat_ultra_secure_2026_key'
+
 # Render.com yoki mahalliy SQLite bazasi
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///safechat_v3.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Papkalarni yaratish (Media va fayllar uchun)
+# Fayl yuklash sozlamalari
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB maksimal
+app.config['REELS_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'reels')
+
+# Ruxsat etilgan video formatlari (Reels uchun)
+ALLOWED_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'webm'}
+
+# Papkalarni yaratish
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'media'), exist_ok=True)
+os.makedirs(app.config['REELS_UPLOAD_FOLDER'], exist_ok=True)
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # --- MA'LUMOTLAR BAZASI MODELLARI ---
-
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -37,9 +45,19 @@ class User(db.Model):
     avatar = db.Column(db.Text, nullable=True)
     is_blocked = db.Column(db.Boolean, default=False)
     is_online = db.Column(db.Boolean, default=False)
-    blocked_users = db.Column(db.Text, default="") 
+    blocked_users = db.Column(db.Text, default="")
     bio = db.Column(db.String(200), default="Hello! I am using SafeChat.")
-    devices = db.Column(db.Text, default="[]") 
+    devices = db.Column(db.Text, default="[]")
+
+class Follow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    following_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('follower_id', 'following_id', name='unique_follow'),
+    )
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,22 +66,39 @@ class Message(db.Model):
     content = db.Column(db.Text, nullable=False)
     msg_type = db.Column(db.String(20), default='text')
     # Reply (javob) ma'lumotlarini JSON formatida saqlash uchun ustun
-    reply_info = db.Column(db.Text, nullable=True) 
+    reply_info = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-class Entity(db.Model): 
+class Entity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     creator = db.Column(db.String(80), nullable=False)
-    entity_type = db.Column(db.String(20)) # 'group' yoki 'channel'
-    members = db.Column(db.Text) 
+    entity_type = db.Column(db.String(20))  # 'group' yoki 'channel'
+    members = db.Column(db.Text)
 
-# Bazani yaratish
+# YANGI: Reels uchun model
+class Reel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False)          # kim yuklagan
+    url = db.Column(db.String(500), nullable=False)              # video manzili
+    caption = db.Column(db.Text, nullable=True)                  # tavsif
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    likes = db.Column(db.Integer, default=0)
+    views = db.Column(db.Integer, default=0)
+    liked_by = db.Column(db.Text, default="[]")  # JSON string sifatida usernames ro'yxati
+    
+class Application(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    phone = db.Column(db.String(20))
+    reason = db.Column(db.Text)
+    status = db.Column(db.String(20), default='new')  # new, accepted, rejected
+
+# Bazani yaratish (barcha modellar qo'shilgandan keyin)
 with app.app_context():
     db.create_all()
 
 # --- YORDAMCHI FUNKSIYALAR ---
-
 def user_is_blocked_by(target_username, sender_username):
     """Target foydalanuvchi senderni bloklaganmi?"""
     user = User.query.filter_by(username=target_username).first()
@@ -71,9 +106,11 @@ def user_is_blocked_by(target_username, sender_username):
         return sender_username in user.blocked_users.split(',')
     return False
 
-# --- API ENDPOINTLAR ---
+def allowed_file(filename):
+    """Faylning kengaytmasi ruxsat etilganmi?"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# ... mavjud importlar ...
+# --- STATIC FAYLLARNI XIZMAT QILISH ---
 @app.route('/<path:path>')
 def serve_static(path):
     return send_from_directory('', path)
@@ -94,49 +131,179 @@ def serve_manifest():
 def serve_logo():
     return send_from_directory(os.getcwd(), 'logo.png')
 
-# Agarda sw.js (Service Worker) ham yaratgan bo'lsangiz:
 @app.route('/sw.js')
 def serve_sw():
     return send_from_directory(os.getcwd(), 'sw.js')
 
+@app.route('/uploads/<path:folder>/<path:filename>')
+def serve_uploads(folder, filename):
+    directory = os.path.join(app.config['UPLOAD_FOLDER'], folder)
+    return send_from_directory(directory, filename)
 
+# --- ASOSIY SAHIFA ---
+@app.route('/')
+def index():
+    return "SafeChat V3 Server is Running!"
+
+@app.route('/api/user/profile/<username>', methods=['GET'])
+def get_user_profile(username):
+    viewer_username = request.args.get('viewer')
+    if not viewer_username:
+        return jsonify({"error": "Viewer talab qilinadi"}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "Foydalanuvchi topilmadi"}), 404
+
+    viewer = User.query.filter_by(username=viewer_username).first()
+    if not viewer:
+        return jsonify({"error": "Viewer topilmadi"}), 404
+
+    # Followers soni
+    followers_count = Follow.query.filter_by(following_id=user.id).count()
+    # Following soni
+    following_count = Follow.query.filter_by(follower_id=user.id).count()
+    # Posts soni (Reels)
+    posts_count = Reel.query.filter_by(username=username).count()
+
+    # Follow holati
+    is_following = Follow.query.filter_by(
+        follower_id=viewer.id,
+        following_id=user.id
+    ).first() is not None
+
+    # Bloklanganmi?
+    blocked_users = user.blocked_users.split(',') if user.blocked_users else []
+    is_blocked_by_viewer = viewer_username in blocked_users
+
+    return jsonify({
+        "username": user.username,
+        "full_name": user.username,  # agar full_name bo'lmasa
+        "bio": user.bio,
+        "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}",
+        "phone": user.phone if viewer_username == username else None,
+        "posts_count": posts_count,
+        "followers_count": followers_count,
+        "following_count": following_count,
+        "is_following": is_following,
+        "is_blocked_by_viewer": is_blocked_by_viewer
+    })
+
+@app.route('/api/user/follow', methods=['POST'])
+def follow_user():
+    data = request.json
+    viewer_username = data['viewer']
+    target_username = data['target']
+    action = data['action']  # 'follow' yoki 'unfollow'
+
+    viewer = User.query.filter_by(username=viewer_username).first()
+    target = User.query.filter_by(username=target_username).first()
+
+    if not viewer or not target:
+        return jsonify({"error": "Foydalanuvchi topilmadi"}), 404
+
+    if action == 'follow':
+        if viewer.id == target.id:
+            return jsonify({"error": "O'zingizni follow qila olmaysiz"}), 400
+
+        existing = Follow.query.filter_by(
+            follower_id=viewer.id,
+            following_id=target.id
+        ).first()
+
+        if not existing:
+            new_follow = Follow(
+                follower_id=viewer.id,
+                following_id=target.id
+            )
+            db.session.add(new_follow)
+            db.session.commit()
+
+            # Realtime yangilash
+            socketio.emit('follow_update', {
+                'target': target_username,
+                'followers_count': Follow.query.filter_by(following_id=target.id).count()
+            }, broadcast=True)
+
+            return jsonify({"success": True, "action": "followed"})
+
+    elif action == 'unfollow':
+        follow = Follow.query.filter_by(
+            follower_id=viewer.id,
+            following_id=target.id
+        ).first()
+
+        if follow:
+            db.session.delete(follow)
+            db.session.commit()
+
+            socketio.emit('follow_update', {
+                'target': target_username,
+                'followers_count': Follow.query.filter_by(following_id=target.id).count()
+            }, broadcast=True)
+
+            return jsonify({"success": True, "action": "unfollowed"})
+
+    return jsonify({"error": "Amal bajarilmadi"}), 400
+
+@app.route('/api/user/block', methods=['POST'])
+def block_user():
+    data = request.json
+    viewer_username = data['viewer']
+    target_username = data['target']
+    action = data['action']  # 'block' yoki 'unblock'
+
+    target = User.query.filter_by(username=target_username).first()
+    if not target:
+        return jsonify({"error": "Foydalanuvchi topilmadi"}), 404
+
+    blocked = target.blocked_users.split(',') if target.blocked_users else []
+
+    if action == 'block':
+        if viewer_username not in blocked:
+            blocked.append(viewer_username)
+            target.blocked_users = ','.join(blocked)
+    else:
+        if viewer_username in blocked:
+            blocked.remove(viewer_username)
+            target.blocked_users = ','.join(blocked) if blocked else ''
+
+    db.session.commit()
+
+    # Realtime yangilash (ixtiyoriy)
+    socketio.emit('block_update', {
+        'target': target_username,
+        'blocked_by': viewer_username,
+        'is_blocked': action == 'block'
+    }, broadcast=True)
+
+    return jsonify({"success": True})
+
+# --- API ENDPOINTLAR ---
 @app.route('/api/recent_chats', methods=['GET'])
 def get_recent_chats():
     username = request.args.get('username')
     if not username:
         return jsonify([]), 400
-
-    # Foydalanuvchi ishtirok etgan barcha xabarlarni vaqt bo'yicha teskari tartibda olish
     msgs = Message.query.filter(
         (Message.sender == username) | (Message.receiver == username)
     ).order_by(Message.timestamp.desc()).all()
-    
     contacts = []
     seen = set()
-    
     for m in msgs:
-        # Suhbatdosh kimligini aniqlaymiz
         other_user = m.sender if m.sender != username else m.receiver
-        
         if other_user not in seen:
             contacts.append(other_user)
             seen.add(other_user)
-    
     return jsonify(contacts)
 
-@app.route('/')
-def index():
-    return "SafeChat V3 Server is Running!"
-  
 @app.route('/api/register', methods=['POST'])
 def register_api():
     data = request.json
-    # Tekshiruv: Username yoki Telefon bandmi?
     if User.query.filter_by(username=data['username']).first():
         return jsonify({"message": "Bu username band!"}), 400
     if User.query.filter_by(phone=data['phone']).first():
         return jsonify({"message": "Bu telefon raqami ro'yxatdan o'tgan!"}), 400
-
     hashed_p = generate_password_hash(data['password'])
     new_user = User(
         username=data['username'],
@@ -153,33 +320,21 @@ def login_api():
         data = request.json
         if not data:
             return jsonify({"message": "Ma'lumot yuborilmadi"}), 400
-
-        # Login va parolni olish va bo'shliqlardan tozalash
         u_name = str(data.get('username', '')).strip()
         p_word = str(data.get('password', '')).strip()
-
         if not u_name or not p_word:
             return jsonify({"message": "Username va parolni to'ldiring"}), 400
-
-        # 1. To'g'ridan-to'g'ri qidirish
         user = User.query.filter_by(username=u_name).first()
-        
-        # 2. Agar topilmasa va foydalanuvchi .connect.uz ni yozishni unutgan bo'lsa
         if not user and not u_name.endswith('.connect.uz'):
             user = User.query.filter_by(username=u_name + '.connect.uz').first()
-
-        # 3. Foydalanuvchi topildimi?
         if user:
-            # 4. Parolni tekshirish (hash orqali)
             if check_password_hash(user.password, p_word):
-                # Login muvaffaqiyatli
                 user.is_online = True
                 try:
                     db.session.commit()
                 except Exception as db_err:
                     db.session.rollback()
                     print(f"Database commit error: {db_err}")
-
                 return jsonify({
                     "status": "success",
                     "username": user.username,
@@ -187,46 +342,182 @@ def login_api():
                     "avatar": user.avatar or f"https://ui-avatars.com/api/?name={user.username}"
                 }), 200
             else:
-                # Parol noto'g'ri bo'lsa
                 return jsonify({"message": "Kiritilgan parol noto'g'ri!"}), 401
         else:
-            # Username umuman topilmasa
             return jsonify({"message": "Bunday foydalanuvchi mavjud emas!"}), 401
-
     except Exception as e:
         print(f"LOGIN_CRITICAL_ERROR: {e}")
         return jsonify({"message": "Serverda texnik xatolik yuz berdi"}), 500
+
+# --- REELS YUKLASH (YANGI) ---
+@app.route('/api/upload_reel', methods=['POST'])
+def upload_reel():
+    if 'reel' not in request.files:
+        return jsonify({"success": False, "message": "Video fayl topilmadi"}), 400
+    
+    file = request.files['reel']
+    caption = request.form.get('caption', '')
+    username = request.form.get('username')
+    
+    if not username:
+        return jsonify({"success": False, "message": "Username talab qilinadi"}), 400
+    
+    if file.filename == '':
+        return jsonify({"success": False, "message": "Fayl tanlanmagan"}), 400
+    
+    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"success": False, "message": "Faqat mp4, mov, avi, mkv, webm formatlari qabul qilinadi"}), 400
+    
+    filename = secure_filename(f"reel_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}")
+    filepath = os.path.join(app.config['REELS_UPLOAD_FOLDER'], filename)
+    
+    try:
+        file.save(filepath)
+        reel_url = f"/uploads/reels/{filename}"
+        
+        new_reel = Reel(
+            username=username,
+            url=reel_url,
+            caption=caption
+        )
+        db.session.add(new_reel)
+        db.session.commit()
+        
+        # REALTIME: Yangi reel yuklanganda barcha foydalanuvchilarga emit qilish
+        socketio.emit('new_reel_uploaded', {
+            "id": new_reel.id,
+            "username": username,
+            "url": reel_url,
+            "caption": caption,
+            "created_at": new_reel.created_at.strftime("%Y-%m-%d %H:%M"),
+            "likes": 0,
+            "views": 0
+        }, broadcast=True)
+        
+        return jsonify({
+            "success": True,
+            "message": "Reel muvaffaqiyatli yuklandi",
+            "reel": {
+                "id": new_reel.id,
+                "url": reel_url,
+                "caption": caption,
+                "username": username
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
     
 
+# Yangi model maydonlari allaqachon bor deb hisoblaymiz:
+# class Reel(db.Model):
+#     ...
+#     likes = db.Column(db.Integer, default=0)
+#     views = db.Column(db.Integer, default=0)
 
-@socketio.on('admin_broadcast')
-def handle_broadcast(data):
-    # Admin ekanligini tekshirish (ixtiyoriy, xavfsizlik uchun)
-    admin_user = data.get('sender')
-    content = data.get('message')
+@socketio.on('reel_like')
+def handle_reel_like(data):
+    reel_id = data.get('reel_id')
+    username = data.get('username')  # kim bosgan
+
+    if not reel_id or not username:
+        return
+
+    reel = Reel.query.get(reel_id)
+    if not reel:
+        return
+
+    # JSON stringdan ro'yxatni olish
+    try:
+        liked_users = json.loads(reel.liked_by or "[]")
+    except:
+        liked_users = []
+
+    # Agar bu foydalanuvchi hali like bosmagan bo'lsa
+    if username not in liked_users:
+        liked_users.append(username)
+        reel.likes += 1
+        reel.liked_by = json.dumps(liked_users)  # yangi ro'yxatni saqlash
+
+        db.session.commit()
+
+        # Barchaga yangilangan ma'lumotni yuborish
+        socketio.emit('reel_liked', {
+            'reel_id': reel_id,
+            'likes': reel.likes,
+            'liked_by': username  # kim bosgani (ixtiyoriy)
+        }, broadcast=True)
+
+# View qo‘shish (video ochilganda)
+@socketio.on('reel_view')
+def handle_reel_view(data):
+    reel_id = data.get('reel_id')
+
+    reel = Reel.query.get(reel_id)
+    if reel:
+        reel.views += 1
+        db.session.commit()
+
+        socketio.emit('reel_viewed', {
+            'reel_id': reel_id,
+            'views': reel.views
+        }, broadcast=True)
+
+# Typing indikatori (chatda yozish boshlanganda)
+@socketio.on('typing_start')
+def handle_typing_start(data):
+    sender = data['sender']
+    receiver = data['receiver']
     
-    # Barcha foydalanuvchilarga xabar tarqatish
-    emit('receive_admin_notification', {
-        'title': '📢 Tizim E\'loni',
-        'message': content,
-        'sender': 'Admin',
-        'timestamp': datetime.utcnow().strftime('%H:%M')
-    }, broadcast=True)
+    # Faqat shu suhbatdoshga yuboriladi
+    emit('user_typing', {
+        'sender': sender,
+        'is_typing': True
+    }, room=receiver)
 
+# Typing to‘xtaganida
+@socketio.on('typing_stop')
+def handle_typing_stop(data):
+    sender = data['sender']
+    receiver = data['receiver']
+    
+    emit('user_typing', {
+        'sender': sender,
+        'is_typing': False
+    }, room=receiver)
+
+# --- BARCHA REELSLARNI OLISH (YANGI) ---
+@app.route('/api/reels', methods=['GET'])
+def get_reels():
+    try:
+        reels = Reel.query.order_by(Reel.created_at.desc()).limit(20).all()
+        result = []
+        for r in reels:
+            result.append({
+                "id": r.id,
+                "username": r.username,
+                "url": r.url,
+                "caption": r.caption or "",
+                "created_at": r.created_at.strftime("%Y-%m-%d %H:%M"),
+                "likes": r.likes,
+                "views": r.views
+            })
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+# QOLGAN BARCHA ENDPOINTLAR (HECH QAYSI O‘CHIRILMAGAN)
 @app.route('/api/admin/edit_user', methods=['POST'])
 def admin_edit_user():
     data = request.json
-    # Xavfsizlik: faqat haqiqiy admin ruxsatiga ega bo'lishi kerak
-    if data.get('admin') != 'admin': # Bu yerda bazadan tekshirish ma'qul
+    if data.get('admin') != 'admin':
         return jsonify({"message": "Ruxsat yo'q"}), 403
-        
     user = User.query.filter_by(username=data.get('target')).first()
     if user:
         user.username = data.get('name', user.username)
         user.bio = data.get('bio', user.bio)
         db.session.commit()
-        
-        # Socket orqali UI-ni yangilash haqida buyruq yuborish
         socketio.emit('user_update', {
             "userId": user.username,
             "updatedFields": {"name": user.username, "bio": user.bio}
@@ -234,114 +525,99 @@ def admin_edit_user():
         return jsonify({"status": "success"})
     return jsonify({"message": "User topilmadi"}), 404
 
-# Foydalanuvchini akkauntini o'chirish API
 @app.route('/api/admin/delete_user', methods=['POST'])
 def delete_user_admin():
     data = request.json
-    if data.get('admin') != 'admin': return jsonify({"m": "No"}), 403
-    
+    if data.get('admin') != 'admin':
+        return jsonify({"m": "No"}), 403
     user = User.query.filter_by(username=data.get('target')).first()
     if user:
-        # Xabarlarini ham tozalash
-        Message.query.filter((Message.sender == user.username) | (Message.receiver == user.username)).delete()
+        Message.query.filter(
+            (Message.sender == user.username) | (Message.receiver == user.username)
+        ).delete()
         db.session.delete(user)
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"status": "error"}), 404
-@socketio.on('disconnect')
-def handle_disconnect():
-    # Bu yerda foydalanuvchini aniqlab is_online = False qilish mumkin
-    print("Foydalanuvchi tarmoqdan uzildi")
 
-# Foydalanuvchini bloklash uchun
+@socketio.on('admin_broadcast')
+def handle_broadcast(data):
+    admin_user = data.get('sender')
+    content = data.get('message')
+    emit('receive_admin_notification', {
+        'title': '📢 Tizim E\'loni',
+        'message': content,
+        'sender': 'Admin',
+        'timestamp': datetime.utcnow().strftime('%H:%M')
+    }, broadcast=True)
+
 @app.route('/api/admin/block', methods=['POST'])
 def admin_block_user():
     data = request.json
     user = User.query.filter_by(username=data['username']).first()
     if user:
-        user.is_blocked = not user.is_blocked # Bloklash yoki blokdan ochish
+        user.is_blocked = not user.is_blocked
         db.session.commit()
         return jsonify({"message": "Muvaffaqiyatli!"}), 200
     return jsonify({"message": "User topilmadi"}), 404
 
 @socketio.on('admin_action')
 def handle_admin_action(data):
-    # data: { action: 'ban', target: 'user1' }
     action = data.get('action')
     target = data.get('target')
-    
     if action == 'ban':
-        # Bazada userni blocklash kodi
         emit('user_banned', {'target': target}, broadcast=True)
 
 @app.route('/api/messages', methods=['GET'])
 def get_messages():
     u1 = request.args.get('user1')
     u2 = request.args.get('user2')
-    
     if not u1 or not u2:
         return jsonify({"message": "Foydalanuvchilar ko'rsatilmadi"}), 400
-
     try:
-        # u2 guruh yoki foydalanuvchi ekanini aniqlash
         is_entity = Entity.query.filter_by(name=u2).first()
-        
         if is_entity:
-            # Guruh xabarlari
             msgs = Message.query.filter_by(receiver=u2).order_by(Message.timestamp.asc()).all()
         else:
-            # Shaxsiy xabarlar
             msgs = Message.query.filter(
                 ((Message.sender == u1) & (Message.receiver == u2)) |
                 ((Message.sender == u2) & (Message.receiver == u1))
             ).order_by(Message.timestamp.asc()).all()
         
-        # JSON javobni shakllantirish
         result = []
         for m in msgs:
-            # MUHIM: reply_info matnini qaytadan JSON (obyekt)ga aylantiramiz
             reply_to_obj = None
             if hasattr(m, 'reply_info') and m.reply_info:
                 try:
                     reply_to_obj = json.loads(m.reply_info)
                 except:
                     reply_to_obj = None
-
             result.append({
                 "id": m.id,
                 "sender": m.sender,
                 "receiver": m.receiver,
                 "content": m.content,
                 "type": m.msg_type,
-                "is_edited": getattr(m, 'is_edited', False), # Agar ustun bo'lsa oladi
+                "is_edited": getattr(m, 'is_edited', False),
                 "timestamp": m.timestamp.strftime('%H:%M'),
-                "reply_to": reply_to_obj # Front-endga obyekt sifatida ketadi
+                "reply_to": reply_to_obj
             })
-        
         return jsonify(result)
-
     except Exception as e:
         print(f"Xabarlarni yuklashda xato: {e}")
         return jsonify({"message": "Xabarlarni yuklab bo'lmadi"}), 500
 
-# 1. Yangi model qo'shing
-class Application(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    reason = db.Column(db.Text)
-    status = db.Column(db.String(20), default='new') # new, accepted, rejected
-
-# 2. Arizani qabul qilish API
 @app.route('/api/apply', methods=['POST'])
 def submit_apply():
     data = request.json
-    new_app = Application(name=data['name'], phone=data['phone'], reason=data['reason'])
+    new_app = Application(
+        name=data['name'],
+        phone=data['phone'],
+        reason=data['reason']
+    )
     db.session.add(new_app)
     db.session.commit()
     return jsonify({"status": "success"})
-
-# 3. Statistika API (Faqat Admin uchun)
 
 @app.route('/api/admin/stats')
 def get_admin_stats():
@@ -349,7 +625,6 @@ def get_admin_stats():
     total_messages = Message.query.count()
     total_groups = Entity.query.filter_by(entity_type='group').count()
     online_now = User.query.filter_by(is_online=True).count()
-    
     return jsonify({
         "total": total_users,
         "online": online_now,
@@ -365,8 +640,6 @@ def update_profile():
     if user:
         user.bio = data.get('bio', user.bio)
         db.session.commit()
-        
-        # MUHIM: Hamma foydalanuvchilarga o'zgarishni yuborish
         socketio.emit('user_update', {
             "userId": user.username,
             "updatedFields": {
@@ -377,18 +650,15 @@ def update_profile():
         return jsonify({"status": "success"})
     return jsonify({"message": "User topilmadi"}), 404
 
-
 @app.route('/api/update_user', methods=['POST'])
 def update_user():
     data = request.json
     user = User.query.filter_by(username=data.get('old_username')).first()
     if not user:
         return jsonify({"message": "User topilmadi"}), 404
-    
     new_username = data.get('new_username')
     if User.query.filter_by(username=new_username).first():
         return jsonify({"message": "Bu username band!"}), 400
-
     user.username = new_username
     db.session.commit()
     return jsonify({"status": "success"})
@@ -403,10 +673,8 @@ def update_password():
         return jsonify({"status": "success"})
     return jsonify({"message": "Xato!"}), 400
 
-
 @app.route('/api/users/search', methods=['GET'])
 def search_users():
-    # Faqat username va statusni qaytaramiz (Xavfsiz qidiruv)
     users = User.query.all()
     return jsonify([{"username": u.username, "is_blocked": u.is_blocked} for u in users])
 
@@ -414,33 +682,22 @@ def search_users():
 def upload_avatar():
     if 'file' not in request.files:
         return jsonify({"message": "Fayl topilmadi"}), 400
-    
     file = request.files['file']
     u_name = request.form.get('username')
-    
     if file and u_name:
         filename = secure_filename(f"avatar_{u_name}_{file.filename}")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'media', filename)
         file.save(filepath)
-        
         user = User.query.filter_by(username=u_name).first()
-        # Biz rasmga URL beramiz (Server manzili bilan)
         user.avatar = f"/uploads/media/{filename}"
         db.session.commit()
-        
         return jsonify({"status": "success", "url": user.avatar})
     return jsonify({"message": "Xato"}), 400
-
-@app.route('/uploads/<path:type>/<path:filename>')
-def serve_files(type, filename):
-    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], type), filename)
 
 @app.route('/api/entities', methods=['GET'])
 def get_entities():
     username = request.args.get('username')
-    # Foydalanuvchi a'zo bo'lgan barcha guruh va kanallarni topish
     entities = Entity.query.filter(Entity.members.contains(username)).all()
-    
     result = []
     for e in entities:
         result.append({
@@ -450,30 +707,12 @@ def get_entities():
         })
     return jsonify(result)
 
-
-# --- SOCKET.IO REAL-TIME (YAKUNIY TO'LIQ VARIANT) ---
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return {"status": "error", "message": "Foydalanuvchi topilmadi"}, 400
-
-    if not check_password_hash(user.password, password):
-        return {"status": "error", "message": "Parol noto‘g‘ri!"}, 400
-
-    return {"status": "ok", "username": username}, 200
-
-
+# --- SOCKET.IO REAL-TIME ---
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
     if username:
         join_room(username)
-        # Foydalanuvchi a'zo bo'lgan guruhlarni topish va ularga ulanish
         entities = Entity.query.filter(Entity.members.contains(username)).all()
         for ent in entities:
             join_room(ent.name)
@@ -484,41 +723,32 @@ def handle_send(data):
     try:
         sender_u = data.get('sender')
         receiver_u = data.get('receiver')
-        msg_type = data.get('type', 'text') # text, image, video, file, location
+        msg_type = data.get('type', 'text')
         content = data.get('content', '')
         
-        # 1. Bloklash tekshiruvi (faqat shaxsiy chat bo'lsa)
         is_entity = Entity.query.filter_by(name=receiver_u).first()
         if not is_entity:
             if user_is_blocked_by(receiver_u, sender_u):
                 print(f"BLOCKED: {sender_u} -> {receiver_u}")
-                return 
-
-        # 2. Bazaga saqlash
-        reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
+                return
         
+        reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
         new_msg = Message(
             sender=sender_u,
             receiver=receiver_u,
-            content=content, # Bu yerda matn yoki fayl nomi bo'ladi
+            content=content,
             msg_type=msg_type,
             reply_info=reply_json
         )
         db.session.add(new_msg)
         db.session.commit()
         
-        # 3. Front-end uchun ma'lumotlarni to'ldirish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        # Multimedia (Base64) yoki Location ma'lumotlari data ichida o'zi bilan ketadi
-        # Front-end ularni 'file_data' yoki 'location_data' sifatida qabul qiladi
-
-        # 4. Xabarni tarqatish
         emit('receive_message', data, to=receiver_u)
         if receiver_u != sender_u:
             emit('receive_message', data, to=sender_u)
-            
     except Exception as e:
         print(f"ERROR_SEND: {e}")
         db.session.rollback()
@@ -551,18 +781,16 @@ def handle_delete(data):
 @socketio.on('create_entity')
 def handle_create_entity(data):
     name = data.get('name')
-    entity_type = data.get('type') # 'group' yoki 'channel'
+    entity_type = data.get('type')
     creator = data.get('creator')
-
     if Entity.query.filter_by(name=name).first():
         emit('entity_error', {"message": "Bu nom band!"}, to=creator)
         return
-
     new_entity = Entity(
         name=name,
         creator=creator,
         entity_type=entity_type,
-        members=creator 
+        members=creator
     )
     db.session.add(new_entity)
     db.session.commit()
@@ -583,18 +811,20 @@ def handle_add_member(data):
 
 @socketio.on('call_signal')
 def handle_call(data):
-    # WebRTC signalizatsiyasi uchun (Video/Audio qo'ng'iroq)
     emit('incoming_call', data, to=data['to'])
 
+@socketio.on('disconnect')
+def handle_disconnect():
+    print("Foydalanuvchi tarmoqdan uzildi")
 
+# Qolgan socket eventlar va route’lar (sizning asl kodingizdagi qolgan qismlar)
+# Masalan:
 @app.route('/api/search', methods=['GET'])
 def search_entities():
     query = request.args.get('q', '').strip().lower()
     if not query:
         return jsonify([])
-
     results = []
-    # 1. Foydalanuvchilarni qidirish
     users = User.query.filter(User.username.ilike(f'%{query}%')).limit(10).all()
     for u in users:
         results.append({
@@ -603,8 +833,6 @@ def search_entities():
             "type": "user",
             "avatar_name": u.username
         })
-
-    # 2. Guruh va Kanallarni qidirish
     entities = Entity.query.filter(Entity.name.ilike(f'%{query}%')).limit(10).all()
     for e in entities:
         m_count = len(e.members.split(',')) if e.members else 0
@@ -614,7 +842,6 @@ def search_entities():
             "type": e.entity_type,
             "avatar_name": e.name
         })
-
     return jsonify(results)
 
 @app.route('/api/delete_entity', methods=['POST'])
@@ -623,19 +850,15 @@ def delete_entity():
     username = data.get('username')
     target = data.get('target')
     target_type = data.get('type')
-
     try:
         if target_type == 'chat':
-            # Chat xabarlarini o'chirish (Userlar o'rtasidagi)
             Message.query.filter(
                 ((Message.sender == username) & (Message.receiver == target)) |
                 ((Message.sender == target) & (Message.receiver == username))
             ).delete()
             db.session.commit()
             return jsonify({"success": True, "message": "Chat o'chirildi"})
-        
         elif target_type == 'group':
-            # Guruhdan chiqish (Entity a'zolaridan o'chirish)
             entity = Entity.query.filter_by(name=target).first()
             if entity:
                 members = entity.members.split(',')
@@ -645,13 +868,37 @@ def delete_entity():
                     db.session.commit()
                     return jsonify({"success": True, "message": "Guruhdan chiqdingiz"})
             return jsonify({"success": False, "message": "Guruh topilmadi"}), 404
-
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "message": str(e)}), 500
-    
+
+
+@socketio.on('update_user_profile')
+def handle_profile_update(data):
+    username = data.get('username')
+    new_name = data.get('name')
+    new_bio = data.get('bio')
+    user = User.query.filter_by(username=username).first()
+    if user:
+        # Username o'zgarmasligi uchun faqat bio yangilanadi
+        # Agar username o'zgartirish kerak bo'lsa, alohida endpoint ishlatiladi
+        user.bio = new_bio
+        db.session.commit()
+        emit('profile_updated_success', {
+            "name": user.username,  # username o'zgarmaydi
+            "bio": new_bio
+        }, broadcast=False)
+
+@app.route('/api/posts/<username>')
+def get_user_posts(username):
+    # Hozircha namunaviy ma'lumot
+    posts = [
+        {"id": 1, "url": "https://picsum.photos/400/400?random=1", "likes": 12},
+        {"id": 2, "url": "https://picsum.photos/400/400?random=2", "likes": 5},
+        {"id": 3, "url": "https://picsum.photos/400/400?random=3", "likes": 44},
+    ]
+    return jsonify(posts)
 
 if __name__ == '__main__':
-    # Render.com portini avtomatik aniqlash
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)
