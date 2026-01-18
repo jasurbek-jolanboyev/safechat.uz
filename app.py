@@ -640,7 +640,10 @@ def delete_entity():
         return jsonify({"success": False, "message": str(e)}), 500
     
    
-   
+@app.route('/user/<username>')
+def user_profile_page(username):
+    # Bu yo'nalish kelganda ham asosiy index.html ni yuboramiz
+    return send_from_directory('', 'index.html')
 
 if __name__ == '__main__':
     # Render.com portini avtomatik aniqlash

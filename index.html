@@ -2863,21 +2863,21 @@ function openStatusSheet() {
     }
 }
 
-// --- 2. PROFILNI ULASHISH (SHARE/COPY ID) ---
 function copyMyID() {
     const username = localStorage.getItem('username') || "User";
-    const profileLink = `https://safeechat-uz.onrender.com/user/${username.toLowerCase()}`;
+    const mainLink = `https://safeechat-uz.onrender.com`;
+    const profileLink = `${mainLink}/user/${username.toLowerCase()}`;
     
+    const shareText = `Salom, men SafeChat messenjeridan foydalanyapman. Men bilan suhbat qurish uchun profilimga kiring: ${profileLink}\n\nIlovani yuklab olish: ${mainLink}`;
+
     if (navigator.share) {
         navigator.share({
             title: 'SafeChat Profili',
-            text: `${username} Salom, men SafeChat messenjeridan foydalanyapman. Men bilan birga SafeChat orqali suxbat quring! Uni shu yerdan yuklab oling!`,
-            url: profileLink,
+            text: shareText
         }).catch(console.error);
     } else {
-        // Share ishlamasa, clipboard'ga nusxalash
-        navigator.clipboard.writeText(profileLink).then(() => {
-            alert("Profil havolasi nusxalandi: " + profileLink);
+        navigator.clipboard.writeText(shareText).then(() => {
+            alert("Havola va xabar nusxalandi!");
         });
     }
 }
@@ -3366,6 +3366,21 @@ function renderAdminUsers(users) {
         listBody.appendChild(row);
     });
 }
+
+window.addEventListener('load', () => {
+    const path = window.location.pathname; // Masalan: /user/jasurbek
+    if (path.startsWith('/user/')) {
+        const targetUser = path.split('/')[2]; // 'jasurbek' qismini ajratib olish
+        
+        if (targetUser) {
+            console.log("Link orqali profil topildi:", targetUser);
+            // Biroz kutib (server ulanishi uchun), profilni ochish funksiyasini chaqiramiz
+            setTimeout(() => {
+                openFullProfile(targetUser); 
+            }, 1000);
+        }
+    }
+});
 
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
 window.addEventListener('appinstalled', () => {
