@@ -1511,10 +1511,17 @@ function appendMessage(data) {
     box.scrollTop = box.scrollHeight;
 }
 function refreshProfileUI() {
-    const name = localStorage.getItem('username') || 'Foydalanuvchi';
-    const phone = localStorage.getItem('user_phone') || '+998 -- --- -- --';
-    const bio = localStorage.getItem('user_bio') || 'Bio hali yozilmagan...';
+    const name = localStorage.getItem('username');
+    const bio = localStorage.getItem('user_bio');
+    const savedAvatar = localStorage.getItem('user_avatar');
 
+    // Agarda bazada rasm bo'lsa o'shani, bo'lmasa UI-Avatar ishlatadi
+    const avatarUrl = (savedAvatar && savedAvatar !== "null") 
+        ? (savedAvatar.startsWith('http') ? savedAvatar : `${API}${savedAvatar}`)
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
+
+    document.getElementById('profileDisplayPic').src = avatarUrl;
+    document.getElementById('userAvatar').src = avatarUrl;
     // Inputlar
     document.getElementById('editNameInp').value = name;
     document.getElementById('editBioInp').value = bio === 'Bio hali yozilmagan...' ? '' : bio;
@@ -1895,6 +1902,24 @@ function closeAdmin() {
     panel.classList.add('hidden');
 }
 
+async function uploadNewAvatar(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('username', localStorage.getItem('username'));
+
+    const res = await fetch(`${API}/api/upload_avatar`, {
+        method: 'POST',
+        body: formData
+    });
+    
+    const result = await res.json();
+    if(result.status === 'success') {
+        localStorage.setItem('user_avatar', result.url);
+        refreshProfileUI();
+        // Socket avtomatik ravishda 'user_update' yuboradi (Serverdagi funksiyaga qarang)
+    }
+}
+
 // 4. ADMIN LOG QO'SHISH
 function addLog(msg, type = "info") {
     const logContainer = document.getElementById('adminLogs');
@@ -1903,6 +1928,26 @@ function addLog(msg, type = "info") {
     const color = type === "success" ? "text-green-400" : type === "danger" ? "text-red-500" : "text-blue-400";
     logContainer.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
     logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+async function saveProfileChanges() {
+    const updatedData = {
+        username: localStorage.getItem('username'),
+        bio: document.getElementById('editBioInp').value,
+        phone: document.getElementById('user_phone') // Agar tahrirlansa
+    };
+
+    const response = await fetch(`${API}/api/update_profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.ok) {
+        localStorage.setItem('user_bio', updatedData.bio);
+        alert("Ma'lumotlar saqlandi!");
+        refreshProfileUI();
+    }
 }
 
 // 5. ADMIN DATA YUKLASH
@@ -2857,16 +2902,51 @@ function renderProfileUI(user) {
     document.getElementById('fullProfileBio').innerText = user.bio;
 }
 
-// --- 2. SOCKET.IO REAL-TIME YANGILASH ---
-// Serverdan socket.on('user_update') kelsa
-if (typeof socket !== 'undefined') {
-    socket.on('user_update', (data) => {
-        if (currentViewedUser && currentViewedUser.id === data.userId) {
-            currentViewedUser = { ...currentViewedUser, ...data.fields };
-            renderProfileUI(currentViewedUser);
+// 1. Socket orqali real-time yangilanishni eshitish (Yagona va to'liq variant)
+socket.on('user_update', (data) => {
+    console.log("Real-time yangilanish keldi:", data);
+    
+    // A. AGAR PROFIL OYNASI OCHIQ BO'LSA
+    // (currentViewedUser va data.userId orqali tekshiramiz)
+    if (currentViewedUser && (currentViewedUser.id === data.userId || currentViewedUser.username === data.userId)) {
+        // Obyektni yangilaymiz
+        currentViewedUser = { ...currentViewedUser, ...data.updatedFields };
+        
+        // UI elementlarini yangilash
+        if (data.updatedFields.name) document.getElementById('fullProfileName').innerText = data.updatedFields.name;
+        if (data.updatedFields.bio) document.getElementById('fullProfileBio').innerText = data.updatedFields.bio;
+        if (data.updatedFields.phone) document.getElementById('fullProfilePhone').innerText = data.updatedFields.phone;
+        
+        if (data.updatedFields.img) {
+            const fullUrl = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
+            document.getElementById('fullProfileImg').src = fullUrl;
+            document.getElementById('bgBlurImg').src = fullUrl;
+        }
+    }
+
+    // B. CHAT HEADERINI YANGILASH (Tepadagi kichik rasm va ism)
+    const headerImg = document.getElementById('activeChatImg');
+    // data-user-id atributi orqali tekshiramiz
+    if (headerImg && headerImg.getAttribute('data-user-id') === data.userId) {
+        if (data.updatedFields.name) document.getElementById('activeName').innerText = data.updatedFields.name;
+        if (data.updatedFields.img) {
+            headerImg.src = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
+        }
+    }
+
+    // C. CHAT LIST (RO'YXAT)DAGI RASMLARNI YANGILASH
+    // Bu qism ro'yxatda turgan foydalanuvchini ham o'sha zaxoti yangilaydi
+    document.querySelectorAll('.chat-card').forEach(card => {
+        // Chat card ichida ismni topish (h5 tegi)
+        const cardName = card.querySelector('h5').innerText;
+        if (cardName === data.userId) {
+            const img = card.querySelector('img');
+            if (img && data.updatedFields.img) {
+                img.src = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
+            }
         }
     });
-}
+});
 
 // --- 3. TELEFON AMALLARI ---
 function openPhoneActions() {
@@ -2930,26 +3010,6 @@ function renderProfileData(user) {
     document.getElementById('fullProfileUsername').innerText = user.username || "@user";
     document.getElementById('fullProfileBio').innerText = user.bio || "Bio kiritilmagan";
 }
-
-/**
- * 3. SOCKET.IO ORQALI REAL-TIME YANGILANISHNI ESHITISH
- */
-socket.on('user_update', (data) => {
-    // data = { userId: "123", updatedFields: { name: "Yangi Ism", img: "yangi_url", ... } }
-    
-    // Agar hozirda shu foydalanuvchining profili ochiq bo'lsa
-    if (currentViewedUser && currentViewedUser.id === data.userId) {
-        currentViewedUser = { ...currentViewedUser, ...data.updatedFields };
-        renderProfileData(currentViewedUser); // Profil oynasini yangilash
-    }
-
-    // Chat headerini ham yangilash
-    const headerImg = document.getElementById('activeChatImg');
-    if (headerImg && headerImg.getAttribute('data-user-id') === data.userId) {
-        if (data.updatedFields.name) document.getElementById('activeName').innerText = data.updatedFields.name;
-        if (data.updatedFields.img) headerImg.src = data.updatedFields.img;
-    }
-});
 
 
 // Rasmni yuklab olish

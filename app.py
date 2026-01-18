@@ -309,17 +309,26 @@ def get_admin_stats():
         "online": online_now,
         "server_time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     })
-# --- FOYDALANUVCHI MA'LUMOTLARINI YANGILASH ---
+
 @app.route('/api/update_profile', methods=['POST'])
 def update_profile():
     data = request.json
     user = User.query.filter_by(username=data['username']).first()
     if user:
         user.bio = data.get('bio', user.bio)
-        # Boshqa ma'lumotlarni yangilash...
         db.session.commit()
+        
+        # MUHIM: Hamma foydalanuvchilarga o'zgarishni yuborish
+        socketio.emit('user_update', {
+            "userId": user.username,
+            "updatedFields": {
+                "bio": user.bio,
+                "name": user.username
+            }
+        })
         return jsonify({"status": "success"})
     return jsonify({"message": "User topilmadi"}), 404
+
 
 @app.route('/api/update_user', methods=['POST'])
 def update_user():
