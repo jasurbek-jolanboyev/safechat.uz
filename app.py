@@ -188,20 +188,55 @@ def login_api():
     
 
 
-@app.route('/api/admin/users', methods=['GET'])
-def admin_get_users():
-    # Bu yerda admin ekanligini tekshirish (auth) qo'shish tavsiya etiladi
-    users = User.query.all()
-    output = []
-    for user in users:
-        output.append({
-            "name": user.username,
-            "status": "ONLINE" if user.is_online else "OFFLINE",
-            "is_blocked": user.is_blocked,
-            "phone": user.phone
-        })
-    return jsonify(output)
+@socketio.on('admin_broadcast')
+def handle_broadcast(data):
+    # Admin ekanligini tekshirish (ixtiyoriy, xavfsizlik uchun)
+    admin_user = data.get('sender')
+    content = data.get('message')
+    
+    # Barcha foydalanuvchilarga xabar tarqatish
+    emit('receive_admin_notification', {
+        'title': '📢 Tizim E\'loni',
+        'message': content,
+        'sender': 'Admin',
+        'timestamp': datetime.utcnow().strftime('%H:%M')
+    }, broadcast=True)
 
+@app.route('/api/admin/edit_user', methods=['POST'])
+def admin_edit_user():
+    data = request.json
+    # Xavfsizlik: faqat haqiqiy admin ruxsatiga ega bo'lishi kerak
+    if data.get('admin') != 'admin': # Bu yerda bazadan tekshirish ma'qul
+        return jsonify({"message": "Ruxsat yo'q"}), 403
+        
+    user = User.query.filter_by(username=data.get('target')).first()
+    if user:
+        user.username = data.get('name', user.username)
+        user.bio = data.get('bio', user.bio)
+        db.session.commit()
+        
+        # Socket orqali UI-ni yangilash haqida buyruq yuborish
+        socketio.emit('user_update', {
+            "userId": user.username,
+            "updatedFields": {"name": user.username, "bio": user.bio}
+        })
+        return jsonify({"status": "success"})
+    return jsonify({"message": "User topilmadi"}), 404
+
+# Foydalanuvchini akkauntini o'chirish API
+@app.route('/api/admin/delete_user', methods=['POST'])
+def delete_user_admin():
+    data = request.json
+    if data.get('admin') != 'admin': return jsonify({"m": "No"}), 403
+    
+    user = User.query.filter_by(username=data.get('target')).first()
+    if user:
+        # Xabarlarini ham tozalash
+        Message.query.filter((Message.sender == user.username) | (Message.receiver == user.username)).delete()
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 404
 @socketio.on('disconnect')
 def handle_disconnect():
     # Bu yerda foydalanuvchini aniqlab is_online = False qilish mumkin
@@ -299,15 +334,17 @@ def submit_apply():
 
 @app.route('/api/admin/stats')
 def get_admin_stats():
-    # Faqat ma'lum raqam uchun ruxsat berish xavfsizlikni kuchaytiradi
     total_users = User.query.count()
+    total_messages = Message.query.count()
+    total_groups = Entity.query.filter_by(entity_type='group').count()
     online_now = User.query.filter_by(is_online=True).count()
-    # Ma'lumotlar bazasida Application modeli bo'lsa:
-    # pending_apps = Application.query.filter_by(status='pending').count()
+    
     return jsonify({
         "total": total_users,
         "online": online_now,
-        "server_time": datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+        "messages": total_messages,
+        "groups": total_groups,
+        "server_time": datetime.utcnow().strftime('%H:%M:%S')
     })
 
 @app.route('/api/update_profile', methods=['POST'])

@@ -11,6 +11,26 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
+.admin-card-v2 {
+    background: #161b22;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.admin-stat-card {
+    background: linear-gradient(145deg, #1c2128, #161b22);
+    padding: 20px;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.btn-icon {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; transition: all 0.2s;
+}
 /* =========================================================
    0. ROOT VA ASOSIY SOZLAMALAR
 ========================================================= */
@@ -612,17 +632,78 @@ body, html {
     </div>
 </div>
 
-<div id="adminPanel" class="hidden fixed inset-0 z-[6000] bg-black text-green-400 font-mono p-4 md:p-8 overflow-y-auto" style="display: none;">
-    <div class="flex justify-between items-center border-b border-green-700 pb-4 mb-6">
-        <div>
-            <h2 class="text-2xl font-bold tracking-widest text-green-500">SAFECHAT_OS_v2.0</h2>
-            <p class="text-[10px] opacity-70">ROOT_ACCESS: GRANTED</p>
+<div id="adminPanel" class="hidden fixed inset-0 z-[9999] bg-[#0b0e14] text-white overflow-y-auto font-sans">
+    <div class="sticky top-0 z-10 bg-[#0b0e14]/80 backdrop-blur-xl border-b border-white/10 p-4 md:p-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-headset text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tighter">SAFECHAT HQ</h1>
+                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Super Admin Console v4.0</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="broadcastPrompt()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-bullhorn"></i> GLOBAL XABAR
+                </button>
+                <button onclick="document.getElementById('adminPanel').classList.add('hidden')" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-bold transition-all">YOPISH</button>
+            </div>
         </div>
-        <button onclick="closeAdmin()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded shadow-lg text-sm">TERMINATE_SESSION</button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10" id="adminStatsGrid">
+            </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="admin-card-v2">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-black text-lg flex items-center gap-2 italic">
+                            <i class="fa-solid fa-users-gear text-blue-500"></i> FOYDALANUVCHILARNI BOSHQARISH
+                        </h3>
+                        <input type="text" id="adminUserSearch" placeholder="Qidirish..." oninput="filterAdminUsers()" 
+                               class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 w-48">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-separate border-spacing-y-2">
+                            <thead class="text-slate-500 text-[10px] font-black uppercase">
+                                <tr>
+                                    <th class="px-4 py-2">Profil</th>
+                                    <th class="px-4 py-2">Status</th>
+                                    <th class="px-4 py-2">Telefon</th>
+                                    <th class="px-4 py-2 text-right">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUserListV2">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="admin-card-v2">
+                    <h3 class="font-black text-lg mb-6 flex items-center gap-2 italic">
+                        <i class="fa-solid fa-layer-group text-purple-500"></i> GURUHLAR VA KANALLAR
+                    </h3>
+                    <div id="adminEntityList" class="space-y-3">
+                        </div>
+                </div>
+
+                <div class="admin-card-v2 bg-gradient-to-br from-red-900/20 to-transparent border-red-500/20">
+                    <h3 class="font-black text-sm mb-4 text-red-500 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i> XAVFLI HUDUD
+                    </h3>
+                    <button onclick="factoryResetServer()" class="w-full py-3 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-600/20 transition-all">
+                        Serverni tozalash (Reset)
+                    </button>
+                </div>
+            </div>
         </div>
+    </div>
 </div>
 
 <div id="applySheet" class="ios-sheet">
@@ -1920,6 +2001,7 @@ async function uploadNewAvatar(file) {
     }
 }
 
+
 // 4. ADMIN LOG QO'SHISH
 function addLog(msg, type = "info") {
     const logContainer = document.getElementById('adminLogs');
@@ -2784,12 +2866,12 @@ function openStatusSheet() {
 // --- 2. PROFILNI ULASHISH (SHARE/COPY ID) ---
 function copyMyID() {
     const username = localStorage.getItem('username') || "User";
-    const profileLink = `https://safechat.uz/user/${username.toLowerCase()}`;
+    const profileLink = `https://safeechat-uz.onrender.com/user/${username.toLowerCase()}`;
     
     if (navigator.share) {
         navigator.share({
             title: 'SafeChat Profili',
-            text: `${username} bilan SafeChat'da bog'laning!`,
+            text: `${username} Salom, men Telegramdan foydalanyapman. Menga qoʻshiling! Uni shu yerdan yuklab oling!`,
             url: profileLink,
         }).catch(console.error);
     } else {
@@ -3133,6 +3215,157 @@ function switchMediaTab(type, btn) {
     // TODO: load media/files/links based on tab
     console.log("Active Tab:", tab);
   }
+
+  /**
+ * 1. ADMIN PANELNI OCHISH VA MA'LUMOTLARNI TAHLIL QILISH
+ */
+async function openAdminPanelV2() {
+    const adminUser = localStorage.getItem('username');
+    document.getElementById('adminPanel').classList.remove('hidden');
+
+    // Stats
+    const stats = await (await fetch(`${API}/api/admin/stats?username=${adminUser}`)).json();
+    renderAdminStats(stats);
+
+    // Users
+    const users = await (await fetch(`${API}/api/admin/users?username=${adminUser}`)).json();
+    renderAdminUsers(users);
+
+    // Groups
+    loadAdminEntities();
+}
+
+function renderAdminStats(stats) {
+    const grid = document.getElementById('adminStatsGrid');
+    const items = [
+        { label: 'Jami Userlar', val: stats.total, color: 'text-blue-500', icon: 'fa-users' },
+        { label: 'Hozir Online', val: stats.online, color: 'text-green-500', icon: 'fa-signal' },
+        { label: 'Xabarlar soni', val: stats.messages, color: 'text-purple-500', icon: 'fa-message' },
+        { label: 'Barcha Guruhlar', val: stats.groups, color: 'text-orange-500', icon: 'fa-folder' }
+    ];
+    grid.innerHTML = items.map(i => `
+        <div class="admin-stat-card">
+            <div class="flex items-center gap-3 mb-2">
+                <i class="fa-solid ${i.icon} ${i.color} text-xs"></i>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${i.label}</span>
+            </div>
+            <div class="text-3xl font-black">${i.val}</div>
+        </div>
+    `).join('');
+}
+
+
+async function adminEditUser(username) {
+    const newName = prompt(`${username} uchun yangi ism kiriting:`);
+    const newBio = prompt(`Yangi bio:`);
+    if(!newName) return;
+
+    const res = await fetch(`${API}/api/admin/edit_user`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ 
+            admin: localStorage.getItem('username'),
+            target: username,
+            name: newName,
+            bio: newBio
+        })
+    });
+    if(res.ok) { alert("O'zgartirildi!"); openAdminPanelV2(); }
+}
+
+function broadcastPrompt() {
+    const msg = prompt("Barcha foydalanuvchilarga nima deb xabar yubormoqchisiz?");
+    if(msg) {
+        socket.emit('admin_broadcast', {
+            message: msg,
+            sender: 'Tizim Mamuri'
+        });
+        alert("Xabar yuborildi!");
+    }
+}
+
+
+async function adminDeleteUser(username) {
+    if(!confirm(`${username} akkauntini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!`)) return;
+
+    const res = await fetch(`${API}/api/admin/delete_user`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ 
+            admin: localStorage.getItem('username'),
+            target: username
+        })
+    });
+    if(res.ok) { alert("Akkaunt o'chirildi!"); openAdminPanelV2(); }
+}
+
+/**
+ * ADMIN YUBORGAN GLOBAL XABARNI QABUL QILISH
+ */
+socket.on('receive_admin_notification', (data) => {
+    console.log("Admin e'loni:", data);
+
+    // 1. Ovozli bildirishnoma (ixtiyoriy)
+    // new Audio('/static/sounds/notification.mp3').play();
+
+    // 2. Ekranda chiroyli Modal/Alert chiqarish
+    const announcementHTML = `
+        <div id="globalNotice" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl transform transition-all scale-100 animate-in fade-in zoom-in duration-300">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto text-2xl">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <h3 class="text-xl font-black text-center mb-2">${data.title}</h3>
+                <p class="text-gray-600 text-center mb-8 leading-relaxed">${data.message}</p>
+                <button onclick="document.getElementById('globalNotice').remove()" 
+                        class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors">
+                    Tushundim
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', announcementHTML);
+});
+
+function renderAdminUsers(users) {
+    const listBody = document.getElementById('adminUserListV2');
+    listBody.innerHTML = '';
+
+    users.forEach(u => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
+        row.innerHTML = `
+            <td class="px-4 py-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400">
+                        ${u.name[0].toUpperCase()}
+                    </div>
+                    <span class="font-bold">${u.name}</span>
+                </div>
+            </td>
+            <td class="px-4 py-4">
+                <span class="text-xs ${u.status === 'ONLINE' ? 'text-green-400' : 'text-slate-500'} font-bold">
+                    ● ${u.status}
+                </span>
+            </td>
+            <td class="px-4 py-4 text-slate-400 text-xs">${u.phone || '—'}</td>
+            <td class="px-4 py-4 text-right">
+                <div class="flex justify-end gap-2">
+                    <button onclick="adminEditUser('${u.name}')" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all">
+                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    </button>
+                    <button onclick="toggleBlockUser('${u.name}')" class="w-8 h-8 rounded-lg ${u.is_blocked ? 'bg-green-500' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'} transition-all">
+                        <i class="fa-solid ${u.is_blocked ? 'fa-unlock' : 'fa-ban'} text-xs"></i>
+                    </button>
+                    <button onclick="adminDeleteUser('${u.name}')" class="w-8 h-8 rounded-lg bg-red-900/20 text-red-700 hover:bg-red-700 hover:text-white transition-all">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        listBody.appendChild(row);
+    });
+}
 
 // Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
 window.addEventListener('appinstalled', () => {
