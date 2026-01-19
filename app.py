@@ -919,6 +919,27 @@ def get_user_posts(username):
     ]
     return jsonify(posts)
 
+@app.route('/api/logout', methods=['POST'])
+def logout_api():
+    data = request.json
+    username = data.get('username')
+    
+    if username:
+        user = User.query.filter_by(username=username).first()
+        if user:
+            user.is_online = False
+            db.session.commit()
+            
+            # Socket.io dan disconnect (ixtiyoriy, lekin yaxshi)
+            try:
+                socketio.emit('user_disconnected', {'username': username}, broadcast=True)
+            except:
+                pass  # Agar socket ishlamasa, xato bermaydi
+            
+            return jsonify({"success": True, "message": "Muvaffaqiyatli tizimdan chiqdingiz"})
+    
+    return jsonify({"success": False, "message": "Username topilmadi"}), 400
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
     socketio.run(app, host='0.0.0.0', port=port)

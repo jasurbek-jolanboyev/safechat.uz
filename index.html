@@ -457,176 +457,120 @@ body, html {
         <div id="groupsTab" class="tab-content hidden p-4 space-y-2">
             <div id="groupList" class="space-y-1"></div>
         </div>
-<div id="reelsTab" class="tab-content hidden p-4 space-y-2">
-            <div id="reelsList" class="space-y-4">
-                <div class="text-center py-20 text-gray-500">
-                    <i class="fa-solid fa-video-slash text-6xl mb-6 opacity-50"></i><br>
-                    Reels bo‘limi tez orada ishga tushadi...
-                </div>
-            </div>
-        </div>
-<div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
-    <div class="flex items-center justify-between px-5 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-[100] border-b border-gray-100">
-        <button onclick="toggleSettingsMenu(true)" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
-            <i class="fa-solid fa-bars-staggered text-gray-700"></i>
-        </button>
-        <div class="text-center">
-            <h2 id="profileName" class="text-[17px] font-black text-gray-900 leading-tight">Loading...</h2>
-            <p id="profileUsername" class="text-[11px] text-blue-600 font-bold tracking-wide uppercase">@username</p>
-        </div>
-        <!-- Edit tugmasi saqlanadi -->
-        <button onclick="openEditModal()" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition text-blue-600">
-            <i class="fa-solid fa-user-pen"></i>
-        </button>
-    </div>
 
-    <div class="flex flex-col items-center py-8 bg-white border-b border-gray-200">
+        <!-- PROFILE TAB (TO‘G‘RI JOYDA!) -->
+       <div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="flex flex-col items-center py-10 bg-white border-b border-gray-200">
         <div class="relative group">
-            <div class="absolute inset-0 bg-blue-500/10 rounded-full scale-110 animate-pulse"></div>
             <img id="profileAvatar" src="https://ui-avatars.com/api/?name=U" 
-                class="w-28 h-28 rounded-full shadow-2xl object-cover border-4 border-white relative z-10 cursor-pointer transition active:scale-95"
+                class="w-28 h-28 rounded-full shadow-lg object-cover border-4 border-white cursor-pointer transition active:scale-95"
                 onclick="triggerAvatarUpload()">
-            <div class="absolute bottom-1 right-1 bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center border-4 border-white text-white text-xs z-20 shadow-lg">
+            <div class="absolute bottom-0 right-0 bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white text-xs">
                 <i class="fa-solid fa-camera"></i>
             </div>
             <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="handleAvatarSelection(event)">
         </div>
 
-        <div class="flex w-full max-w-sm justify-around mt-8 px-4">
-            <div class="text-center group cursor-pointer">
-                <p id="countPosts" class="text-xl font-black text-gray-900">0</p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Postlar</p>
-            </div>
-            <div class="w-[1px] h-8 bg-gray-100 self-center"></div>
-            <div class="text-center group cursor-pointer">
-                <p id="countFollowers" class="text-xl font-black text-gray-900">0</p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Followers</p>
-            </div>
-            <div class="w-[1px] h-8 bg-gray-100 self-center"></div>
-            <div class="text-center group cursor-pointer">
-                <p id="countFollowing" class="text-xl font-black text-gray-900">0</p>
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Following</p>
-            </div>
-        </div>
+        <h2 id="profileName" class="mt-4 text-2xl font-black text-gray-900 leading-tight">Loading...</h2>
+        <p id="profileUsername" class="text-blue-600 font-bold text-sm tracking-wide">@username</p>
         
-        <div onclick="openStatusSheet()" class="mt-6 px-6 py-2 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition border border-gray-100">
-            <span id="profileStatusDisplay" class="text-xs text-gray-500 font-bold italic tracking-tight">Status o'rnatish...</span>
+        <div onclick="openStatusSheet()" class="mt-2 px-4 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition">
+            <span id="profileStatusDisplay" class="text-xs text-gray-500 italic font-medium">Status o'rnatish...</span>
         </div>
 
-        <div class="flex gap-3 mt-6">
-            <button onclick="copyMyID()" class="px-6 py-2.5 bg-white text-gray-700 rounded-xl shadow-sm border border-gray-200 font-bold active:scale-95 transition text-sm flex items-center gap-2">
-                <i class="fa-solid fa-share-nodes text-blue-500"></i> Share
+        <div class="flex gap-2 mt-5">
+            <button onclick="switchTab('settings')" class="px-8 py-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 font-bold active:scale-95 transition text-sm">
+                Edit Profile
+            </button>
+            <button onclick="copyMyID()" class="px-4 py-2.5 bg-white text-gray-700 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition">
+                <i class="fa-solid fa-share-nodes"></i>
             </button>
         </div>
     </div>
 
-    <div class="mt-2 grid grid-cols-3 gap-[2px] bg-gray-200">
-        <div class="aspect-square bg-white flex items-center justify-center group cursor-pointer overflow-hidden">
-            <img src="https://picsum.photos/400/400?random=1" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-        </div>
-        <div class="aspect-square bg-white flex items-center justify-center group cursor-pointer overflow-hidden">
-            <img src="https://picsum.photos/400/400?random=2" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-        </div>
-        <div class="aspect-square bg-white flex items-center justify-center group cursor-pointer overflow-hidden">
-            <img src="https://picsum.photos/400/400?random=3" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
-        </div>
-    </div>
-</div>
-
-<div id="settingsMenu" class="fixed inset-0 z-[5001] hidden overflow-hidden">
-    <div id="settingsBackdrop" class="absolute inset-0 bg-black/30 opacity-0 transition-opacity duration-300" onclick="toggleSettingsMenu(false)"></div>
-    <div id="settingsContent" class="absolute left-0 top-0 bottom-0 w-[80%] max-w-[320px] bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 flex flex-col">
-        <div class="p-6 border-b border-gray-50">
-            <h3 class="text-2xl font-black text-gray-900">Sozlamalar</h3>
-        </div>
-        <div class="flex-1 overflow-y-auto py-4 space-y-1">
-            <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer group">
-                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-user-shield"></i></div>
-                <span class="font-bold text-gray-700">Akkaunt xavfsizligi</span>
-            </div>
-            <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer group">
-                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bell"></i></div>
-                <span class="font-bold text-gray-700">Bildirishnomalar</span>
-            </div>
-            <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer group">
-                <div class="w-10 h-10 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-globe"></i></div>
-                <span class="font-bold text-gray-700">Til (Language)</span>
-            </div>
-            <div class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer">
+    <div class="mt-6 space-y-4 px-4">
+        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
+            <div onclick="alert('Saqlangan xabarlar tez kunda!')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 transition cursor-pointer">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center"><i class="fa-solid fa-moon"></i></div>
-                    <span class="font-bold text-gray-700">Tungi rejim</span>
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bookmark"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Saqlangan xabarlar</span>
                 </div>
-                <input type="checkbox" onchange="toggleDarkMode(this)" class="w-5 h-5 accent-blue-600">
+                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+            </div>
+
+            <div onclick="unlockHiddenChats()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-eye-slash"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Yashirin chatlar</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i id="lockStatusIcon" class="fa-solid fa-lock text-gray-300 text-xs"></i>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
             </div>
         </div>
-        <div class="p-6 border-t border-gray-50">
-            <button onclick="logout()" class="w-full py-4 bg-red-50 text-red-600 rounded-2xl font-black transition active:scale-95">
-                Hisobdan chiqish
-            </button>
+
+        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
+            <div onclick="openDeviceSheet()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-laptop"></i></div>
+                    <span class="font-bold text-gray-800 text-sm">Faol seanslar (Devices)</span>
+                </div>
+                <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full">3 active</span>
+            </div>
         </div>
     </div>
 </div>
-<div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
-    <div class="flex items-center justify-between px-5 py-4 bg-white border-b sticky top-0 z-50">
-        <button onclick="toggleSettingsMenu(true)" class="text-xl"><i class="fa-solid fa-bars-staggered"></i></button>
-        <h2 id="profileNameHeader" class="font-black text-gray-900">Profil</h2>
-        <button onclick="openEditModal()" class="text-blue-600 font-bold">Edit</button>
-    </div>
 
-    <div class="flex flex-col items-center py-8 bg-white border-b">
-        <div class="relative">
-            <img id="profileAvatar" src="" class="w-24 h-24 rounded-full border-4 border-blue-50 object-cover shadow-lg">
-            <label class="absolute bottom-0 right-0 bg-blue-600 text-white p-1.5 rounded-full cursor-pointer border-2 border-white">
-                <i class="fa-solid fa-camera text-[10px]"></i>
-                <input type="file" id="avatarInput" class="hidden" onchange="uploadAvatar(event)">
-            </label>
+<div id="settingsTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="px-4 pt-8 space-y-6">
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Hisob ma'lumotlari</p>
+            <div onclick="editField('Name')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Ism</span>
+                <span id="settingsName" class="text-gray-400 text-sm font-medium">Loading...</span>
+            </div>
+            <div onclick="editField('Username')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Username</span>
+                <span id="settingsUsername" class="text-blue-500 text-sm font-bold">@username</span>
+            </div>
+            <div onclick="editField('Bio')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Bio</span>
+                <span id="settingsBio" class="text-gray-400 text-sm italic">No bio</span>
+            </div>
         </div>
-        <h2 id="profileFullName" class="mt-4 text-xl font-black text-gray-900">Ism Familiya</h2>
-        <p id="profileUsernameDisplay" class="text-blue-600 font-bold text-xs uppercase tracking-widest">@username</p>
-        <p id="profileBioDisplay" class="mt-2 text-gray-500 text-sm px-10 text-center">Bio loading...</p>
-    </div>
 
-    <div class="flex justify-around bg-white py-4 border-b">
-        <div class="text-center" onclick="showUserPosts()">
-            <p id="countPosts" class="font-black text-lg">0</p>
-            <p class="text-[10px] text-gray-400 font-bold uppercase">Postlar</p>
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Xavfsizlik</p>
+            <div onclick="openTwoFASheet()" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">2-Step Verification</span>
+                <span id="twoFAStatusLabel" class="text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg">OFF</span>
+            </div>
+            <div onclick="openSheet('hiddenPinSheet')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
+                <span class="font-bold text-gray-700 text-sm">Hidden Chats PIN</span>
+                <i class="fa-solid fa-key text-gray-300"></i>
+            </div>
         </div>
-        <div class="text-center">
-            <p id="countFollowers" class="font-black text-lg">0</p>
-            <p class="text-[10px] text-gray-400 font-bold uppercase">Followers</p>
-        </div>
-        <div class="text-center">
-            <p id="countFollowing" class="font-black text-lg">0</p>
-            <p class="text-[10px] text-gray-400 font-bold uppercase">Following</p>
-        </div>
-    </div>
 
-    <div id="userPostsGrid" class="grid grid-cols-3 gap-0.5 mt-1 bg-gray-200">
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex items-center justify-between p-4 border-b border-gray-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-moon"></i></div>
+                    <span class="font-bold text-gray-700 text-sm">Tungi rejim</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" onchange="toggleDarkMode(this)" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
+                </label>
+            </div>
         </div>
+
+        <button onclick="logout()" class="w-full py-4 bg-white text-red-600 rounded-2xl font-black shadow-sm active:scale-[0.98] transition border border-red-50 mt-4 mb-10">
+            Hisobdan chiqish
+        </button>
+    </div>
 </div>
 
-<div id="editProfileModal" class="fixed inset-0 z-[6000] hidden bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-[32px] overflow-hidden animate-slide-up">
-        <div class="p-6 border-b flex justify-between items-center">
-            <h3 class="text-xl font-black">Edit Profile</h3>
-            <button onclick="closeEditModal()" class="text-gray-400 text-2xl">&times;</button>
-        </div>
-        <div class="p-6 space-y-4">
-            <div>
-                <label class="text-[11px] font-black text-gray-400 uppercase ml-2">To'liq ism</label>
-                <input type="text" id="editFullName" class="w-full bg-gray-50 border-none rounded-2xl p-4 mt-1 focus:ring-2 focus:ring-blue-500 transition-all">
-            </div>
-            <div>
-                <label class="text-[11px] font-black text-gray-400 uppercase ml-2">Bio</label>
-                <textarea id="editBio" class="w-full bg-gray-50 border-none rounded-2xl p-4 mt-1 h-24 focus:ring-2 focus:ring-blue-500 transition-all"></textarea>
-            </div>
-            <button onclick="saveProfileChanges()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 active:scale-95 transition">
-                Saqlash
-            </button>
-        </div>
-    </div>
-</div>
     <!-- BOTTOM NAVBAR -->
     <div class="fixed bottom-5 left-0 right-0 px-5 pb-[env(safe-area-inset-bottom,24px)] pt-6 z-50 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none">
         <nav class="pointer-events-auto bg-white/70 backdrop-blur-[25px] border border-white/40 rounded-[38px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] p-2 flex justify-around items-center relative overflow-hidden ring-1 ring-black/[0.03]">
@@ -644,14 +588,14 @@ body, html {
             </button>
 
             <div class="flex items-center justify-center px-2">
-               <button onclick="openSheet('uploadReelSheet')" class="flex items-center justify-center w-[54px] h-[54px] bg-[#007aff] rounded-full shadow-[0_8px_20px_rgba(0,122,255,0.3)] z-20 active:scale-[0.85] transition-all duration-300 hover:brightness-110">
+                <button onclick="openSheet('createEntitySheet')" class="flex items-center justify-center w-[54px] h-[54px] bg-[#007aff] rounded-full shadow-[0_8px_20px_rgba(0,122,255,0.3)] z-20 active:scale-[0.85] transition-all duration-300 hover:brightness-110">
                     <i class="fa-solid fa-plus text-white text-2xl"></i>
-               </button>
+                </button>
             </div>
 
-            <button id="nav-reels" onclick="switchTab('reels')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-                <i class="fa-solid fa-video text-[22px]"></i>
-                <span class="text-[10px] mt-1 font-semibold tracking-tight">Reels</span>
+            <button id="nav-settings" onclick="switchTab('settings')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+                <i class="fa-solid fa-gears text-[22px]"></i>
+                <span class="text-[10px] mt-1 font-semibold tracking-tight">Sozlamalar</span>
             </button>
 
             <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
@@ -672,7 +616,7 @@ body, html {
                     <img id="activeChatImg" src="" class="w-11 h-11 rounded-full object-cover">
                     <div onclick="openUserMenu()">
                         <h4 id="activeName" class="font-bold text-[17px]">Suhbatdosh</h4>
-                       <p id="activeStatus" class="text-xs text-blue-500">online</p>
+                        <p class="text-xs text-blue-500">online</p>
                     </div>
                 </div>
                 <div class="flex gap-5 text-blue-600 text-xl">
@@ -683,10 +627,7 @@ body, html {
             </header>
 
             <div id="msgBox" class="flex-1 overflow-y-auto p-6 flex flex-col no-scrollbar bg-[#f2f2f7]"></div>
-            <!-- chat header ichiga yoki msgBox dan oldin -->
-            <div id="typingIndicator" class="hidden text-blue-500 text-sm italic px-4 py-2">
-                <span id="typingUser"></span> yozmoqda...
-            </div>
+
             <footer id="chatFooter" class="p-4 pb-10 flex items-center gap-3 glass-panel">
                 <i class="fa-solid fa-plus text-blue-600 text-2xl cursor-pointer" onclick="openSheet('mediaSheet')"></i>
                 <input type="text" id="msgInp" onkeypress="handleEnter(event)" placeholder="Xabar yozing..." class="flex-1 p-3 bg-gray-100 rounded-[24px] outline-none border-0 focus:ring-2 focus:ring-blue-100 transition">
@@ -776,36 +717,7 @@ body, html {
         <div id="mediaDisplayArea" class="max-w-full max-h-full"></div>
     </div>
 </div>
-<!-- YANGILANGAN: Reels yuklash oynasi (bir nechta fayl tanlash mumkin) -->
-<div id="uploadReelSheet" class="ios-sheet h-[80%]">
-    <div class="sheet-handle"></div>
-    <div class="p-6">
-        <h2 class="text-2xl font-black mb-6 text-center">Yangi Reel/Post yuklash</h2>
-        
-        <!-- Oldindan ko‘rish maydoni (bir nechta fayl uchun grid) -->
-        <div id="reelPreviewGrid" class="grid grid-cols-3 gap-3 mb-6 max-h-80 overflow-y-auto">
-            <!-- Fayllar shu yerga dinamik qo‘shiladi -->
-        </div>
 
-        <!-- Yuklash tugmasi -->
-        <label for="reelFileInput" class="block w-full py-5 bg-blue-600 text-white rounded-2xl text-center font-bold text-lg cursor-pointer hover:bg-blue-700 transition active:scale-95 mb-4 shadow-lg">
-            <i class="fa-solid fa-images mr-2"></i> Rasm yoki Video tanlash (bir nechta mumkin)
-        </label>
-        <input type="file" id="reelFileInput" accept="image/*,video/*" multiple class="hidden" onchange="previewMultipleReels(this)">
-
-        <!-- Tavsif -->
-        <textarea id="reelCaption" placeholder="Tavsif yozing... (ixtiyoriy)" class="w-full p-4 bg-gray-100 rounded-2xl outline-none resize-none h-24 mb-6 focus:ring-2 focus:ring-blue-400 transition"></textarea>
-
-        <!-- Yuklash tugmasi -->
-        <button onclick="uploadMultipleReels()" class="w-full py-5 bg-green-600 text-white rounded-2xl font-bold text-lg hover:bg-green-700 transition active:scale-95 shadow-lg">
-            <i class="fa-solid fa-cloud-upload-alt mr-2"></i> Yuklash
-        </button>
-
-        <button onclick="closeSheet('uploadReelSheet')" class="w-full mt-4 py-4 text-gray-600 font-medium">
-            Bekor qilish
-        </button>
-    </div>
-</div>
 <div id="adminPanel" class="hidden fixed inset-0 z-[9999] bg-[#0b0e14] text-white overflow-y-auto font-sans">
     <div class="sticky top-0 z-10 bg-[#0b0e14]/80 backdrop-blur-xl border-b border-white/10 p-4 md:p-6">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
@@ -961,109 +873,81 @@ body, html {
     </div>
   </div>
 
-<!-- FULL USER PROFILE OVERLAY -->
-<div id="fullUserProfile" class="fixed inset-0 z-[9999] bg-white/90 hidden flex-col animate-slide-up overflow-hidden backdrop-blur-lg">
-  <!-- HEADER -->
-  <div class="relative w-full h-[40vh] bg-gray-900 flex items-center justify-center overflow-hidden">
-    <img id="bgBlurImg" src="" class="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40">
-    <div id="profileCircle" class="relative w-36 h-36 rounded-full border-4 border-white/50 shadow-2xl overflow-hidden cursor-pointer active:scale-95 z-10" onclick="expandImage()">
-      <img id="fullProfileImg" src="" class="w-full h-full object-cover">
-    </div>
-    <div class="absolute top-12 left-4 right-4 flex justify-between z-20">
-      <button onclick="closeFullProfile()" class="w-10 h-10 bg-black/30 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-      <div class="flex gap-2">
-        <button onclick="downloadProfileImg()" class="w-10 h-10 bg-black/30 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
-          <i class="fa-solid fa-download"></i>
-        </button>
-        <button onclick="shareUserProfile()" class="w-10 h-10 bg-black/30 backdrop-blur-xl text-white rounded-full flex items-center justify-center">
-          <i class="fa-solid fa-share-nodes"></i>
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- SCROLLABLE CONTENT -->
-  <div id="fullProfileScrollArea" class="flex-1 bg-[#f2f2f7]/95 overflow-y-auto p-4 space-y-6 no-scrollbar">
-    <!-- NAME + STATUS + ACTIONS -->
-    <div class="bg-white rounded-[28px] p-6 shadow-sm text-center">
+  <div id="fullProfileScrollArea" class="flex-1 bg-[#f2f2f7]/95 overflow-y-auto p-4 space-y-4 no-scrollbar">
+
+    <!-- NAME & STATUS -->
+    <div class="bg-white rounded-[28px] p-6 text-center shadow-sm">
       <h2 id="fullProfileName" class="text-2xl font-black text-gray-800">...</h2>
-      <p id="fullProfileUsername" class="text-blue-600 font-bold text-sm mt-1">@username</p>
-      <p id="fullProfileStatus" class="text-green-500 font-medium text-sm mt-2">online</p>
-
-      <!-- TUGMALAR BLOKI -->
-      <div class="flex flex-wrap justify-center gap-3 mt-6">
-        <!-- O'z profil uchun -->
-        <button id="editProfileBtn" onclick="openEditModal()" class="hidden px-8 py-3 bg-blue-600 text-white rounded-full font-bold shadow-md active:scale-95 transition">
-          <i class="fa-solid fa-pen mr-2"></i> Tahrirlash
-        </button>
-
-        <!-- Boshqa profil uchun -->
-        <button id="followBtn" onclick="toggleFollow()" class="hidden px-8 py-3 bg-blue-600 text-white rounded-full font-bold shadow-md active:scale-95 transition">
-          Follow
-        </button>
-        <button id="unfollowBtn" onclick="toggleFollow()" class="hidden px-8 py-3 bg-gray-600 text-white rounded-full font-bold shadow-md active:scale-95 transition">
-          Following
-        </button>
-
-        <button id="messageBtn" onclick="startChatWithUser()" class="hidden px-8 py-3 bg-green-600 text-white rounded-full font-bold shadow-md active:scale-95 transition">
-          <i class="fa-solid fa-comment-dots mr-2"></i> Xabar
-        </button>
-
-        <button id="blockBtn" onclick="toggleBlockUser()" class="hidden px-6 py-3 bg-red-100 text-red-700 rounded-full font-bold active:scale-95 transition">
-          Bloklash
-        </button>
-        <button id="unblockBtn" onclick="toggleBlockUser()" class="hidden px-6 py-3 bg-gray-100 text-gray-700 rounded-full font-bold active:scale-95 transition">
-          Blokdan chiqarish
-        </button>
-      </div>
+      <p id="fullProfileStatus" class="text-blue-500 font-bold text-sm">online</p>
     </div>
 
-    <!-- STATISTIKA -->
-    <div class="bg-white rounded-[28px] p-6 shadow-sm">
-      <div class="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <p class="text-2xl font-black" id="profilePostCount">0</p>
-          <p class="text-xs text-gray-500 uppercase">Postlar</p>
-        </div>
-        <div class="cursor-pointer" onclick="showFollowersList()">
-          <p class="text-2xl font-black" id="profileFollowersCount">0</p>
-          <p class="text-xs text-gray-500 uppercase">Obunachilar</p>
-        </div>
-        <div class="cursor-pointer" onclick="showFollowingList()">
-          <p class="text-2xl font-black" id="profileFollowingCount">0</p>
-          <p class="text-xs text-gray-500 uppercase">Obuna bo‘lingan</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- BIO -->
-    <div class="bg-white rounded-[28px] p-6 shadow-sm">
-      <p class="text-[10px] text-gray-400 font-black uppercase mb-2">Bio</p>
-      <p id="fullProfileBio" class="text-gray-700 text-sm leading-relaxed">...</p>
-    </div>
-
-    <!-- SHARED MEDIA -->
+    <!-- MEDIA / FILES / LINKS TAB -->
     <div class="bg-white rounded-[28px] overflow-hidden shadow-sm">
       <div class="flex border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400">
         <button onclick="switchMediaTab('media', this)" class="flex-1 py-4 text-blue-600 border-b-2 border-blue-600 active-tab">Media</button>
         <button onclick="switchMediaTab('files', this)" class="flex-1 py-4">Fayllar</button>
         <button onclick="switchMediaTab('links', this)" class="flex-1 py-4">Linklar</button>
       </div>
-      <div id="sharedMediaContent" class="p-4 grid grid-cols-3 gap-2 min-h-[180px]"></div>
+      <div id="sharedMediaContent" class="p-3 grid grid-cols-3 gap-2 min-h-[180px]"></div>
     </div>
 
-    <!-- PHONE -->
-    <div class="bg-white rounded-[28px] shadow-sm">
-      <div onclick="openPhoneActions()" class="p-5 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+    <!-- CONTACT INFO -->
+    <div class="bg-white rounded-[28px] shadow-sm divide-y divide-gray-50 overflow-hidden">
+
+      <!-- PHONE ACTION -->
+      <div onclick="openPhoneActions()" class="p-5 flex justify-between items-center active:bg-gray-50 cursor-pointer relative">
         <div>
           <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Telefon</p>
           <p id="fullProfilePhone" class="font-bold text-gray-800">+998 00 000 00 00</p>
         </div>
         <i class="fa-solid fa-phone-flip text-blue-500"></i>
       </div>
+
+      <!-- USERNAME -->
+      <div onclick="copyInfo('username')" class="p-5 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+        <div>
+          <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Username</p>
+          <p id="fullProfileUsername" class="text-blue-600 font-bold">@user</p>
+        </div>
+        <i class="fa-solid fa-at text-gray-300"></i>
+      </div>
+
+      <!-- BIO -->
+      <div class="p-5">
+        <p class="text-[10px] text-gray-400 font-black uppercase mb-1">Bio</p>
+        <p id="fullProfileBio" class="text-gray-600 text-sm leading-relaxed">...</p>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- PHOTO VIEWER OVERLAY -->
+<div id="photoViewer" class="fixed inset-0 z-[10000] bg-black/95 hidden flex-col animate-fade-in">
+  <div class="absolute top-12 left-0 right-0 px-6 flex justify-between items-center z-[10001]">
+    <span id="viewerName" class="text-white font-bold">Rasm</span>
+    <button onclick="closePhotoViewer()" class="w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center backdrop-blur-lg">
+      <i class="fa-solid fa-xmark text-xl"></i>
+    </button>
+  </div>
+  <img id="expandedImg" src="" class="w-full h-full object-contain">
+</div>
+
+<!-- PHONE ACTION SHEET -->
+<div id="phoneActionOverlay" class="sheet-overlay fixed inset-0 bg-black/40 hidden z-[10001]" onclick="closePhoneMenu()"></div>
+<div id="phoneActionSheet" class="ios-sheet fixed bottom-0 left-0 right-0 bg-white rounded-t-[28px] shadow-2xl transform translate-y-full transition-all duration-300 z-[10002]">
+  <div class="sheet-handle w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-2"></div>
+  <div class="p-4 space-y-3">
+    <h4 id="actionSheetNumber" class="text-center text-gray-400 text-[10px] font-black uppercase mb-4 tracking-widest">+998 00 000 00 00</h4>
+    <a id="callBtn" href="#" class="flex items-center justify-between w-full p-5 bg-gray-50 rounded-3xl active:scale-95 transition">
+      <span class="font-bold text-gray-800">Qo'ng'iroq qilish</span>
+      <i class="fa-solid fa-phone text-green-500"></i>
+    </a>
+    <button onclick="copyPhoneNumber()" class="flex items-center justify-between w-full p-5 bg-gray-50 rounded-3xl active:scale-95 transition">
+      <span class="font-bold text-gray-800">Nusxa olish</span>
+      <i class="fa-solid fa-copy text-blue-500"></i>
+    </button>
+    <button onclick="closePhoneMenu()" class="w-full p-5 text-red-500 font-black text-center">Bekor qilish</button>
   </div>
 </div>
     <script>
@@ -1075,9 +959,6 @@ body, html {
         let selectedMsgId = null;
         let isEditing = false;
         let currentUploadType = 'file';
-        let isFollowing = false;
-        let isBlocked = false;
-
 
         // --- AUTH & CORE ---
         function toggleAuth(isReg) {
@@ -1139,11 +1020,6 @@ async function login() {
         return;
     }
 
-    // Username oxirida .connect.uz bo‘lmasa qo‘shib yuboramiz (foydalanuvchi qulayligi uchun)
-    if (!u.endsWith('.connect.uz')) {
-        u += '.connect.uz';
-    }
-
     try {
         // 2️⃣ API ga login so‘rovi
         const res = await fetch(`${API}/api/login`, {
@@ -1161,12 +1037,11 @@ async function login() {
         if (res.ok) {
             currentUser = d.username;
 
-            // LocalStorage ga to‘liq ma'lumotlarni saqlaymiz
+            // LocalStorage ga saqlaymiz
             localStorage.setItem("chat_user", d.username);
-            if (d.phone) localStorage.setItem("user_phone", d.phone);
-            if (d.bio) localStorage.setItem("user_bio", d.bio);
-            if (d.full_name) localStorage.setItem("full_name", d.full_name);
-            if (d.avatar) localStorage.setItem("user_avatar", d.avatar);
+            if (d.phone) {
+                localStorage.setItem("user_phone", d.phone);
+            }
 
             // UI ni yangilash
             document.getElementById("authScreen").classList.add("hidden");
@@ -1174,9 +1049,6 @@ async function login() {
 
             // SOCKET orqali tizimga qo‘shish
             socket.emit("join", { username: d.username });
-
-            // Profil ma'lumotlarini yuklash va UI ni yangilash
-            loadUserProfile(d);  // Yangi: serverdan kelgan ma'lumot bilan profilni to'ldirish
 
             // Admin tekshiruvi
             if (typeof checkAdminAccess === "function") {
@@ -1188,105 +1060,17 @@ async function login() {
                 initApp();
             }
 
-            // Chatlar tabiga avtomatik o‘tish
-            switchTab('chats');
-
-            console.log("Login muvaffaqiyatli! User:", currentUser);
         } else {
-            // 4️⃣ Serverdan kelgan xato xabarini ko‘rsatish
+            // 4️⃣ Noaniq xatoda aniq habar
             alert("Xato: " + (d.message || "Login amalga oshmadi!"));
         }
+
     } catch (err) {
-        // 5️⃣ Serverga ulanishda muammo (internet, CORS, server ishlamayapti)
+        // 5️⃣ Serverga ulanishda muammo — internet yoki API ishlamayapti
         console.error("Ulanish xatosi:", err);
-        alert("Server bilan ulanishda xato! Iltimos, internetingizni tekshiring yoki keyinroq urinib ko‘ring.");
+        alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
     }
 }
-
-// Profil ma'lumotlarini yuklash va UI ni yangilash funksiyasi
-function loadUserProfile(userData) {
-    if (!userData) {
-        console.warn("Profil ma'lumotlari mavjud emas");
-        return;
-    }
-
-    // Asosiy profil sahifasi (o‘z profilingiz)
-    const profileNameEl = document.getElementById('profileName');
-    const profileUsernameEl = document.getElementById('profileUsername');
-    const profileStatusEl = document.getElementById('profileStatusDisplay');
-    const profileAvatarEl = document.getElementById('profileAvatar');
-
-    if (profileNameEl) profileNameEl.innerText = userData.full_name || userData.username;
-    if (profileUsernameEl) profileUsernameEl.innerText = '@' + userData.username.split('.')[0];
-    if (profileStatusEl) profileStatusEl.innerText = userData.bio || "Status o'rnatish...";
-    if (profileAvatarEl) {
-        profileAvatarEl.src = userData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.username)}&background=007aff&color=fff`;
-    }
-
-    // Edit modal ichini to'ldirish
-    const editFullName = document.getElementById('editFullName');
-    const editBio = document.getElementById('editBio');
-    if (editFullName) editFullName.value = userData.full_name || userData.username;
-    if (editBio) editBio.value = userData.bio || "";
-
-    console.log("Profil UI yangilandi:", userData);
-}
-
-// Sahifa yuklanganda (masalan /user/jasurbek linki orqali kelinsa)
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    console.log("Hozirgi manzil:", path);
-
-    if (path.includes('/user/')) {
-        const parts = path.split('/');
-        const targetUser = parts[parts.indexOf('user') + 1];
-
-        if (targetUser) {
-            console.log("Profil yuklanmoqda:", targetUser);
-
-            // Server bilan ulanish va ma'lumot olish uchun biroz kutamiz
-            setTimeout(async () => {
-                try {
-                    // Agar foydalanuvchi login qilgan bo‘lsa viewer parametrini qo‘shamiz
-                    const viewer = currentUser || localStorage.getItem("chat_user");
-                    const url = viewer 
-                        ? `${API}/api/user/profile/${targetUser}?viewer=${viewer}`
-                        : `${API}/api/user/profile/${targetUser}`;
-
-                    const res = await fetch(url);
-                    const userData = await res.json();
-
-                    if (userData && !userData.error) {
-                        // Profil oynasini ochish
-                        openFullProfile(userData.username);
-                    } else {
-                        console.error("Foydalanuvchi topilmadi yoki xato:", userData?.error);
-                        alert("Profil yuklanmadi: " + (userData?.error || "Noma'lum xato"));
-                    }
-                } catch (err) {
-                    console.error("Profilni yuklashda xato:", err);
-                    alert("Profilni yuklashda xato yuz berdi. Internetni tekshiring.");
-                }
-            }, 1000); // 1 soniya kutish (socket ulanishi va currentUser tayyor bo‘lishi uchun)
-        }
-    }
-
-    // Agar oldin login qilingan bo‘lsa, avtomatik kirish
-    const savedUser = localStorage.getItem("chat_user");
-    if (savedUser) {
-        currentUser = savedUser;
-        document.getElementById("authScreen").classList.add("hidden");
-        document.getElementById("mainApp").classList.remove("hidden");
-        socket.emit("join", { username: savedUser });
-        loadUserProfile({
-            username: savedUser,
-            full_name: localStorage.getItem("full_name") || savedUser,
-            bio: localStorage.getItem("user_bio") || "",
-            avatar: localStorage.getItem("user_avatar")
-        });
-        switchTab('chats');
-    }
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname; 
@@ -1319,120 +1103,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
-
-// Profilni ochish funksiyasini yangilash
-async function openFullProfile(username) {
-    if (!username) return;
-
-    try {
-        const res = await fetch(`${API}/api/user/profile/${username}?viewer=${currentUser}`);
-        const user = await res.json();
-
-        if (user.error) {
-            alert("Foydalanuvchi topilmadi");
-            return;
-        }
-
-        currentViewedUser = user;
-
-        // UI ni to'ldirish
-        document.getElementById('fullProfileName').innerText = user.full_name || user.username;
-        document.getElementById('fullProfileUsername').innerText = '@' + user.username.split('.')[0];
-        document.getElementById('fullProfileBio').innerText = user.bio || "Bio kiritilmagan";
-        document.getElementById('fullProfilePhone').innerText = user.phone || "Ko‘rinmaydi";
-        document.getElementById('fullProfileImg').src = user.avatar;
-        document.getElementById('bgBlurImg').src = user.avatar;
-
-        document.getElementById('profilePostCount').innerText = user.posts_count;
-        document.getElementById('profileFollowersCount').innerText = user.followers_count;
-        document.getElementById('profileFollowingCount').innerText = user.following_count;
-
-        // Holatni saqlash
-        isFollowing = user.is_following;
-        isBlocked = user.is_blocked_by_viewer;
-
-        // Tugmalarni ko'rsatish/yashirish
-        const isOwn = username === currentUser;
-        document.getElementById('editProfileBtn').classList.toggle('hidden', !isOwn);
-        document.getElementById('followBtn').classList.toggle('hidden', isOwn || isFollowing);
-        document.getElementById('unfollowBtn').classList.toggle('hidden', isOwn || !isFollowing);
-        document.getElementById('messageBtn').classList.toggle('hidden', isOwn);
-        document.getElementById('blockBtn').classList.toggle('hidden', isOwn || isBlocked);
-        document.getElementById('unblockBtn').classList.toggle('hidden', isOwn || !isBlocked);
-
-        document.getElementById('fullUserProfile').classList.remove('hidden');
-    } catch (err) {
-        alert("Profil yuklanmadi");
-    }
-}
-
-// Follow/Unfollow tugmasi
-async function toggleFollow() {
-    if (!currentViewedUser) return;
-
-    const action = isFollowing ? 'unfollow' : 'follow';
-
-    try {
-        const res = await fetch(`${API}/api/user/follow`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                viewer: currentUser,
-                target: currentViewedUser.username,
-                action: action
-            })
-        });
-
-        if (res.ok) {
-            isFollowing = !isFollowing;
-            document.getElementById('followBtn').classList.toggle('hidden', isFollowing);
-            document.getElementById('unfollowBtn').classList.toggle('hidden', !isFollowing);
-
-            const count = parseInt(document.getElementById('profileFollowersCount').innerText);
-            document.getElementById('profileFollowersCount').innerText = isFollowing ? count + 1 : Math.max(0, count - 1);
-        }
-    } catch (err) {
-        alert("Amal bajarilmadi");
-    }
-}
-
-// Bloklash / ochish
-async function toggleBlockUser() {
-    if (!currentViewedUser) return;
-
-    const action = isBlocked ? 'unblock' : 'block';
-
-    if (!confirm(action === 'block' ? 'Bloklashni tasdiqlaysizmi?' : 'Blokdan chiqarishni tasdiqlaysizmi?')) return;
-
-    try {
-        const res = await fetch(`${API}/api/user/block`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                viewer: currentUser,
-                target: currentViewedUser.username,
-                action: action
-            })
-        });
-
-        if (res.ok) {
-            isBlocked = !isBlocked;
-            document.getElementById('blockBtn').classList.toggle('hidden', isBlocked);
-            document.getElementById('unblockBtn').classList.toggle('hidden', !isBlocked);
-            alert(action === 'block' ? 'Bloklandi!' : 'Blokdan chiqarildi!');
-        }
-    } catch (err) {
-        alert("Xato yuz berdi");
-    }
-}
-
-// Xabar yozish
-function startChatWithUser() {
-    if (!currentViewedUser) return;
-    closeFullProfile();
-    openChat(currentViewedUser.username);
-}
 
 // Qidiruv maydonini ochish/yopish
 function toggleSearch() {
@@ -1475,209 +1145,102 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-    // 1. Barcha navigatsiya tugmalarini "normal" holatga qaytarish
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('text-[#007aff]');
-        item.classList.add('text-gray-400');
+    // 1. Navigatsiya tugmalarining vizual holatini yangilash (Ranglar)
+    document.querySelectorAll('.nav-item').forEach(i => {
+        i.classList.remove('text-[#007aff]');
+        i.classList.add('text-gray-400');
     });
-    // 2. Tanlangan tabni faol (ko‘k rang) qilish + indikator harakati
+
+    // 2. Tanlangan navigatsiya tugmasini aktiv (ko'k) qilish
     const navBtn = document.getElementById(`nav-${tab}`);
     if (navBtn) {
         navBtn.classList.remove('text-gray-400');
         navBtn.classList.add('text-[#007aff]');
+
+        // iOS uslubidagi ko'k indikatorni harakatlantirish
         const indicator = document.getElementById('navIndicator');
         if (indicator) {
             indicator.style.width = `${navBtn.offsetWidth}px`;
             indicator.style.left = `${navBtn.offsetLeft}px`;
         }
     }
-    // 3. Barcha tab kontentlarini yashirish va faqat keraklisini ko‘rsatish
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.add('hidden');
-    });
-    const targetTab = document.getElementById(`${tab}Tab`);
-    if (targetTab) {
-        targetTab.classList.remove('hidden');
+
+    // 3. Tab kontentlarini almashtirish (Hidden/Visible)
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    const tabCont = document.getElementById(`${tab}Tab`);
+    if (tabCont) {
+        tabCont.classList.remove('hidden');
     }
-    // 4. Yuqori sarlavha (header title) ni yangilash
-    const titles = {
-        chats: 'Chatlar',
-        groups: 'Ommaviy',
-        reels: 'Reels', // yangi tab
-        profile: 'Profil'
-        // settings endi yo'q — u profil ichida ochiladi
+
+    // 4. Yuqori sarlavha (Header Title) matnini yangilash
+    const titles = { 
+        chats: 'Chatlar', 
+        groups: 'Ommaviy', 
+        profile: 'Profil', 
+        settings: 'Sozlamalar' 
     };
+
     const titleEl = document.getElementById('tabTitle');
     if (titleEl) {
         titleEl.innerText = titles[tab] || 'SafeChat';
     }
-    // 5. Ma'lumotlarni yuklash / yangilash logikasi
-    switch (tab) {
-        case 'chats':
-        case 'groups':
-            if (typeof loadList === 'function') {
-                loadList(tab);
-            }
-            // Yashirin chatlar uchun qulf belgisi
-            const lockIcon = document.getElementById('lockStatusIcon');
-            if (lockIcon) {
-                const hasPin = localStorage.getItem("hiddenPin");
-                lockIcon.classList.toggle('hidden', !hasPin);
-            }
-            // REALTIME: Yangi chatlar uchun socket listener
-            socket.on('new_chat_update', (data) => {
-                loadList(tab); // ro'yxatni yangilash
-                console.log("Chatlar realtime yangilandi!");
-            });
-            break;
-        case 'reels':
-            if (typeof loadReels === 'function') {
-                loadReels();
-            } else {
-                console.warn("[switchTab] loadReels funksiyasi topilmadi");
-                const reelsContainer = document.getElementById('reelsList');
-                if (reelsContainer) {
-                    reelsContainer.innerHTML = `
-                            <div class="text-center py-20 text-gray-500">
-                                <i class="fa-solid fa-video-slash text-5xl mb-4 opacity-50"></i><br>
-                                Reels hali mavjud emas<br>
-                                <small>Tez orada qo'shiladi...</small>
-                            </div>
-                        `;
-                }
-            }
-            // REALTIME: Yangi reel yuklanganda ro'yxatni yangilash
-            socket.on('new_reel_uploaded', (newReel) => {
-                const reelsContainer = document.getElementById('reelsList');
-                if (reelsContainer) {
-                    const div = document.createElement('div');
-                    div.className = "bg-white rounded-3xl p-4 shadow-sm cursor-pointer hover:scale-105 transition-transform";
-                    div.innerHTML = `
-                        <video src="${newReel.url}" class="w-full h-96 object-cover rounded-2xl" controls></video>
-                        <p class="mt-2 text-sm font-bold">${newReel.caption || 'Yangilangan Reel'}</p>
-                    `;
-                    reelsContainer.prepend(div); // tepaga qo'shish
-                }
-                console.log("Reels realtime yangilandi!");
-            });
-            break;
-        case 'profile':
-            // Profil ma'lumotlarini yangilash
-            if (typeof updateAllUI === 'function') {
-                updateAllUI();
-            }
-            if (typeof loadUserProfile === 'function') {
-                loadUserProfile(currentUser); // yoki currentUser obyekti
-            }
-            if (typeof updateDeviceInfo === 'function') {
-                updateDeviceInfo();
-            }
-            if (typeof loadStatus === 'function') {
-                loadStatus();
-            }
-            if (typeof checkAdminAccess === 'function') {
-                checkAdminAccess();
-            }
-            // REALTIME: Profil o'zgarganda socket orqali yangilash
-            socket.on('profile_updated', (data) => {
-                if (data.username === currentUser) {
-                    document.getElementById('profileName').innerText = data.name;
-                    document.getElementById('profileUsername').innerText = '@' + data.username;
-                    document.getElementById('profileStatusDisplay').innerText = data.bio;
-                    // Boshqa elementlarni yangilash
-                    console.log("Profil realtime yangilandi!");
-                }
-            });
-            break;
-        // settings endi bu yerda ishlatilmaydi — profil ichida ochiladi
-        default:
-            console.log(`Noma'lum tab: ${tab}`);
+
+    // 5. Chatlar va Guruhlar bo'limi uchun ro'yxatni yuklash
+    if (tab === 'chats' || tab === 'groups') {
+        if (typeof loadList === 'function') {
+            loadList(tab);
+        }
+    } 
+    
+    // 6. Profil va Sozlamalar bo'limi uchun barcha ma'lumotlarni yangilash
+    if (tab === 'profile' || tab === 'settings') {
+        
+        // --- Siz so'ragan asosiy yangilash funksiyalari ---
+        if (typeof updateAllUI === 'function') {
+            updateAllUI(); // Barcha matnlar, ism, bio va rasmlarni yuklash
+        }
+
+        if (typeof updateDeviceInfo === 'function') {
+            updateDeviceInfo(); // Faol seanslar (Devices) ro'yxatini yuklash
+        }
+
+        // --- Qo'shimcha Premium funksiyalar ---
+        if (typeof loadStatus === 'function') {
+            loadStatus(); // Foydalanuvchi statusini yuklash
+        }
+
+        if (typeof updateProfileUI === 'function') {
+            updateProfileUI(); // Eski mantiqdan qolgan UI yangilanishi
+        }
+
+        if (typeof checkAdminAccess === 'function') {
+            checkAdminAccess(); // Admin huquqlarini tekshirish
+        }
     }
-    // 6. Qo'shimcha navigatsiya yangilanishlari (agar kerak bo'lsa)
+
+    // 7. Navigatsiya UI qo'shimcha yangilanishi (FaceID/PIN holati)
     if (typeof updateNavUI === 'function') {
         updateNavUI(tab);
     }
-    // 7. Debug ma'lumot
-    console.log(`[SafeChat] Tab o'zgartirildi → ${tab}`);
-}
-socket.on('follow_update', (data) => {
-    if (currentViewedUser && currentViewedUser.username === data.target) {
-        document.getElementById('profileFollowersCount').innerText = data.followers_count;
-    }
-});
-// Followers va Following yuklash (hozircha placeholder)
-async function loadFollowersFollowing() {
-    // Keyinchalik serverdan real ma'lumot olinadi
-    document.getElementById('countFollowers').innerText = "128";
-    document.getElementById('countFollowing').innerText = "256";
-    document.getElementById('countPosts').innerText = "42";
-}
 
-// Postlarni real serverdan yuklash
-async function fetchUserPosts(username) {
-    const grid = document.getElementById('userPostsGrid');
-    if (!grid) return;
-
-    grid.innerHTML = '<div class="col-span-3 text-center py-10"><i class="fa-solid fa-spinner animate-spin text-3xl"></i></div>';
-
-    try {
-        const res = await fetch(`${API}/api/reels?username=${username}`);
-        const posts = await res.json();
-
-        grid.innerHTML = "";
-        document.getElementById('countPosts').innerText = posts.length;
-
-        posts.forEach(post => {
-            const div = document.createElement('div');
-            div.className = "aspect-square bg-gray-200 relative group cursor-pointer overflow-hidden";
-            div.innerHTML = `
-                <img src="${post.url}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-sm font-bold">
-                    ${post.caption ? post.caption.substring(0, 20) + '...' : 'Post'}
-                </div>
-            `;
-            grid.appendChild(div);
-        });
-
-        if (posts.length === 0) {
-            grid.innerHTML = '<p class="col-span-3 text-center py-20 text-gray-500">Hozircha post yo‘q</p>';
+    // 8. Yashirin chatlar uchun PIN lock belgisini boshqarish
+    if (tab === 'chats') {
+        const lockIcon = document.getElementById('lockStatusIcon');
+        if (lockIcon) {
+            // Agar PIN o'rnatilgan bo'lsa qulf belgisini ko'rsatish
+            const hasPin = localStorage.getItem("hiddenPin");
+            if (hasPin) {
+                lockIcon.classList.remove('hidden');
+            } else {
+                lockIcon.classList.add('hidden');
+            }
         }
-    } catch (e) {
-        grid.innerHTML = '<p class="col-span-3 text-center py-10 text-red-500">Postlarni yuklab bo‘lmadi</p>';
     }
+
+    // Konsolga ma'lumot chiqarish (Tekshirish uchun)
+    console.log(`[SafeChat] Tab switched to: ${tab}`);
 }
 
-// Edit profil saqlash (serverga yuborish)
-async function saveProfileChanges() {
-    const newName = document.getElementById('editFullName').value.trim();
-    const newBio = document.getElementById('editBio').value.trim();
-
-    if (!newName) return alert("Ism bo‘sh bo‘lmasin!");
-
-    try {
-        const res = await fetch(`${API}/api/update_profile`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser,
-                bio: newBio
-                // Agar ism o'zgartirish kerak bo'lsa, alohida endpoint ishlatiladi
-            })
-        });
-
-        if (res.ok) {
-            localStorage.setItem('username', newName);
-            localStorage.setItem('user_bio', newBio);
-            updateAllUI();
-            closeEditModal();
-            alert("Profil yangilandi!");
-        } else {
-            alert("Yangilashda xato!");
-        }
-    } catch (err) {
-        alert("Server bilan ulanishda muammo!");
-    }
-}
 
 async function loadList(tab) {
     // 1. To'g'ri konteynerni tanlash
@@ -1953,62 +1516,6 @@ async function executeDelete() {
     } catch (e) {
         console.error("Fetch xatosi:", e);
         alert("Server bilan ulanishda xato!");
-    }
-}
-
-async function openUserMenu(userData = null) {
-    console.log("openUserMenu chaqirildi");
-    console.log("currentUser =", currentUser);
-    console.log("activeChat =", activeChat);
-    console.log("userData =", userData);
-
-    let targetUsername = activeChat;
-
-    if (userData && userData.username) {
-        targetUsername = userData.username;
-    }
-
-    if (!targetUsername) {
-        console.error("Hech qanday username topilmadi!");
-        alert("Suhbatdosh topilmadi (activeChat yo'q)");
-        return;
-    }
-
-    if (!currentUser) {
-        console.error("currentUser mavjud emas! Login qilinmagan bo'lishi mumkin.");
-        alert("Avval tizimga kiring!");
-        return;
-    }
-
-    console.log(`Profil so'rovi yuborilmoqda: ${targetUsername} uchun, viewer=${currentUser}`);
-
-    try {
-        const url = `${API}/api/user/profile/${targetUsername}?viewer=${currentUser}`;
-        console.log("So'rov URL:", url);
-
-        const res = await fetch(url);
-        console.log("Javob statusi:", res.status);
-
-        if (!res.ok) {
-            const text = await res.text();
-            console.error("Javob xatosi:", res.status, text);
-            throw new Error(`Server xatosi: ${res.status}`);
-        }
-
-        const user = await res.json();
-        console.log("Olingan user ma'lumotlari:", user);
-
-        if (user.error) {
-            console.error("Serverdan xato keldi:", user.error);
-            alert("Server xatosi: " + user.error);
-            return;
-        }
-
-        currentViewedUser = user;
-        // ... qolgan kod (UI to'ldirish, tugmalar ko'rsatish) ...
-    } catch (err) {
-        console.error("Profil yuklashda xato:", err);
-        alert("Profil yuklanmadi\n\nXato: " + err.message);
     }
 }
 
@@ -2462,6 +1969,11 @@ function sendLocation() {
                 }
             });
 
+        function openUserMenu() {
+            const block = confirm(activeChat + " foydalanuvchini bloklash?");
+            if(block) socket.emit('block_user', { target: activeChat });
+        }
+
         function initiateCall(type) {
             alert(type + " qo'ng'iroq signali yuborilmoqda...");
             socket.emit('call_signal', { to: activeChat, type: type });
@@ -2479,6 +1991,29 @@ function setEntityType(type) {
     document.getElementById("btnTypeChannel").classList.toggle("bg-white", type === "channel");
     document.getElementById("btnTypeChannel").classList.toggle("text-gray-800", type === "channel");
     document.getElementById("btnTypeChannel").classList.toggle("text-gray-500", type !== "channel");
+}
+
+function createEntity() {
+    const name = document.getElementById("entityName").value.trim();
+    if (name.length < 2) {
+        alert("Nomi juda qisqa!");
+        return;
+    }
+
+    // Backendga yuboriladi
+    socket.emit("create_entity", { 
+        type: entityType,
+        name: name 
+    });
+
+    // UIga qo‘shib qo‘yamiz (real vaqtda ko‘rinishi uchun)
+    if (entityType === "group") {
+        addToGroupList(name);
+    } else {
+        addToChannelList(name);
+    }
+
+    closeSheet();
 }
 
 // Frontendga yangi element qo‘shish
@@ -2503,14 +2038,14 @@ function addToChannelList(name) {
 }
 
 function createEntity() {
-    const type = currentEntityType;
+    const type = currentEntityType; 
     const name = document.getElementById("entityName").value.trim();
+
     if (!name) return alert("Nomi bo‘sh bo‘lmasin!");
 
     socket.emit("create_entity", {
         type: type,
-        name: name,
-        creator: currentUser  // Yangi qo'shilgan: creator yuboriladi
+        name: name
     });
 
     closeSheet('createEntitySheet');
@@ -2607,6 +2142,25 @@ function addLog(msg, type = "info") {
     logContainer.scrollTop = logContainer.scrollHeight;
 }
 
+async function saveProfileChanges() {
+    const updatedData = {
+        username: localStorage.getItem('username'),
+        bio: document.getElementById('editBioInp').value,
+        phone: document.getElementById('user_phone') // Agar tahrirlansa
+    };
+
+    const response = await fetch(`${API}/api/update_profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.ok) {
+        localStorage.setItem('user_bio', updatedData.bio);
+        alert("Ma'lumotlar saqlandi!");
+        refreshProfileUI();
+    }
+}
 
 // 5. ADMIN DATA YUKLASH
 async function loadAdminData() {
@@ -3067,16 +2621,18 @@ function updateDeviceInfo() {
     localStorage.setItem("device", device);
 }
 
-
-
-socket.on('settings_updated', (data) => {
-    if (data.field === 'dark_mode') {
-        document.documentElement.classList.toggle('dark', data.value);
-        localStorage.setItem('theme', data.value ? 'dark' : 'light');
+// 2. Dark Mode
+function toggleDarkMode(checkbox) {
+    if (checkbox.checked) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        document.body.style.backgroundColor = '#1c1c1e';
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        document.body.style.backgroundColor = '#f2f2f7';
     }
-    // Boshqa fieldlar uchun ham...
-    updateAllUI(); // UI ni yangilash
-});
+}
 
 // Sahifa yuklanganda barcha sozlamalarni tiklash
 window.addEventListener('DOMContentLoaded', () => {
@@ -3095,205 +2651,23 @@ window.addEventListener('DOMContentLoaded', () => {
         updateAllUI();
     }
 });
-function loadReels() {
-    fetch(`${API}/api/reels`)
-        .then(res => res.json())
-        .then(reels => {
-            const container = document.getElementById('reelsList');
-            container.innerHTML = '';
 
-            reels.forEach(reel => {
-                const reelDiv = document.createElement('div');
-                reelDiv.className = 'reel-item bg-white rounded-2xl shadow-md mb-6 overflow-hidden';
-                reelDiv.innerHTML = `
-                    <video 
-                        src="${reel.url}" 
-                        class="w-full h-96 object-cover" 
-                        controls 
-                        onplay="registerView(${reel.id})"
-                    ></video>
-                    <div class="p-4">
-                        <p class="text-sm font-medium">${reel.caption || 'No caption'}</p>
-                        <div class="flex justify-between mt-3 text-gray-600 text-sm">
-                            <button onclick="likeReel(${reel.id})" class="flex items-center gap-1 hover:text-red-500 transition">
-                                <i class="fa-solid fa-heart"></i>
-                                <span id="likes-${reel.id}">${reel.likes}</span>
-                            </button>
-                            <span class="flex items-center gap-1">
-                                <i class="fa-solid fa-eye"></i>
-                                <span id="views-${reel.id}">${reel.views}</span>
-                            </span>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(reelDiv);
-            });
-        });
-}
-
-// Like bosish
-function likeReel(reelId) {
-    socket.emit('reel_like', {
-        reel_id: reelId,
-        username: currentUser
-    });
-}
-
-// View qayd etish (video play bo‘lganda)
-function registerView(reelId) {
-    socket.emit('reel_view', { reel_id: reelId });
-}
-
-// Realtime yangilanishlarni qabul qilish
-socket.on('reel_liked', (data) => {
-    const likesEl = document.getElementById(`likes-${data.reel_id}`);
-    if (likesEl) likesEl.textContent = data.likes;
-});
-
-socket.on('reel_viewed', (data) => {
-    const viewsEl = document.getElementById(`views-${data.reel_id}`);
-    if (viewsEl) viewsEl.textContent = data.views;
-});
-
-// Bir nechta faylni oldindan ko‘rish
-function previewMultipleReels(input) {
-    if (!input.files || input.files.length === 0) return;
-
-    const grid = document.getElementById('reelPreviewGrid');
-    grid.innerHTML = ''; // oldingi fayllarni tozalash
-
-    Array.from(input.files).forEach(file => {
-        const div = document.createElement('div');
-        div.className = 'relative aspect-square rounded-xl overflow-hidden bg-gray-800';
-
-        if (file.type.startsWith('image/')) {
-            const url = URL.createObjectURL(file);
-            div.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
-        } else if (file.type.startsWith('video/')) {
-            const url = URL.createObjectURL(file);
-            div.innerHTML = `<video src="${url}" class="w-full h-full object-cover" muted></video>`;
-        } else {
-            div.innerHTML = `<div class="flex items-center justify-center h-full text-white text-xs">Qo‘llab-quvvatlanmaydi</div>`;
-        }
-
-        grid.appendChild(div);
-    });
-}
-
-// Bir nechta faylni serverga yuklash
-async function uploadMultipleReels() {
-    const fileInput = document.getElementById('reelFileInput');
-    const caption = document.getElementById('reelCaption').value.trim();
-
-    if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Iltimos, kamida bitta rasm yoki video tanlang!");
-        return;
-    }
-
-    const formData = new FormData();
-    for (let file of fileInput.files) {
-        formData.append('files', file); // bir nechta faylni "files" nomi bilan yuboramiz
-    }
-    formData.append('caption', caption);
-    formData.append('username', currentUser || localStorage.getItem('username') || 'guest');
-
-    try {
-        const res = await fetch(`${API}/api/upload_reel`, {
-            method: 'POST',
-            body: formData
-        });
-
-        const result = await res.json();
-
-        if (res.ok && result.success) {
-            alert(`Muvaffaqiyatli yuklandi! ${result.uploaded} ta fayl`);
-            closeSheet('uploadReelSheet');
-            
-            // Reels ro'yxatini yangilash
-            if (typeof loadReels === 'function') {
-                loadReels();
-            }
-
-            // Tozalash
-            fileInput.value = '';
-            document.getElementById('reelCaption').value = '';
-            document.getElementById('reelPreviewGrid').innerHTML = '';
-        } else {
-            alert(result.message || "Yuklashda xato yuz berdi");
-        }
-    } catch (err) {
-        console.error("Yuklash xatosi:", err);
-        alert("Server bilan ulanishda muammo!");
-    }
-}
-
-// Reel oldindan ko‘rish
-function previewReel(input) {
-    if (!input.files || !input.files[0]) return;
+// // 2. Tab almashtirishda Profilni yangilash
+// const originalSwitchTab = switchTab; // Agar switchTab avval e'lon qilingan bo'lsa
+// switchTab = function(tabName) {
+//     // Eski switchTab funksiyasini chaqirish
+//     document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+//     document.getElementById(tabName + 'Tab').classList.remove('hidden');
     
-    const file = input.files[0];
-    const video = document.getElementById('reelVideoPreview');
-    const previewContainer = document.getElementById('reelPreview');
+//     // Profil yoki Sozlamalar ochilganda UI ni yangilash
+//     if(tabName === 'profile' || tabName === 'settings') {
+//         updateProfileUI();
+//         checkAdminAccess(); // Admin tugmasini tekshirish
+//     }
     
-    if (file.type.startsWith('video/')) {
-        const url = URL.createObjectURL(file);
-        video.src = url;
-        video.classList.remove('hidden');
-        previewContainer.querySelector('div').classList.add('hidden');
-        
-        // Video yuklanganda avtomatik play qilish (ixtiyoriy)
-        video.onloadeddata = () => video.play().catch(() => {});
-    } else {
-        alert("Faqat video fayllarni tanlashingiz mumkin!");
-    }
-}
-
-// Reel serverga yuklash
-async function uploadReel() {
-    const fileInput = document.getElementById('reelFileInput');
-    const caption = document.getElementById('reelCaption').value.trim();
-    
-    if (!fileInput.files || !fileInput.files[0]) {
-        alert("Iltimos, video tanlang!");
-        return;
-    }
-    
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append('reel', file);
-    formData.append('caption', caption);
-    formData.append('username', currentUser || localStorage.getItem('username'));
-    
-    try {
-        const res = await fetch(`${API}/api/upload_reel`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await res.json();
-        
-        if (res.ok && result.success) {
-            alert("Reel muvaffaqiyatli yuklandi!");
-            closeSheet('uploadReelSheet');
-            
-            // Reels ro'yxatini yangilash
-            if (typeof loadReels === 'function') {
-                loadReels();
-            }
-            
-            // Inputlarni tozalash
-            fileInput.value = '';
-            document.getElementById('reelCaption').value = '';
-            document.getElementById('reelVideoPreview').classList.add('hidden');
-            document.getElementById('reelPreview').querySelector('div').classList.remove('hidden');
-        } else {
-            alert(result.message || "Yuklashda xato yuz berdi");
-        }
-    } catch (err) {
-        console.error("Reel yuklash xatosi:", err);
-        alert("Server bilan ulanishda muammo!");
-    }
-}
+//     // Navigatsiyani yangilash (Oldingi kodingizga moslash)
+//     updateNavUI(tabName); 
+// }
 
 // 3. Admin Panelni ochish (Haqiqiy interfeys)
 function showAdminPanel() {
@@ -3487,8 +2861,8 @@ function setup2FA() {
 
 // --- BARCHA UI ELEMENTLARINI YANGILASH (PROFIL VA SOZLAMALAR) ---
 function updateAllUI() {
-    // 1. Birinchi navbatda localStorage'dan ma'lumotlarni olish (optimistic update uchun)
-    let user = {
+    // 1. Ma'lumotlarni localStorage'dan yig'ib olish
+    const user = {
         name: localStorage.getItem('username') || 'Foydalanuvchi',
         phone: localStorage.getItem('user_phone') || '+998 00 000 00 00',
         bio: localStorage.getItem('user_bio') || 'Bio ma\'lumot kiritilmagan',
@@ -3505,7 +2879,7 @@ function updateAllUI() {
         if (el) el[type] = value;
     };
 
-    // 3. Matnli ma'lumotlarni joylashtirish (localdan boshlab)
+    // 3. Matnli ma'lumotlarni joylashtirish
     safeUpdate('profileName', user.name);
     safeUpdate('settingsName', user.name);
     safeUpdate('profileUsername', '@' + user.username);
@@ -3518,6 +2892,7 @@ function updateAllUI() {
     const savedAvatar = localStorage.getItem('userAvatarBase64');
     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
     const finalAvatar = savedAvatar || defaultAvatar;
+
     safeUpdate('profileAvatar', finalAvatar, 'src');
     safeUpdate('userAvatar', finalAvatar, 'src'); // Navbardagi kichik rasm
 
@@ -3554,85 +2929,21 @@ function updateAllUI() {
         document.body.classList.remove('dark-mode');
         if (themeToggle) themeToggle.checked = false;
     }
+    const savedTheme = localStorage.getItem('theme');
 
+    if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        if (themeToggle) themeToggle.checked = true;
+        document.body.style.backgroundColor = '#1c1c1e';
+    }
     // 8. Faol seanslar sonini ko'rsatish
     const deviceBadge = document.querySelector('#profileTab span.bg-green-100');
     if (deviceBadge) {
-        // Bu yerda real mantiqda serverdan sessionlar soni olinadi (quyida qo'shilgan funksiya orqali)
-        deviceBadge.innerText = "1 active"; // Placeholder, quyida yangilanadi
+        // Haqiqiy mantiqda bu yerda session list uzunligi olinadi
+        deviceBadge.innerText = "1 active"; 
     }
-
-    // 9. Serverdan ma'lumotlarni yuklash va sinxronlash (Real-time uchun)
-    fetchUserDataFromServer(user.username);
 
     console.log("🚀 Barcha interfeys elementlari yangilandi!");
-}
-
-// --- QO'SHIMCHA FUNKSIYA: SERVERDAN PROFIL VA SOZLAMALAR MA'LUMOTLARINI YUKLASH ---
-function fetchUserDataFromServer(username) {
-    if (!socket) {
-        console.error("Socket.io ulanmagan!");
-        return;
-    }
-
-    // Serverga so'rov yuborish
-    socket.emit('get_user_data', { username: username });
-
-    // Javobni qabul qilish va UI ni yangilash
-    socket.on('user_data_received', (data) => {
-        if (data.error) {
-            console.error("Server xatosi:", data.error);
-            return;
-        }
-
-        // LocalStorage ni yangilash
-        Object.keys(data).forEach(key => {
-            localStorage.setItem(key, data[key]);
-        });
-
-        // UI ni qayta yangilash (server ma'lumotlari bilan)
-        updateAllUI(); // Rekursiv emas, chunki bu on hodisasida
-
-        // Qo'shimcha: Device sessions ni yangilash
-        const deviceBadge = document.querySelector('#profileTab span.bg-green-100');
-        if (deviceBadge && data.sessions) {
-            deviceBadge.innerText = `${data.sessions.length} active`;
-        }
-    });
-}
-
-// --- QO'SHIMCHA FUNKSIYA: SOZLAMALARNI SERVERGA SINXRONLASH (MASALAN, DARK MODE UCHUN) ---
-function syncSettingsToServer(field, value) {
-    if (!socket) return;
-
-    socket.emit('user_settings_update', {
-        username: localStorage.getItem('username'),
-        field: field,
-        value: value
-    });
-
-    // Javobni qabul qilish
-    socket.on('settings_update_success', (response) => {
-        if (response.success) {
-            console.log(`${field} muvaffaqiyatli saqlandi!`);
-            updateAllUI(); // Yangilash
-        } else {
-            console.error("Sozlamalar yangilashda xato:", response.error);
-        }
-    });
-}
-
-
-function toggleDarkMode(checkbox) {
-    const value = checkbox.checked;
-    document.documentElement.classList.toggle('dark', value);
-    localStorage.setItem('theme', value ? 'dark' : 'light'); // Local saqlash
-    // Serverga yuborish (real-time sinxron)
-    socket.emit('user_settings_update', {
-        username: currentUser.username,
-        field: 'dark_mode',
-        value: value
-    });
 }
 
 // --- 2. YASHIRIN CHATLAR (PIN LOCK) ---
@@ -3767,6 +3078,30 @@ function loadStatus() {
 // Global o'zgaruvchi: Hozirgi ko'rilayotgan foydalanuvchi ma'lumotlarini saqlash uchun
 let currentViewedUser = null;
 
+// --- 1. PROFILNI OCHISH (Socket/Data bilan) ---
+function openUserMenu(userData = null) {
+    // Agar data kelmasa, chat headerdan ma'lumotlarni yig'ish
+    if (!userData) {
+        currentViewedUser = {
+            id: document.getElementById('activeChatImg').getAttribute('data-user-id'),
+            name: document.getElementById('activeName').innerText,
+            img: document.getElementById('activeChatImg').src,
+            phone: "+998 90 123 45 67", // Bularni bazadan chaqirish kerak
+            username: "@" + document.getElementById('activeName').innerText.toLowerCase().replace(/\s/g, ''),
+            bio: "SafeChat Connection Connection a'zosi",
+            status: "online"
+        };
+    } else {
+        currentViewedUser = userData;
+    }
+
+    renderProfileUI(currentViewedUser);
+
+    document.getElementById('fullUserProfile').classList.remove('hidden');
+    document.getElementById('fullUserProfile').classList.add('flex');
+    
+    loadSharedMedia();
+}
 
 // UI-ni yangilash funksiyasi
 function renderProfileUI(user) {
@@ -4174,243 +3509,6 @@ window.addEventListener('load', () => {
                 openFullProfile(targetUser); 
             }, 1000);
         }
-    }
-});
-
-function startChatWithUser() {
-    if (!currentViewedUser) return;
-    closeFullProfile();
-    openChat(currentViewedUser.username);
-}
-
-async function toggleBlockUser() {
-    if (!currentViewedUser) return;
-
-    const action = isBlocked ? 'unblock' : 'block';
-
-    if (!confirm(`${action === 'block' ? 'Bloklash' : 'Blokdan chiqarish'}ni tasdiqlaysizmi?`)) return;
-
-    try {
-        const res = await fetch(`${API}/api/user/block`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                viewer: currentUser,
-                target: currentViewedUser.username,
-                action: action
-            })
-        });
-
-        if (res.ok) {
-            isBlocked = !isBlocked;
-            updateProfileActionButtons();
-            alert(action === 'block' ? "Foydalanuvchi bloklandi" : "Blokdan chiqarildi");
-        }
-    } catch (err) {
-        alert("Xato yuz berdi");
-    }
-}
-
-// 1. Foydalanuvchi ma'lumotlarini serverdan yuklash (Auth'dan so'ng)
-function loadUserProfile(userData) {
-    if (!userData) return;
-    
-    // UI elementlarini yangilash
-    document.getElementById('profileName').innerText = userData.full_name || userData.username;
-    document.getElementById('profileFullName').innerText = userData.full_name || userData.username;
-    document.getElementById('profileUsernameDisplay').innerText = "@" + userData.username;
-    document.getElementById('profileBioDisplay').innerText = userData.bio || "Bio hali yozilmagan";
-    document.getElementById('profileAvatar').src = userData.avatar || `https://ui-avatars.com/api/?name=${userData.username}`;
-    
-    // Sozlamalar va Modalni to'ldirish
-    document.getElementById('settingsName').innerText = userData.full_name || "Kiritilmagan";
-    document.getElementById('editFullName').value = userData.full_name || "";
-    document.getElementById('editBio').value = userData.bio || "";
-
-    // Postlarni yuklash
-    fetchUserPosts(userData.username);
-}
-
-// 2. Real-time yangilanishlar uchun listenerlar
-socket.on('profile_update', (data) => {
-    console.log("Profil yangilandi:", data);
-    // Agar o'zgarish joriy foydalanuvchiga tegishli bo'lsa UI-ni yangilash
-    if (data.username === currentUser.username) {
-        if(data.bio) document.getElementById('profileStatusDisplay').innerText = data.bio;
-        if(data.avatar) document.getElementById('profileAvatar').src = data.avatar;
-        // Boshqa maydonlar...
-    }
-});
-
-socket.on('stats_update', (data) => {
-    // Followerlar soni o'zgarganda realtime yangilash
-    document.getElementById('countFollowers').innerText = data.followers;
-    document.getElementById('countFollowing').innerText = data.following;
-    document.getElementById('countPosts').innerText = data.posts;
-});
-
-// 3. Settings Menyusini boshqarish
-function toggleSettingsMenu(show) {
-    const menu = document.getElementById('settingsMenu');
-    const content = document.getElementById('settingsContent');
-    const backdrop = document.getElementById('settingsBackdrop');
-
-    if (show) {
-        menu.classList.remove('hidden');
-        setTimeout(() => {
-            backdrop.classList.add('opacity-100');
-            content.classList.remove('-translate-x-full');
-        }, 10);
-    } else {
-        content.classList.add('-translate-x-full');
-        backdrop.classList.remove('opacity-100');
-        setTimeout(() => {
-            menu.classList.add('hidden');
-        }, 300);
-    }
-}
-
-// 4. Profil tahrirlash (Real-time yuborish)
-function editProfileField(field, value) {
-    // Serverga yuborish
-    socket.emit('edit_profile', {
-        username: currentUser.username,
-        field: field,
-        value: value
-    });
-}
-
-// 1. Profilni yuklash (Login'dan so'ng)
-function loadProfileData() {
-    const user = JSON.parse(localStorage.getItem('user')); // LocalStorage'dan user ni olish
-    if (!user) return;
-
-    // UI-ni to'ldirish
-    document.getElementById('profileFullName').innerText = user.name || "Foydalanuvchi";
-    document.getElementById('profileUsernameDisplay').innerText = "@" + user.username.split('.')[0];
-    document.getElementById('profileBioDisplay').innerText = user.bio || "Bio hali yozilmagan";
-    document.getElementById('profileAvatar').src = user.avatar || `https://ui-avatars.com/api/?name=${user.username}`;
-    
-    // Modal ichini ham to'ldirib qo'yamiz
-    document.getElementById('editFullName').value = user.name || "";
-    document.getElementById('editBio').value = user.bio || "";
-
-    fetchUserPosts(user.username);
-}
-
-// 2. Edit Profile Modalni boshqarish
-function openEditModal() {
-    document.getElementById('editProfileModal').classList.remove('hidden');
-}
-
-function closeEditModal() {
-    document.getElementById('editProfileModal').classList.add('hidden');
-}
-
-// --- 2. PROFILNI TAHRIRLASH (SOCKET.IO) ---
-function saveProfileChanges() {
-    const newName = document.getElementById('editFullName').value;
-    const newBio = document.getElementById('editBio').value;
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-
-    if (!user) return alert("Avval tizimga kiring!");
-
-    // Serverga Socket orqali yuborish
-    socket.emit('update_user_profile', {
-        username: user.username,
-        name: newName,
-        bio: newBio
-    });
-
-    // Kutmasdan UI-ni yangilash (Optimistic Update)
-    document.getElementById('profileFullName').innerText = newName;
-    document.getElementById('profileBioDisplay').innerText = newBio;
-    
-    closeEditModal();
-}
-
-socket.on('profile_updated_success', (data) => {
-    // LocalStorage-ni yangilash
-    let user = JSON.parse(localStorage.getItem('currentUser'));
-    user.full_name = data.name;
-    user.bio = data.bio;
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    
-    alert("Ma'lumotlar saqlandi!");
-});
-
-// 5. Postlarni yuklash
-async function fetchUserPosts(username) {
-    const grid = document.getElementById('userPostsGrid');
-    if (!grid) return;
-    
-    grid.innerHTML = '<div class="col-span-3 text-center py-10"><i class="fa-solid fa-spinner animate-spin"></i></div>';
-
-    try {
-        const res = await fetch(`/api/posts/${username}`);
-        const posts = await res.json();
-        
-        grid.innerHTML = ""; // Spinnerni tozalash
-        document.getElementById('countPosts').innerText = posts.length;
-
-        posts.forEach(post => {
-            const postDiv = document.createElement('div');
-            postDiv.className = "aspect-square bg-gray-100 relative group cursor-pointer overflow-hidden rounded-sm";
-            postDiv.innerHTML = `
-                <img src="${post.url}" class="w-full h-full object-cover transition-transform group-hover:scale-110">
-                <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                    <i class="fa-solid fa-eye mr-2"></i> Ko'rish
-                </div>
-            `;
-            // Postga bosilganda amal
-            postDiv.onclick = () => openPostView(post.id);
-            grid.appendChild(postDiv);
-        });
-    } catch (e) {
-        grid.innerHTML = "<p class='col-span-3 text-center py-10 text-gray-400'>Postlar yuklanmadi</p>";
-    }
-}
-
-function openPostView(postId) {
-    alert("Post ID: " + postId + " uchun batafsil ma'lumot tez kunda qo'shiladi!");
-    // Bu yerda post detali modalini ochish mumkin
-}
-
-// Inputda yozish boshlanganda
-const msgInput = document.getElementById('msgInp');
-let typingTimer;
-
-msgInput.addEventListener('input', () => {
-    if (!activeChat) return;
-
-    // Typing boshlanganini yuborish
-    socket.emit('typing_start', {
-        sender: currentUser,
-        receiver: activeChat
-    });
-
-    // Agar 2 soniya ichida yozish to‘xtasa — stop yuborish
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {
-        socket.emit('typing_stop', {
-            sender: currentUser,
-            receiver: activeChat
-        });
-    }, 2000);
-});
-
-socket.on('user_typing', (data) => {
-    const indicator = document.getElementById('typingIndicator');
-    const typingUser = document.getElementById('typingUser');
-    const statusEl = document.getElementById('activeStatus');  // Yangi qo'shilgan
-
-    if (data.is_typing && data.sender !== currentUser) {
-        typingUser.textContent = data.sender;
-        indicator.classList.remove('hidden');
-        if (statusEl) statusEl.innerText = "Yozmoqda...";  // Headerni yangilash
-    } else {
-        indicator.classList.add('hidden');
-        if (statusEl) statusEl.innerText = "online";  // Default holat
     }
 });
 
