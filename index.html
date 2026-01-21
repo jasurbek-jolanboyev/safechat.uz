@@ -448,12 +448,12 @@ body, html {
 
     <!-- HEADER -->
     <header class="p-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
-        <div class="flex justify-between items-center mb-4">
+        <!-- <div class="flex justify-between items-center mb-4">
             <h2 id="tabTitle" class="text-2xl font-black text-gray-900">Chatlar</h2>
             <button id="toggleSearch" class="text-gray-500 text-xl cursor-pointer">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
-        </div>
+        </div> -->
 
         <div id="searchWrapper" class="relative hidden transition-all duration-300">
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -1271,19 +1271,17 @@ function updateNavUI(tabName) {
 }
 
 function switchTab(tab) {
-    // 1. Navigatsiya tugmalarining vizual holatini yangilash (Ranglar)
+    /* === 1. NAV BUTTONLAR RANGI === */
     document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.remove('text-[#007aff]');
         i.classList.add('text-gray-400');
     });
 
-    // 2. Tanlangan navigatsiya tugmasini aktiv (ko'k) qilish
     const navBtn = document.getElementById(`nav-${tab}`);
     if (navBtn) {
         navBtn.classList.remove('text-gray-400');
         navBtn.classList.add('text-[#007aff]');
 
-        // iOS uslubidagi ko'k indikatorni harakatlantirish
         const indicator = document.getElementById('navIndicator');
         if (indicator) {
             indicator.style.width = `${navBtn.offsetWidth}px`;
@@ -1291,81 +1289,50 @@ function switchTab(tab) {
         }
     }
 
-    // 3. Tab kontentlarini almashtirish (Hidden/Visible)
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    const tabCont = document.getElementById(`${tab}Tab`);
-    if (tabCont) {
-        tabCont.classList.remove('hidden');
-    }
+    /* === 2. TAB CONTENTLAR === */
+    document.querySelectorAll('.tab-content').forEach(c =>
+        c.classList.add('hidden')
+    );
 
-    // 4. Yuqori sarlavha (Header Title) matnini yangilash
-    const titles = { 
-        chats: 'Chatlar', 
-        groups: 'Ommaviy', 
-        profile: 'Profil', 
-        settings: 'Yangiliklar' 
-    };
+    const tabContent = document.getElementById(`${tab}Tab`);
+    if (tabContent) tabContent.classList.remove('hidden');
 
-    const titleEl = document.getElementById('tabTitle');
-    if (titleEl) {
-        titleEl.innerText = titles[tab] || 'SafeChat';
-    }
+    /* === 3. SEARCH BOSHQARUVI === */
+    const searchBtn = document.getElementById('toggleSearch');
+    const searchWrapper = document.getElementById('searchWrapper');
 
-    // 5. Chatlar va Guruhlar bo'limi uchun ro'yxatni yuklash
+    if (searchBtn) searchBtn.classList.add('hidden');
+    if (searchWrapper) searchWrapper.classList.add('hidden');
+
     if (tab === 'chats' || tab === 'groups') {
-        if (typeof loadList === 'function') {
-            loadList(tab);
-        }
-    } 
-    
-    // 6. Profil va Sozlamalar bo'limi uchun barcha ma'lumotlarni yangilash
+        if (searchBtn) searchBtn.classList.remove('hidden');
+    }
+
+    /* === 4. MA’LUMOT YUKLASH === */
+    if ((tab === 'chats' || tab === 'groups') && typeof loadList === 'function') {
+        loadList(tab);
+    }
+
     if (tab === 'profile' || tab === 'settings') {
-        
-        // --- Siz so'ragan asosiy yangilash funksiyalari ---
-        if (typeof updateAllUI === 'function') {
-            updateAllUI(); // Barcha matnlar, ism, bio va rasmlarni yuklash
-        }
+        if (typeof updateAllUI === 'function') updateAllUI();
+        if (typeof updateDeviceInfo === 'function') updateDeviceInfo();
+        if (typeof loadStatus === 'function') loadStatus();
+        if (typeof checkAdminAccess === 'function') checkAdminAccess();
+    }
 
-        if (typeof updateDeviceInfo === 'function') {
-            updateDeviceInfo(); // Faol seanslar (Devices) ro'yxatini yuklash
-        }
-
-        // --- Qo'shimcha Premium funksiyalar ---
-        if (typeof loadStatus === 'function') {
-            loadStatus(); // Foydalanuvchi statusini yuklash
-        }
-
-        if (typeof updateProfileUI === 'function') {
-            updateProfileUI(); // Eski mantiqdan qolgan UI yangilanishi
-        }
-
-        if (typeof checkAdminAccess === 'function') {
-            checkAdminAccess(); // Admin huquqlarini tekshirish
+    /* === 5. PIN LOCK (FAQAT CHATDA) === */
+    const lockIcon = document.getElementById('lockStatusIcon');
+    if (lockIcon) {
+        if (tab === 'chats' && localStorage.getItem('hiddenPin')) {
+            lockIcon.classList.remove('hidden');
+        } else {
+            lockIcon.classList.add('hidden');
         }
     }
 
-    // 7. Navigatsiya UI qo'shimcha yangilanishi (FaceID/PIN holati)
-    if (typeof updateNavUI === 'function') {
-        updateNavUI(tab);
-    }
-
-    // 8. Yashirin chatlar uchun PIN lock belgisini boshqarish
-    if (tab === 'chats') {
-        const lockIcon = document.getElementById('lockStatusIcon');
-        if (lockIcon) {
-            // Agar PIN o'rnatilgan bo'lsa qulf belgisini ko'rsatish
-            const hasPin = localStorage.getItem("hiddenPin");
-            if (hasPin) {
-                lockIcon.classList.remove('hidden');
-            } else {
-                lockIcon.classList.add('hidden');
-            }
-        }
-    }
-
-    // Konsolga ma'lumot chiqarish (Tekshirish uchun)
-    console.log(`[SafeChat] Tab switched to: ${tab}`);
+    console.log(`[SafeChat] Active tab: ${tab}`);
 }
+
 
 // 1. Sonlarni formatlash funksiyasi (Eng tepaga qo'ying)
 function formatViews(num) {
@@ -1391,7 +1358,7 @@ const myNews = [
     Muvaffaqiyatli loyihalar doimo oddiy bir g'oya va kuchli ishonchdan boshlanadi.`,
     type: "local_video",
     mediaPath: "postlar/zuck.mp4", // Fayl nomi loyihangizga qarab
-    views: 101,
+    views: 100,
     date: "Bugun",
     links: [
         { name: "YouTube", url: "https://www.youtube.com/@Jasurbek_Jolanboyev", icon: "fa-youtube" },

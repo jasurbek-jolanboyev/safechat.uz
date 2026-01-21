@@ -108,12 +108,11 @@ def create_entity():
 
 @app.route('/api/entities')
 def get_entities():
+    # Barcha ommaviy guruh/kanallarni olish
     ents = Entity.query.all()
     return jsonify([{
-        "name": e.name, 
-        "type": e.type, 
-        "theme": e.theme_color,
-        "member_count": 1 # Default
+        "id": e.id, "name": e.name, "type": e.type, 
+        "member_count": EntityMember.query.filter_by(entity_id=e.id).count()
     } for e in ents])
 
 class Application(db.Model):
@@ -187,19 +186,6 @@ def get_user_profile(username):
     viewer = User.query.filter_by(username=viewer_username).first()
     if not viewer:
         return jsonify({"error": "Viewer topilmadi"}), 404
-
-    # Followers soni
-    followers_count = Follow.query.filter_by(following_id=user.id).count()
-    # Following soni
-    following_count = Follow.query.filter_by(follower_id=user.id).count()
-    # Posts soni (Reels)
-    posts_count = Reel.query.filter_by(username=username).count()
-
-    # Follow holati
-    is_following = Follow.query.filter_by(
-        follower_id=viewer.id,
-        following_id=user.id
-    ).first() is not None
 
     # Bloklanganmi?
     blocked_users = user.blocked_users.split(',') if user.blocked_users else []
@@ -675,7 +661,7 @@ def submit_apply():
 def get_admin_stats():
     total_users = User.query.count()
     total_messages = Message.query.count()
-    total_groups = Entity.query.filter_by(entity_type='group').count()
+    total_groups = Entity.query.filter_by(type='group').count()
     online_now = User.query.filter_by(is_online=True).count()
     return jsonify({
         "total": total_users,
@@ -742,72 +728,55 @@ def upload_avatar():
         return jsonify({"status": "success", "url": user.avatar})
     return jsonify({"message": "Xato"}), 400
 
-@app.route('/api/entities', methods=['GET'])
-def get_entities():
-    username = request.args.get('username')
-    entities = Entity.query.filter(Entity.members.contains(username)).all()
-    result = []
-    for e in entities:
-        result.append({
-            "name": e.name,
-            "type": e.entity_type,
-            "creator": e.creator
-        })
-    return jsonify(result)
 
-# --- SOCKET.IO REAL-TIME ---
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
-    if username:
-        join_room(username)
-        entities = Entity.query.filter(Entity.members.contains(username)).all()
-        for ent in entities:
-            join_room(ent.name)
-        print(f"DEBUG: {username} hamma xonalarga ulandi.")
+    if not username:
+        return
+
+    join_room(username)
+
+    memberships = EntityMember.query.filter_by(username=username).all()
+    for m in memberships:
+        entity = Entity.query.get(m.entity_id)
+        if entity:
+            join_room(entity.name)
+
+    print(f"✅ {username} barcha xonalarga ulandi")
+
 
 @socketio.on('send_message')
 def handle_send(data):
     try:
         sender_u = data.get('sender')
-        receiver_u = data.get('receiver') # Guruh nomi yoki foydalanuvchi nomi
+        receiver_u = data.get('receiver')
         msg_type = data.get('type', 'text')
         content = data.get('content', '')
-        chat_type = data.get('chat_type', 'private') # 'private' yoki 'group'
         
-        # 1. Bloklanganligini tekshirish (faqat shaxsiy chat uchun)
-        if chat_type == 'private':
+        is_entity = Entity.query.filter_by(name=receiver_u).first()
+        if not is_entity:
             if user_is_blocked_by(receiver_u, sender_u):
+                print(f"BLOCKED: {sender_u} -> {receiver_u}")
                 return
         
-        # 2. Bazaga saqlash
         reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
         new_msg = Message(
             sender=sender_u,
             receiver=receiver_u,
             content=content,
             msg_type=msg_type,
-            reply_info=reply_json,
-            # Agarda Message modelida chat_type ustuni bo'lsa:
-            # chat_type=chat_type 
+            reply_info=reply_json
         )
         db.session.add(new_msg)
         db.session.commit()
         
-        # 3. Ma'lumotlarni boyitish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        # 4. Xabarni tarqatish
-        if chat_type == 'group':
-            # Guruh xonasidagi hamma a'zolarga (shu jumladan yuboruvchiga ham)
-            emit('receive_message', data, room=receiver_u)
-        else:
-            # Shaxsiy xabar: qabul qiluvchiga va yuboruvchining o'ziga
-            emit('receive_message', data, room=receiver_u)
-            if receiver_u != sender_u:
-                emit('receive_message', data, room=sender_u)
-                
+        emit('receive_message', data, to=receiver_u)
+        if receiver_u != sender_u:
+            emit('receive_message', data, to=sender_u)
     except Exception as e:
         print(f"ERROR_SEND: {e}")
         db.session.rollback()
