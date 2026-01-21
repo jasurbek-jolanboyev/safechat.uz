@@ -11,6 +11,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
 <style>
+    .media-grid-1 { grid-template-columns: 1fr; }
+    .media-grid-2 { grid-template-columns: 1fr 1fr; }
+    .media-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    
+    .aspect-video-custom { aspect-ratio: 16 / 9; }
+    .aspect-reels-custom { aspect-ratio: 9 / 16; }
     /* Telegram Style Minimalist Design */
 .tg-input-group {
     position: relative;
@@ -123,6 +129,18 @@ body, html {
 /* =========================================================
    1. ANIMATSIYALAR
 ========================================================= */
+
+@keyframes slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slide-up {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-100%); opacity: 0; }
+}
+.animate-slide-down { animation: slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 @keyframes slideUpFull {
     from { transform: translateY(100%); opacity: 0.8; }
     to { transform: translateY(0); opacity: 1; }
@@ -459,152 +477,124 @@ body, html {
         </div>
 
         <!-- PROFILE TAB (TO‘G‘RI JOYDA!) -->
-       <div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
-    <div class="flex flex-col items-center py-10 bg-white border-b border-gray-200">
-        <div class="relative group">
-            <img id="profileAvatar" src="https://ui-avatars.com/api/?name=U" 
-                class="w-28 h-28 rounded-full shadow-lg object-cover border-4 border-white cursor-pointer transition active:scale-95"
-                onclick="triggerAvatarUpload()">
-            <div class="absolute bottom-0 right-0 bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white text-xs">
-                <i class="fa-solid fa-camera"></i>
-            </div>
-            <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="handleAvatarSelection(event)">
-        </div>
-
-        <h2 id="profileName" class="mt-4 text-2xl font-black text-gray-900 leading-tight">Loading...</h2>
-        <p id="profileUsername" class="text-blue-600 font-bold text-sm tracking-wide">@username</p>
-        
-        <div onclick="openStatusSheet()" class="mt-2 px-4 py-1 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition">
-            <span id="profileStatusDisplay" class="text-xs text-gray-500 italic font-medium">Status o'rnatish...</span>
-        </div>
-
-        <div class="flex gap-2 mt-5">
-            <button onclick="switchTab('settings')" class="px-8 py-2.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 font-bold active:scale-95 transition text-sm">
-                Edit Profile
-            </button>
-            <button onclick="copyMyID()" class="px-4 py-2.5 bg-white text-gray-700 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition">
-                <i class="fa-solid fa-share-nodes"></i>
-            </button>
-        </div>
+<div id="newsTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="sticky top-0 bg-white/80 backdrop-blur-md px-6 py-4 border-b z-50">
+        <h1 class="text-xl font-black text-gray-900 tracking-tighter italic">Yangiliklar</h1>
     </div>
+    
+    <div id="newsFeed" class="p-4 space-y-6"></div>
+</div>
 
-    <div class="mt-6 space-y-4 px-4">
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
-            <div onclick="alert('Saqlangan xabarlar tez kunda!')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 transition cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bookmark"></i></div>
-                    <span class="font-bold text-gray-800 text-sm">Saqlangan xabarlar</span>
-                </div>
-                <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+<div id="newsDetailModal" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+    <div class="bg-white/90 backdrop-blur-2xl w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden border border-white/40 transform transition-all duration-300 translate-y-0">
+        <div id="detailContent" class="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
             </div>
-
-            <div onclick="unlockHiddenChats()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-eye-slash"></i></div>
-                    <span class="font-bold text-gray-800 text-sm">Yashirin chatlar</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i id="lockStatusIcon" class="fa-solid fa-lock text-gray-300 text-xs"></i>
-                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100">
-            <div onclick="openDeviceSheet()" class="flex items-center justify-between p-4 active:bg-gray-50 transition cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-gray-50 text-gray-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-laptop"></i></div>
-                    <span class="font-bold text-gray-800 text-sm">Faol seanslar (Devices)</span>
-                </div>
-                <span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full">3 active</span>
-            </div>
+        <div class="p-6 bg-gray-100/50 border-t border-white/20">
+            <button onclick="closeNewsDetail()" class="w-full py-4 bg-blue-600 text-white rounded-3xl font-black shadow-lg shadow-blue-500/30 active:scale-95 transition-all uppercase tracking-widest text-xs">Yopish</button>
         </div>
     </div>
 </div>
 
-<div id="settingsTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
-    <div class="px-4 pt-8 space-y-6">
-        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
-            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Hisob ma'lumotlari</p>
+<div id="profileTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
+    <div class="flex flex-col items-center py-10 bg-white border-b border-gray-200">
+        <div class="relative group">
+            <img id="profileAvatar" src="https://ui-avatars.com/api/?name=U" 
+                class="w-24 h-24 rounded-full shadow-md object-cover border-2 border-gray-50">
+            <button onclick="triggerAvatarUpload()" class="absolute bottom-0 right-0 bg-blue-600 w-7 h-7 rounded-full border-2 border-white text-white text-[10px]">
+                <i class="fa-solid fa-camera"></i>
+            </button>
+            <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="handleAvatarSelection(event)">
+        </div>
+        <h2 id="profileFullName" class="mt-4 text-xl font-black text-gray-900 leading-tight">Loading...</h2>
+        <p id="profileUsernameDisplay" class="text-blue-600 font-bold text-xs tracking-wide">@username</p>
+    </div>
+
+    <div class="px-4 mt-6 space-y-6">
+        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Ma'lumotlar</p>
             <div onclick="editField('Name')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
-                <span class="font-bold text-gray-700 text-sm">Ism</span>
-                <span id="settingsName" class="text-gray-400 text-sm font-medium">Loading...</span>
-            </div>
-            <div onclick="editField('Username')" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
-                <span class="font-bold text-gray-700 text-sm">Username</span>
-                <span id="settingsUsername" class="text-blue-500 text-sm font-bold">@username</span>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-user text-blue-500 w-4"></i>
+                    <span class="font-bold text-gray-700 text-sm">Ism</span>
+                </div>
+                <span id="settingsName" class="text-gray-400 text-xs font-medium">O'zgartirish</span>
             </div>
             <div onclick="editField('Bio')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
-                <span class="font-bold text-gray-700 text-sm">Bio</span>
-                <span id="settingsBio" class="text-gray-400 text-sm italic">No bio</span>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-info-circle text-blue-400 w-4"></i>
+                    <span class="font-bold text-gray-700 text-sm">Bio</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300 text-[10px]"></i>
+            </div>
+            <div onclick="openStatusSheet()" class="flex items-center justify-between p-4 border-t border-gray-50 active:bg-gray-50 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-quote-left text-purple-400 w-4"></i>
+                    <span class="font-bold text-gray-700 text-sm">Status</span>
+                </div>
+                <span id="profileStatusDisplay" class="text-gray-400 text-xs">O'rnatish...</span>
             </div>
         </div>
 
-        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
-            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Xavfsizlik</p>
+        <div class="bg-white rounded-[24px] shadow-sm border border-gray-100 overflow-hidden">
+            <p class="px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50/50">Tizim va Xavfsizlik</p>
             <div onclick="openTwoFASheet()" class="flex items-center justify-between p-4 border-b border-gray-50 active:bg-gray-50 cursor-pointer">
-                <span class="font-bold text-gray-700 text-sm">2-Step Verification</span>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-shield-halved text-green-500 w-4"></i>
+                    <span class="font-bold text-gray-700 text-sm">Ikki bosqichli himoya</span>
+                </div>
                 <span id="twoFAStatusLabel" class="text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg">OFF</span>
             </div>
-            <div onclick="openSheet('hiddenPinSheet')" class="flex items-center justify-between p-4 active:bg-gray-50 cursor-pointer">
-                <span class="font-bold text-gray-700 text-sm">Hidden Chats PIN</span>
-                <i class="fa-solid fa-key text-gray-300"></i>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
-            <div class="flex items-center justify-between p-4 border-b border-gray-50">
+            <div class="flex items-center justify-between p-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-gray-900 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-moon"></i></div>
+                    <i class="fa-solid fa-moon text-gray-600 w-4"></i>
                     <span class="font-bold text-gray-700 text-sm">Tungi rejim</span>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" onchange="toggleDarkMode(this)" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
+                    <div class="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-blue-600 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:bg-white after:rounded-full after:transition-all peer-checked:after:translate-x-full"></div>
                 </label>
             </div>
         </div>
 
-        <button onclick="logout()" class="w-full py-4 bg-white text-red-600 rounded-2xl font-black shadow-sm active:scale-[0.98] transition border border-red-50 mt-4 mb-10">
+        <button onclick="logout()" class="w-full py-4 bg-white text-red-600 rounded-[24px] font-black shadow-sm active:scale-[0.98] transition border border-red-50 mb-10">
             Hisobdan chiqish
         </button>
     </div>
 </div>
 
-    <!-- BOTTOM NAVBAR -->
-    <div class="fixed bottom-5 left-0 right-0 px-5 pb-[env(safe-area-inset-bottom,24px)] pt-6 z-50 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none">
-        <nav class="pointer-events-auto bg-white/70 backdrop-blur-[25px] border border-white/40 rounded-[38px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] p-2 flex justify-around items-center relative overflow-hidden ring-1 ring-black/[0.03]">
+<div class="fixed bottom-5 left-0 right-0 px-5 pb-[env(safe-area-inset-bottom,24px)] pt-6 z-50 bg-gradient-to-t from-gray-50/80 to-transparent pointer-events-none">
+    <nav class="pointer-events-auto bg-white/70 backdrop-blur-[25px] border border-white/40 rounded-[38px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] p-2 flex justify-around items-center relative overflow-hidden ring-1 ring-black/[0.03]">
 
-            <div id="navIndicator" class="absolute h-[52px] bg-[#007aff]/10 rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] z-0"></div>
+        <div id="navIndicator" class="absolute h-[52px] bg-[#007aff]/10 rounded-[28px] transition-all duration-500 ease-[cubic-bezier(0.2,1,0.3,1)] z-0"></div>
 
-            <button id="nav-chats" onclick="switchTab('chats')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-[#007aff] transition-all duration-300 active:scale-90">
-                <i class="fa-solid fa-comment-dots text-[22px]"></i>
-                <span class="text-[10px] mt-1 font-semibold tracking-tight">Chatlar</span>
+        <button id="nav-chats" onclick="switchTab('chats')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-[#007aff] transition-all duration-300 active:scale-90">
+            <i class="fa-solid fa-comment-dots text-[22px]"></i>
+            <span class="text-[10px] mt-1 font-semibold tracking-tight">Chatlar</span>
+        </button>
+
+        <button id="nav-news" onclick="switchTab('news')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+            <i class="fa-solid fa-clapperboard text-[22px]"></i>
+            <span class="text-[10px] mt-1 font-semibold tracking-tight">Yangiliklar</span>
+        </button>
+
+        <div class="flex items-center justify-center px-2">
+            <button onclick="openEntityModal()" class="flex items-center justify-center w-[56px] h-[56px] bg-gradient-to-br from-[#007aff] to-[#005bb5] rounded-full shadow-[0_8px_25px_rgba(0,122,255,0.4)] z-20 active:scale-75 transition-all duration-300 hover:brightness-110">
+                <i class="fa-solid fa-plus text-white text-2xl"></i>
             </button>
+        </div>
 
-            <button id="nav-groups" onclick="switchTab('groups')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-                <i class="fa-solid fa-globe text-[22px]"></i>
-                <span class="text-[10px] mt-1 font-semibold tracking-tight">Ommaviy</span>
-            </button>
+        <button id="nav-groups" onclick="switchTab('groups')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+            <i class="fa-solid fa-globe text-[22px]"></i>
+            <span class="text-[10px] mt-1 font-semibold tracking-tight">Ommaviy</span>
+        </button>
 
-            <div class="flex items-center justify-center px-2">
-                <button onclick="openSheet('createEntitySheet')" class="flex items-center justify-center w-[54px] h-[54px] bg-[#007aff] rounded-full shadow-[0_8px_20px_rgba(0,122,255,0.3)] z-20 active:scale-[0.85] transition-all duration-300 hover:brightness-110">
-                    <i class="fa-solid fa-plus text-white text-2xl"></i>
-                </button>
-            </div>
+        <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
+            <i class="fa-solid fa-circle-user text-[22px]"></i>
+            <span class="text-[10px] mt-1 font-semibold tracking-tight">Profil</span>
+        </button>
 
-            <button id="nav-settings" onclick="switchTab('settings')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-                <i class="fa-solid fa-gears text-[22px]"></i>
-                <span class="text-[10px] mt-1 font-semibold tracking-tight">Sozlamalar</span>
-            </button>
-
-            <button id="nav-profile" onclick="switchTab('profile')" class="nav-item flex flex-col items-center justify-center flex-1 h-12 z-10 text-gray-400 transition-all duration-300 active:scale-90">
-                <i class="fa-solid fa-circle-user text-[22px]"></i>
-                <span class="text-[10px] mt-1 font-semibold tracking-tight">Profil</span>
-            </button>
-
-        </nav>
-    </div>
+    </nav>
+</div>
 
 </aside>
 
@@ -671,18 +661,36 @@ body, html {
             </button>
         </div>
 
-    <div id="createEntitySheet" class="ios-sheet h-[60%]">
-        <div class="sheet-handle"></div>
+<div id="createEntityModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+    <div class="bg-white w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl animate-zoom-in">
         <div class="p-8">
-            <h2 class="text-3xl font-black mb-6 text-gray-800">Yangi yaratish</h2>
-            <div class="flex bg-gray-200 p-1 rounded-2xl mb-6">
-                <button id="btnTypeGroup" onclick="setEntityType('group')" class="flex-1 py-3 rounded-xl bg-white shadow-sm font-bold text-gray-800">Guruh</button>
-                <button id="btnTypeChannel" onclick="setEntityType('channel')" class="flex-1 py-3 rounded-xl font-bold text-gray-500">Kanal</button>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-black text-gray-800">Yangi yaratish</h2>
+                <button onclick="closeEntityModal()" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <input type="text" id="entityName" class="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none mb-4" placeholder="Nomi">
-            <button onclick="createEntity()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg">Tasdiqlash</button>
+            
+            <div class="flex justify-center mb-6">
+                <div class="relative group">
+                    <div class="w-24 h-24 bg-blue-50 rounded-[30px] flex items-center justify-center border-2 border-dashed border-blue-200 group-hover:border-blue-500 transition-all cursor-pointer">
+                        <i class="fa-solid fa-camera text-3xl text-blue-300 group-hover:text-blue-500"></i>
+                    </div>
+                    <p class="text-center text-[10px] font-black text-blue-600 mt-2 uppercase tracking-widest">Rasm tanlash</p>
+                </div>
+            </div>
+
+            <div class="flex bg-gray-100 p-1.5 rounded-2xl mb-6 font-bold text-xs">
+                <button id="mTypeGroup" onclick="setMType('group')" class="flex-1 py-3 rounded-xl bg-white shadow-sm text-blue-600">GURUH</button>
+                <button id="mTypeChannel" onclick="setMType('channel')" class="flex-1 py-3 rounded-xl text-gray-400">KANAL</button>
+            </div>
+
+            <input type="text" id="mEntityName" class="w-full p-4 bg-gray-50 rounded-2xl outline-none mb-6 border border-transparent focus:border-blue-500 transition-all font-bold" placeholder="Nomini kiriting...">
+            
+            <button onclick="submitNewEntity()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black shadow-lg shadow-blue-200 active:scale-95 transition-all uppercase tracking-widest">
+                Tasdiqlash va Yaratish
+            </button>
         </div>
     </div>
+</div>
 
     <div id="mediaSheet" class="ios-sheet h-[45%]">
         <div class="sheet-handle"></div>
@@ -718,79 +726,7 @@ body, html {
     </div>
 </div>
 
-<div id="adminPanel" class="hidden fixed inset-0 z-[9999] bg-[#0b0e14] text-white overflow-y-auto font-sans">
-    <div class="sticky top-0 z-10 bg-[#0b0e14]/80 backdrop-blur-xl border-b border-white/10 p-4 md:p-6">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fa-solid fa-headset text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black tracking-tighter">SAFECHAT HQ</h1>
-                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.2em]">Super Admin Console v4.0</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="broadcastPrompt()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
-                    <i class="fa-solid fa-bullhorn"></i> GLOBAL XABAR
-                </button>
-                <button onclick="document.getElementById('adminPanel').classList.add('hidden')" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-xs font-bold transition-all">YOPISH</button>
-            </div>
-        </div>
-    </div>
 
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10" id="adminStatsGrid">
-            </div>
-
-        <div class="grid lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-6">
-                <div class="admin-card-v2">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="font-black text-lg flex items-center gap-2 italic">
-                            <i class="fa-solid fa-users-gear text-blue-500"></i> FOYDALANUVCHILARNI BOSHQARISH
-                        </h3>
-                        <input type="text" id="adminUserSearch" placeholder="Qidirish..." oninput="filterAdminUsers()" 
-                               class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-blue-500 w-48">
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-separate border-spacing-y-2">
-                            <thead class="text-slate-500 text-[10px] font-black uppercase">
-                                <tr>
-                                    <th class="px-4 py-2">Profil</th>
-                                    <th class="px-4 py-2">Status</th>
-                                    <th class="px-4 py-2">Telefon</th>
-                                    <th class="px-4 py-2 text-right">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody id="adminUserListV2">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <div class="admin-card-v2">
-                    <h3 class="font-black text-lg mb-6 flex items-center gap-2 italic">
-                        <i class="fa-solid fa-layer-group text-purple-500"></i> GURUHLAR VA KANALLAR
-                    </h3>
-                    <div id="adminEntityList" class="space-y-3">
-                        </div>
-                </div>
-
-                <div class="admin-card-v2 bg-gradient-to-br from-red-900/20 to-transparent border-red-500/20">
-                    <h3 class="font-black text-sm mb-4 text-red-500 flex items-center gap-2">
-                        <i class="fa-solid fa-triangle-exclamation"></i> XAVFLI HUDUD
-                    </h3>
-                    <button onclick="factoryResetServer()" class="w-full py-3 bg-red-600/10 hover:bg-red-600/20 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-600/20 transition-all">
-                        Serverni tozalash (Reset)
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div id="applySheet" class="ios-sheet">
     <div class="sheet-handle"></div>
@@ -957,8 +893,13 @@ body, html {
         let activeChat = null;
         let currentEntityType = 'group';
         let selectedMsgId = null;
+        let selectedMsgText = "";
+        let selectedMsgSender = null;
+        let isMeSelected = false;
         let isEditing = false;
+        let selectedMsgEditId = null;
         let currentUploadType = 'file';
+        let activeChatType = 'private';
 
         // --- AUTH & CORE ---
         function toggleAuth(isReg) {
@@ -1104,6 +1045,133 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function renderNewsFeed(posts) {
+    const feed = document.getElementById('newsFeed');
+    feed.innerHTML = '';
+
+    posts.forEach(post => {
+        const postCard = document.createElement('div');
+        postCard.className = "bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-4";
+        
+        let mediaContent = '';
+        
+        // 1. YouTube yoki Reels linklarini tekshirish
+        if (post.links && post.links.length > 0) {
+            post.links.forEach(link => {
+                if (link.includes('youtube.com/shorts') || link.includes('instagram.com/reels')) {
+                    // Reels uslubida (9:16)
+                    mediaContent += `<div class="aspect-reels-custom bg-black w-full">
+                        <iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe>
+                    </div>`;
+                } else if (link.includes('youtube.com/watch')) {
+                    // YouTube uslubida (16:9)
+                    mediaContent += `<div class="aspect-video-custom bg-black w-full">
+                        <iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe>
+                    </div>`;
+                }
+            });
+        }
+
+        // 2. Local Media (Rasm, Video, Ovozli)
+        if (post.media && post.media.length > 0) {
+            const gridClass = post.media.length > 2 ? 'media-grid-3' : `media-grid-${post.media.length}`;
+            mediaContent += `<div class="grid ${gridClass} gap-1">`;
+            
+            post.media.forEach(m => {
+                if (m.endsWith('.mp4') || m.endsWith('.mov')) {
+                    mediaContent += `<video src="${m}" controls class="w-full h-full object-cover"></video>`;
+                } else if (m.endsWith('.mp3') || m.endsWith('.ogg')) {
+                    mediaContent += `
+                        <div class="col-span-full p-4 bg-blue-50 flex items-center gap-3">
+                            <i class="fa-solid fa-play-circle text-blue-600 text-3xl"></i>
+                            <audio src="${m}" controls class="flex-1"></audio>
+                        </div>`;
+                } else {
+                    mediaContent += `<img src="${m}" class="w-full h-full object-cover cursor-pointer" onclick="expandImage('${m}')">`;
+                }
+            });
+            mediaContent += `</div>`;
+        }
+
+        // 3. Tavsif va Sarlavha
+        const textContent = `
+            <div class="p-4">
+                <h3 class="text-lg font-black text-gray-900 leading-tight">${post.title}</h3>
+                <p class="mt-2 text-sm text-gray-600 leading-relaxed">${post.description}</p>
+                <div class="mt-4 flex items-center justify-between text-gray-400">
+                    <div class="flex gap-4">
+                        <button class="active:text-red-500"><i class="fa-regular fa-heart"></i></button>
+                        <button><i class="fa-regular fa-comment"></i></button>
+                        <button><i class="fa-regular fa-paper-plane"></i></button>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase">${post.date || 'Hozirgina'}</span>
+                </div>
+            </div>
+        `;
+
+        postCard.innerHTML = mediaContent + textContent;
+        feed.appendChild(postCard);
+    });
+}
+// Postni render qilishda 'views' qismini qo'shing
+function createPostHTML(post) {
+    return `
+        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-6">
+            ${renderMedia(post)} <div class="p-5">
+                <h3 class="font-black text-lg">${post.title}</h3>
+                <p class="text-sm text-gray-500 mt-2">${post.description}</p>
+                
+                <div class="mt-4 pt-4 border-t flex justify-between items-center text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-eye text-xs"></i>
+                        <span class="text-xs font-bold">${post.views} marta ko'rildi</span>
+                    </div>
+                    <button onclick="likePost(${post.id})" class="active:scale-125 transition">
+                        <i class="fa-regular fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Post ko'rilganda serverga xabar berish (IntersectionObserver ishlatish tavsiya etiladi)
+async function markAsSeen(postId) {
+    await fetch(`/api/posts/view/${postId}`, { method: 'POST' });
+}
+async function submitNewPost() {
+    const postData = {
+        admin_phone: localStorage.getItem('user_phone'),
+        title: document.getElementById('postTitle').value,
+        description: document.getElementById('postDesc').value,
+        media: document.getElementById('postMedia').value.split(','),
+        type: document.getElementById('postType').value
+    };
+
+    const res = await fetch('/api/admin/add_post', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(postData)
+    });
+
+    if(res.ok) {
+        alert("Yangilik muvaffaqiyatli qo'shildi!");
+        closeAdmin();
+        switchTab('news');
+    }
+}
+
+// YouTube linkini Embed formatiga o'tkazish
+function formatEmbedUrl(url) {
+    if (url.includes('youtube.com/watch?v=')) {
+        return url.replace('watch?v=', 'embed/');
+    }
+    if (url.includes('youtube.com/shorts/')) {
+        return url.replace('shorts/', 'embed/');
+    }
+    return url;
+}
+
 // Qidiruv maydonini ochish/yopish
 function toggleSearch() {
     const searchContainer = document.getElementById('searchBarContainer');
@@ -1112,6 +1180,64 @@ function toggleSearch() {
     // Agar qidiruv ochilsa, inputga fokus berish
     if(!searchContainer.classList.contains('hidden')) {
         document.getElementById('userSearch').focus();
+    }
+}
+
+let selectedEntityType = 'group';
+
+function openEntityModal() {
+    document.getElementById('createEntityModal').classList.remove('hidden');
+}
+
+function closeEntityModal() {
+    document.getElementById('createEntityModal').classList.add('hidden');
+    document.getElementById('mEntityName').value = "";
+}
+
+function setMType(type) {
+    selectedEntityType = type;
+    const gBtn = document.getElementById('mTypeGroup');
+    const cBtn = document.getElementById('mTypeChannel');
+    
+    if(type === 'group') {
+        gBtn.className = "flex-1 py-3 rounded-xl bg-white shadow-sm text-blue-600";
+        cBtn.className = "flex-1 py-3 rounded-xl text-gray-400";
+    } else {
+        cBtn.className = "flex-1 py-3 rounded-xl bg-white shadow-sm text-blue-600";
+        gBtn.className = "flex-1 py-3 rounded-xl text-gray-400";
+    }
+}
+
+async function submitNewEntity() {
+    const nameInput = document.getElementById('mEntityName');
+    const name = nameInput.value.trim();
+    const username = localStorage.getItem("chat_user");
+
+    if (!name) {
+        showNotification("Xato", "Nomini kiriting!", "fa-exclamation-triangle");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API}/api/create_entity`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: name,
+                type: selectedEntityType, // 'group' yoki 'channel'
+                username: username
+            })
+        });
+
+        const data = await res.json();
+        if (data.status === "success") {
+            closeEntityModal();
+            loadList('groups'); // Ro'yxatni yangilash
+            showNotification("Muvaffaqiyatli", `${name} yaratildi!`, "fa-check");
+        }
+    } catch (e) {
+        console.error("Xatolik:", e);
+        showNotification("Xato", "Serverga ulanib bo'lmadi", "fa-wifi");
     }
 }
 
@@ -1177,7 +1303,7 @@ function switchTab(tab) {
         chats: 'Chatlar', 
         groups: 'Ommaviy', 
         profile: 'Profil', 
-        settings: 'Sozlamalar' 
+        settings: 'Yangiliklar' 
     };
 
     const titleEl = document.getElementById('tabTitle');
@@ -1241,9 +1367,170 @@ function switchTab(tab) {
     console.log(`[SafeChat] Tab switched to: ${tab}`);
 }
 
+// 1. Sonlarni formatlash funksiyasi (Eng tepaga qo'ying)
+function formatViews(num) {
+    if (!num) return 0;
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num;
+}
+
+const myNews = [
+{
+    id: 1,
+    title: "Facebook qanday boshlangan? Mark Zuckerberg va Eduardo Saverin",
+    shortDesc: "Dunyo tarixidagi eng yirik ijtimoiy tarmoqning ilk bor ishga tushirilishi va do'stlar hamkorligi.",
+    fullText: `2004-yil, Harvard yotoqxonasi. Mark Zuckerberg va uning do'sti Eduardo Saverin birgalikda 'TheFacebook' saytini ishga tushirishadi. 
+
+    Ushbu tarixiy voqea haqida qiziqarli faktlar:
+    • Mark kod yozish bilan band bo'lgan bo'lsa, Eduardo loyihaning birinchi 1000$ sarmoyasini kiritgan.
+    • Sayt dastlab faqat Harvard talabalari uchun yaratilgan, ammo bir necha kunda minglab odamlar ro'yxatdan o'tgan.
+    • Filmda Markning Eduardo bilan birgalikda 'Go live' (saytni yoqish) tugmasini bosishi va o'sha hayajonli lahzalar aks etgan.
+    
+    Mark Zuckerberg shunday degan: "Odamlar siz nima deganingiz bilan emas, nima yaratganingiz bilan qiziqishadi."
+
+    Muvaffaqiyatli loyihalar doimo oddiy bir g'oya va kuchli ishonchdan boshlanadi.`,
+    type: "local_video",
+    mediaPath: "postlar/zuck.mp4", // Fayl nomi loyihangizga qarab
+    views: 3420,
+    date: "Bugun",
+    links: [
+        { name: "YouTube", url: "https://www.youtube.com/@Jasurbek_Jolanboyev", icon: "fa-youtube" },
+        { name: "Telegram", url: "t.me/vscoderr", icon: "fa-telegram" }
+    ]
+},
+    {
+    id: 3,
+    title: "Raqamli Qullik: Snouden ogohlantirishi hamon dolzarbmi?",
+    shortDesc: "Bugungi kunda har bir qadamingiz, har bir xabaringiz va hatto ovozingiz ham nazorat ostidami?",
+    fullText: `Edvard Snouden o'z vaqtida fosh etgan haqiqatlar shunchaki tarix emas, balki bugungi kunimizning achchiq haqiqatidir. 
+
+    Hozirgi kunda:
+    • Siz qidirgan mahsulot bir zumda reklama bo'lib chiqishi — bu tasodif emas, balki algoritmik kuzatuv.
+    • Ijtimoiy tarmoqlar siz haqingizda o'zingizdan ko'ra ko'proq ma'lumotga ega.
+    • Smartfoningiz o'chiq bo'lsa ham, u raqamli iz qoldirishda davom etadi.
+    
+    Snouden aytganidek: "Maxfiylik — bu sizda yashiradigan narsa borligini emas, balki siz himoya qilishingiz kerak bo'lgan narsa borligini anglatadi". 
+    
+    Bizning raqamli dunyoda qanday qilib xavfsiz qolish, kiber-gigiyena qoidalariga amal qilish va dasturlash orqali o'z tizimlarimizni yaratishni o'rganish vaqti keldi. 
+
+    Mening ijtimoiy tarmoqlarimda kiberxavfsizlik va zamonaviy texnologiyalar haqida eng so'nggi ma'lumotlarni berib boraman. Albatta obuna bo'ling!`,
+    type: "local_image",
+    mediaPath: "uploads/posts/privacy_control.jpg", 
+    views: 2100,
+    date: "Bugun",
+    links: [
+        { name: "YouTube", url: "https://www.youtube.com/@Jasurbek_Jolanboyev", icon: "fa-youtube" },
+        { name: "Telegram", url: "t.me/vscoderr", icon: "fa-telegram" },
+        { name: "Instagram", url: "https://www.instagram.com/jasurbek.official.uz/", icon: "fa-instagram" },
+        { name: "LinkedIn", url: "https://www.linkedin.com/in/jasurbek-jo-lanboyev-74b758351", icon: "fa-linkedin" }
+    ]
+}
+];
+
+function renderMyNews() {
+    const feed = document.getElementById('newsFeed');
+    if (!feed) return;
+    feed.innerHTML = '';
+
+    myNews.forEach(post => {
+        let mediaTag = '';
+
+        if (post.type === 'local_video') {
+            mediaTag = `
+                <div class="aspect-video w-full bg-black rounded-t-[32px] overflow-hidden">
+                    <video src="${post.mediaPath}" controls class="w-full h-full object-cover"></video>
+                </div>`;
+        } else {
+            mediaTag = `
+                <img src="${post.mediaPath}" class="w-full h-56 object-cover rounded-t-[32px]" 
+                onerror="this.src='https://picsum.photos/800/400?random=${post.id}'">`;
+        }
+
+        const card = `
+            <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 mb-6 group animate-fade-in">
+                ${mediaTag}
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-md">${post.date}</span>
+                        <span class="text-[10px] font-bold text-gray-400"><i class="fa-solid fa-eye mr-1"></i>${formatViews(post.views)}</span>
+                    </div>
+                    <h3 class="text-lg font-black text-gray-900 mb-2">${post.title}</h3>
+                    <p class="text-sm text-gray-500 line-clamp-2">${post.shortDesc}</p>
+                    <button onclick="openNewsDetail(${post.id})" class="mt-4 w-full py-3 bg-gray-900 text-white text-[10px] font-black rounded-full uppercase tracking-widest hover:bg-blue-600 transition-all">Batafsil</button>
+                </div>
+            </div>`;
+        feed.innerHTML += card;
+    });
+}
+
+function openNewsDetail(id) {
+    const post = myNews.find(n => n.id === id);
+    const modal = document.getElementById('newsDetailModal');
+    const content = document.getElementById('detailContent');
+
+    if (!post) return;
+
+    // 1. Linklar bo'limini shakllantirish
+    let linksHTML = '';
+    if (post.links && post.links.length > 0) {
+        linksHTML = `
+            <div class="mt-8 pt-6 border-t border-gray-100">
+                <p class="text-[11px] font-black text-blue-600 uppercase tracking-[2px] mb-4">
+                    Batafsil ma'lumot uchun havolalar:
+                </p>
+                <div class="grid gap-3">
+                    ${post.links.map(link => `
+                        <a href="${link.url}" target="_blank" 
+                           class="flex items-center gap-4 p-4 bg-gray-50 rounded-[20px] hover:bg-blue-600 hover:text-white transition-all duration-300 group shadow-sm">
+                            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-500">
+                                <i class="fa-brands ${link.icon} text-xl text-blue-600 group-hover:text-white"></i>
+                            </div>
+                            <div class="flex-1">
+                                <span class="block text-[10px] uppercase font-black opacity-60 group-hover:opacity-100">Platformaga o'tish</span>
+                                <span class="text-sm font-bold">${link.name} sahifasini ko'rish</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+                        </a>
+                    `).join('')}
+                </div>
+            </div>`;
+    }
+
+    // 2. Modal ichidagi kontentni yig'ish
+    content.innerHTML = `
+        <div class="space-y-4">
+            <h2 class="text-2xl font-black text-gray-900 leading-tight">${post.title}</h2>
+            
+            <div class="flex items-center gap-2">
+                <div class="h-1.5 w-12 bg-blue-600 rounded-full"></div>
+                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${post.date}</span>
+            </div>
+
+            <div class="text-gray-700 leading-relaxed font-medium text-base mt-6">
+                ${post.fullText.replace(/\n/g, '<br>')}
+            </div>
+
+            ${linksHTML}
+            
+            <p class="text-[10px] text-center text-gray-400 mt-6 font-bold uppercase tracking-widest">SafeChat Secure News</p>
+        </div>
+    `;
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// 5. MODALNI YOPISH
+function closeNewsDetail() {
+    document.getElementById('newsDetailModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// 6. ISHGA TUSHIRISH
+// Faqat bitta joyda turishi kerak
+window.addEventListener('load', renderMyNews);
 
 async function loadList(tab) {
-    // 1. To'g'ri konteynerni tanlash
     let list;
     if (tab === 'chats') {
         list = document.getElementById('chatList');
@@ -1253,15 +1540,13 @@ async function loadList(tab) {
 
     if (!list) return;
 
-    // Yuklanish indikatori
-    if (list.innerHTML.trim() === "" || list.innerHTML.includes('text-red-400')) {
-        list.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-                <div class="w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
-                <div class="h-3 w-32 bg-gray-200 rounded mb-2"></div>
-                <div class="h-2 w-20 bg-gray-100 rounded"></div>
-            </div>`;
-    }
+    // Yuklanish animatsiyasi (Skeleton screen)
+    list.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
+            <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
+            <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
+            <div class="h-2 w-20 bg-gray-50 rounded"></div>
+        </div>`;
 
     try {
         if (tab === 'chats') {
@@ -1271,65 +1556,34 @@ async function loadList(tab) {
 
             if (!contacts || contacts.length === 0) {
                 list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 animate-fade-in text-center">
+                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center animate-fade-in">
                         <div class="w-20 h-20 bg-blue-50 rounded-[30px] flex items-center justify-center mb-4">
                             <i class="fa-solid fa-comments text-3xl text-blue-500"></i>
                         </div>
                         <p class="text-gray-800 text-sm font-bold">Suhbatlar hali yo'q</p>
-                        <p class="text-gray-400 text-[11px] px-10">Kimnidir topish uchun qidiruvdan foydalaning.</p>
+                        <p class="text-gray-400 text-[11px] px-10">Chatni boshlash uchun kontakt tanlang.</p>
                     </div>`;
             } else {
                 contacts.forEach(contact => {
                     const name = typeof contact === 'object' ? contact.username : contact;
                     const isOnline = typeof contact === 'object' ? contact.is_online : false;
+                    // loadList('groups') ichidagi entities.forEach qismi
                     const div = document.createElement('div');
-                    div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition-all duration-300 shadow-sm mb-2 active:scale-[0.97] border border-gray-50 group animate-fade-in";
-                    
+                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer hover:shadow-md transition-all mb-3 border border-gray-100 mx-4";
+                    div.onclick = () => openChat(ent.name, ent.type); // Bu yerda type yuboriladi
+
                     div.innerHTML = `
-                        <div class="relative">
-                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff" class="w-13 h-13 rounded-full border-2 border-white shadow-sm">
-                            ${isOnline ? '<div class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${ent.theme || 'from-blue-500 to-indigo-600'} flex items-center justify-center text-white shadow-lg">
+                            <i class="fa-solid ${ent.type === 'group' ? 'fa-users' : 'fa-bullhorn'}"></i>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-center mb-0.5">
-                                <h5 class="font-bold text-[14px] text-gray-800 truncate">${name}</h5>
-                                <span class="text-[10px] text-gray-400">Hozir</span>
-                            </div>
-                            <div class="flex justify-between items-center text-[12px]">
-                                <p class="text-gray-400 truncate pr-4">Suhbatni boshlash...</p>
-                                <div class="w-2 h-2 bg-blue-600 rounded-full ${typeof contact === 'object' && contact.unread ? '' : 'hidden'}" id="unread-${name}"></div>
-                            </div>
+                        <div class="flex-1">
+                            <h3 class="font-black text-gray-800">${ent.name}</h3>
+                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${ent.type}</p>
                         </div>
                     `;
 
-                    // --- O'CHIRISH FUNKSIYALARI (CHATS) ---
-                    let pressTimer;
-                    let isLongPress = false;
-
-                    // O'ng tugma (Desktop)
-                    div.oncontextmenu = (e) => {
-                        e.preventDefault();
-                        openDeleteActionSheet(name, 'chat');
-                    };
-
-                    // Uzoq bosish (Mobile)
-                    const startPress = () => {
-                        isLongPress = false;
-                        pressTimer = setTimeout(() => {
-                            isLongPress = true;
-                            openDeleteActionSheet(name, 'chat');
-                        }, 800);
-                    };
-                    const cancelPress = () => clearTimeout(pressTimer);
-
-                    div.addEventListener('touchstart', startPress);
-                    div.addEventListener('touchend', cancelPress);
-                    div.addEventListener('mousedown', startPress);
-                    div.addEventListener('mouseup', cancelPress);
-
-                    div.onclick = () => {
-                        if (!isLongPress) openChat(name);
-                    };
+                    div.onclick = () => openChat(name);
+                    div.oncontextmenu = (e) => { e.preventDefault(); openDeleteActionSheet(name, 'chat'); };
                     list.appendChild(div);
                 });
             }
@@ -1340,13 +1594,13 @@ async function loadList(tab) {
 
             if (!entities || entities.length === 0) {
                 list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 animate-fade-in text-center">
+                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center animate-fade-in">
                         <div class="w-20 h-20 bg-orange-50 rounded-[30px] flex items-center justify-center mb-4">
                             <i class="fa-solid fa-globe text-3xl text-orange-500"></i>
                         </div>
-                        <p class="text-gray-800 text-sm font-bold">Hech narsa topilmadi</p>
-                        <p class="text-gray-400 text-[11px] mb-4">Hozircha ommaviy guruhlar mavjud emas.</p>
-                        <button onclick="openSheet('createEntitySheet')" class="bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-bold shadow-lg shadow-blue-200">YARATISH</button>
+                        <p class="text-gray-800 text-sm font-bold">Ommaviy guruhlar yo'q</p>
+                        <p class="text-gray-400 text-[11px] mb-4 px-10">O'zingizning birinchi guruhingizni yarating!</p>
+                        <button onclick="openEntityModal()" class="bg-[#007aff] text-white px-8 py-3 rounded-full text-xs font-black shadow-lg shadow-blue-200 uppercase tracking-wider">YARATISH</button>
                     </div>`;
             } else {
                 entities.forEach(ent => {
@@ -1362,13 +1616,11 @@ async function loadList(tab) {
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-center mb-1">
                                 <h3 class="font-black text-[15px] text-gray-800 truncate">${ent.name}</h3>
-                                <span class="bg-gray-100 text-[9px] font-black px-2 py-1 rounded-md text-gray-500 uppercase tracking-tighter">
-                                    ${isGroup ? 'Guruh' : 'Kanal'}
-                                </span>
+                                <span class="bg-gray-100 text-[9px] font-black px-2 py-1 rounded-md text-gray-500 uppercase">${isGroup ? 'Guruh' : 'Kanal'}</span>
                             </div>
                             <p class="text-[11px] text-gray-400 font-medium">
-                                <i class="fa-solid fa-circle-check text-blue-400 mr-1"></i>
-                                ${ent.member_count || 0} a'zo • ${isGroup ? 'Suhbatlashish' : 'Obuna'}
+                                <i class="fa-solid fa-users text-blue-400 mr-1 text-[9px]"></i>
+                                ${ent.member_count || 0} a'zo • Ko'rish
                             </p>
                         </div>
                         <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
@@ -1376,39 +1628,15 @@ async function loadList(tab) {
                         </div>
                     `;
 
-                    // --- O'CHIRISH FUNKSIYALARI (GROUPS/CHANNELS) ---
-                    let groupTimer;
-                    let groupLongPress = false;
-
-                    div.oncontextmenu = (e) => {
-                        e.preventDefault();
-                        openDeleteActionSheet(ent.name, 'group');
-                    };
-
-                    const gStart = () => {
-                        groupLongPress = false;
-                        groupTimer = setTimeout(() => {
-                            groupLongPress = true;
-                            openDeleteActionSheet(ent.name, 'group');
-                        }, 800);
-                    };
-                    const gCancel = () => clearTimeout(groupTimer);
-
-                    div.addEventListener('touchstart', gStart);
-                    div.addEventListener('touchend', gCancel);
-                    div.addEventListener('mousedown', gStart);
-                    div.addEventListener('mouseup', gCancel);
-
-                    div.onclick = () => {
-                        if (!groupLongPress) openChat(ent.name);
-                    };
+                    div.onclick = () => openChat(ent.name);
+                    div.oncontextmenu = (e) => { e.preventDefault(); openDeleteActionSheet(ent.name, 'group'); };
                     list.appendChild(div);
                 });
             }
         }
     } catch (e) {
         console.error("Xatolik:", e);
-        list.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Ulanishda xato yuz berdi!</div>`;
+        list.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs">Ulanishda xato!</div>`;
     }
 }
 
@@ -1519,28 +1747,45 @@ async function executeDelete() {
     }
 }
 
-async function openChat(name) {
+async function openChat(name, type = 'private') {
     activeChat = name;
-    const chatArea = document.getElementById('chatArea');
+    activeChatType = type; // 'private' yoki 'group' ni saqlab qoladi
     
-    // 1. Chat oynasini ko'rinadigan qilish (CSS dagi display: none ni yengish uchun)
+    const chatArea = document.getElementById('chatArea');
+    const chatHeader = document.getElementById('chatHeader'); // HTML da sarlavha qismiga id="chatHeader" bering
+    
     chatArea.style.display = 'flex'; 
     chatArea.classList.remove('hidden');
     
-    // 2. Suhbatdosh ma'lumotlarini yangilash
+    // 2. Suhbatdosh yoki Guruh ma'lumotlarini yangilash
     document.getElementById('activeName').innerText = name;
-    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
     
-    // Xabarlar oynasini tozalash va yuklanayotganini ko'rsatish (ixtiyoriy)
+    // Dizaynni turiga qarab o'zgartirish
+    if (type === 'group') {
+        // Guruh dizayni (Masalan: Binafsha gradient sarlavha)
+        chatHeader.className = "p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center gap-3 shadow-lg";
+        document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=6366f1&color=fff`;
+        document.getElementById('chatStatus').innerText = "Guruh a'zolari..."; // Online holati o'rniga
+    } else {
+        // Shaxsiy chat dizayni (Standart oq yoki ko'k)
+        chatHeader.className = "p-4 bg-white border-b border-gray-100 flex items-center gap-3 text-gray-800";
+        document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
+        document.getElementById('chatStatus').innerText = "online";
+    }
+
     const msgBox = document.getElementById('msgBox');
-    msgBox.innerHTML = '<div class="text-center py-10 text-gray-400 text-xs">Yuklanmoqda...</div>'; 
-    
-    // 3. Xabarlar tarixini serverdan yuklash
+    msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Yuklanmoqda...</div>'; 
+
+    // 3. Xabarlarni yuklash (Endpointni turiga qarab tanlash)
     try {
-        const res = await fetch(`${API}/api/messages?user1=${currentUser}&user2=${name}`);
+        let url = type === 'group' 
+            ? `${API}/api/group_messages?group_name=${name}` 
+            : `${API}/api/messages?user1=${currentUser}&user2=${name}`;
+            
+        const res = await fetch(url);
         if (res.ok) {
             const msgs = await res.json();
-            msgBox.innerHTML = ""; // Yuklanmoqda yozuvini o'chirish
+            msgBox.innerHTML = "";
             if(msgs.length === 0) {
                 msgBox.innerHTML = '<div class="text-center py-10 text-gray-300 text-xs">Xabarlar mavjud emas</div>';
             } else {
@@ -1548,11 +1793,8 @@ async function openChat(name) {
             }
         }
     } catch(e) { 
-        console.log("Xabarlarni yuklashda xato:", e);
-        msgBox.innerHTML = '<div class="text-center py-10 text-red-400 text-xs">Xabarlarni yuklab bo\'lmadi</div>';
+        msgBox.innerHTML = '<div class="text-center py-10 text-red-400 text-xs">Yuklashda xato!</div>';
     }
-
-    // 4. Ochiq turgan barcha menyularni yopish
     closeAllSheets();
 }
 /////menuni tepaga chiqaradi 
@@ -1569,47 +1811,30 @@ function sendMsg(type = 'text', content = null) {
     const inp = document.getElementById('msgInp');
     const val = content || inp.value.trim();
     
-    // Agar xabar bo'sh bo'lsa yoki chat tanlanmagan bo'lsa chiqib ketish
     if (!val || !activeChat) return;
 
     if (isEditing) {
-        // --- TAHRIRLASH REJIMI ---
         socket.emit('edit_message', { 
             id: selectedMsgId, 
             content: val, 
-            receiver: activeChat 
+            receiver: activeChat,
+            chat_type: activeChatType // Qo'shildi
         });
-        
-        // Tahrirlashni yakunlash va tugma ikonkasini qaytarish
-        isEditing = false;
-        selectedMsgId = null; 
-        document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
-        
+        // ... (tahrirlashni yakunlash qismi o'zgarishsiz)
     } else {
-        // --- YANGI XABAR YUBORISH REJIMI ---
         const data = { 
             sender: currentUser, 
-            receiver: activeChat, 
+            receiver: activeChat, // Shaxsiy bo'lsa username, guruh bo'lsa guruh nomi
             content: val, 
-            // Reply ma'lumotlarini qo'shish
-            reply_to: replyToId ? { 
-                id: replyToId, 
-                text: replyToText, 
-                sender: replyToSender 
-            } : null,
+            chat_type: activeChatType, // 'private' yoki 'group'
+            reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
             type: type 
         };
 
-        // Serverga yuborish
         socket.emit('send_message', data);
-        
-        // --- MUHIM: Reply rejimini tozalash ---
-        if (replyToId) {
-            cancelReply(); // Reply oynasini yopish va o'zgaruvchilarni nolga tushirish
-        }
+        if (replyToId) cancelReply();
     }
     
-    // Inputni tozalash va fokusni qaytarish
     if (!content) {
         inp.value = "";
         inp.focus();
@@ -1646,11 +1871,18 @@ function setupLongPress(element, name, type) {
 function showActionSheet(name, type) {
     currentTarget = { name, type };
     const sheet = document.getElementById('deleteActionSheet');
-    const title = document.getElementById('deleteTargetName');
     const btnText = document.getElementById('deleteBtnText');
+    const icon = document.getElementById('deleteBtnIcon'); // HTML da ikonka qo'shing
 
-    title.innerText = name;
-    btnText.innerText = type === 'chat' ? "Chatni o'chirish" : "Guruhdan chiqish";
+    if (type === 'group') {
+        document.getElementById('deleteTargetName').innerText = "Guruh: " + name;
+        btnText.innerText = "Guruhdan chiqish";
+        icon.className = "fa-solid fa-right-from-bracket";
+    } else {
+        document.getElementById('deleteTargetName').innerText = name;
+        btnText.innerText = "Chatni o'chirish";
+        icon.className = "fa-solid fa-trash-can";
+    }
     
     sheet.classList.remove('hidden');
     if (window.navigator.vibrate) window.navigator.vibrate(50);
@@ -1659,8 +1891,9 @@ function showActionSheet(name, type) {
 function appendMessage(data) {
     const box = document.getElementById('msgBox');
     const isMe = data.sender === currentUser;
+    const isGroup = activeChatType === 'group'; // Global o'zgaruvchidan olinadi
     
-    // 1. Multimedia qismini tayyorlash
+    // 1. Multimedia qismi
     let mediaHTML = "";
     if (data.type === 'image') {
         mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
@@ -1670,18 +1903,12 @@ function appendMessage(data) {
         mediaHTML = `
             <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
                 <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2 font-medium">
-                    <i class="fa-solid fa-map-location-dot"></i> 📍 Joylashuvni ko'rish
+                    <i class="fa-solid fa-map-location-dot"></i> Joylashuvni ko'rish
                 </a>
             </div>`;
     }
 
-    // 2. Matn (kontent) qismini tayyorlash
-    // Agar bu location bo'lsa, linkni matn sifatida qayta ko'rsatmaymiz
-    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "") 
-                   ? `<p class="text-sm leading-relaxed">${data.content}</p>` 
-                   : "";
-
-    // 3. Reply (javob) qismi
+    // 2. Reply (javob) qismi
     let replyMarkup = "";
     if (data.reply_to) {
         replyMarkup = `
@@ -1691,14 +1918,27 @@ function appendMessage(data) {
             </div>`;
     }
 
-    // 4. Konteyner yaratish
+    // 3. Guruhda yuboruvchi ismini ko'rsatish
+    let senderNameHTML = "";
+    if (isGroup && !isMe) {
+        senderNameHTML = `<span class="text-[11px] font-bold text-indigo-500 block mb-1">${data.sender}</span>`;
+    }
+
+    // 4. Matn qismi
+    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "") 
+                   ? `<p class="text-sm leading-relaxed">${data.content}</p>` 
+                   : "";
+
+    // 5. Konteyner yaratish
     const container = document.createElement('div');
     container.id = `container-${data.id}`;
-    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4 w-full`;
+    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4 w-full animate-fade-in`;
     
     container.innerHTML = `
-        <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'}" 
-            id="msg-${data.id}">
+        <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${
+            isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+        }" id="msg-${data.id}">
+            ${senderNameHTML}
             ${replyMarkup}
             <div class="msg-body">
                 ${mediaHTML}
@@ -1713,12 +1953,12 @@ function appendMessage(data) {
 
     box.appendChild(container);
     
-    // 5. Hodisalarni bog'lash
+    // Hodisalar
     const bubble = container.querySelector('.msg-bubble');
     bindContextEvents(bubble, data); 
-    initSwipe(bubble, data.id, data.content, data.sender);
+    if (typeof initSwipe === "function") initSwipe(bubble, data.id, data.content, data.sender);
     
-    // Skrolni pastga tushirish
+    // Avtomatik pastga tushish
     box.scrollTop = box.scrollHeight;
 }
 function refreshProfileUI() {
@@ -1981,6 +2221,49 @@ function sendLocation() {
         // guruh va kanallar qoshish uchun yangi funksiya 
         let entityType = "group"; // default
 
+        // Socket.io orqali realtime yangilanishni tinglash
+socket.on('update_views', (data) => {
+    // 1. Lenta (Feed) ichidagi sonni yangilash
+    const viewSpan = document.querySelector(`#view-count-${data.post_id}`);
+    if (viewSpan) {
+        viewSpan.innerText = formatViews(data.views);
+    }
+    
+    // 2. Agar modal ochiq bo'lsa, uning ichidagini ham yangilash
+    const modalViewSpan = document.querySelector(`#modal-view-count`);
+    if (modalViewSpan && currentOpenedPostId === data.post_id) {
+        modalViewSpan.innerText = formatViews(data.views) + " ko'rilgan";
+    }
+});
+
+let currentOpenedPostId = null;
+
+// Batafsil tugmasi bosilganda
+async function openNewsDetail(id) {
+    currentOpenedPostId = id;
+    const post = myNews.find(n => n.id === id);
+    
+    // Serverga ko'rildi deb yuborish
+    fetch(`/api/news/view/${id}`, { method: 'POST' });
+
+    const modal = document.getElementById('newsDetailModal');
+    const content = document.getElementById('detailContent');
+
+    content.innerHTML = `
+        <div class="space-y-4">
+            <h2 class="text-2xl font-black text-gray-900 leading-none">${post.title}</h2>
+            <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <span>${post.date}</span> • <span id="modal-view-count">${post.views} ko'rilgan</span>
+            </div>
+            <div class="h-1 w-12 bg-blue-600 rounded-full"></div>
+            <p class="text-gray-700 leading-relaxed text-base font-medium">${post.fullText}</p>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+}
+
+
+
 function setEntityType(type) {
     entityType = type;
 
@@ -2092,15 +2375,23 @@ function closeChatArea() {
     if(searchInp) searchInp.value = "";
 }
 
-// 2. ADMIN LOGIN FUNKSIYASI
 function showAdminLogin() {
+    const userPhone = localStorage.getItem('user_phone'); // Kirgan foydalanuvchi raqami
+    
+    // 1-darajali tekshiruv: Telefon raqami
+    if (userPhone !== '+998958883851') {
+        alert("Sizda admin huquqi yo'q!");
+        return;
+    }
+
+    // 2-darajali tekshiruv: Root Key
     const key = prompt("ENTER ROOT_KEY:");
     if (key === 'serinaqu') {
         const panel = document.getElementById('adminPanel');
-        panel.style.display = 'block';
         panel.classList.remove('hidden');
+        panel.style.display = 'block';
         loadAdminData();
-        addLog("ADMIN_SESSION_STARTED", "success");
+        addLog("ADMIN_SESSION_STARTED: Welcome Boss", "success");
     } else {
         alert("ACCESS_DENIED: INVALID_KEY");
     }
@@ -2447,27 +2738,22 @@ setTimeout(() => {
 }, 50);
 }
 
-// closeMenu funksiyasini ham moslashtiramiz
 function closeMenu() {
     const menu = document.getElementById('msgContextMenu');
     const msgBox = document.getElementById('msgBox');
-    
-    // 1. Menyuni yashirish
+    if (!menu) return;
+
     menu.style.display = 'none';
     menu.classList.add('hidden');
-    
-    msgBox.style.filter = "none"; 
-    msgBox.classList.remove('blur-sm'); 
-    
+
+    if (msgBox) {
+        msgBox.style.filter = "none";
+        msgBox.classList.remove('blur-sm');
+    }
+
     document.removeEventListener('click', closeMenu);
 }
 
-function closeMenu() {
-    const menu = document.getElementById('msgContextMenu');
-    menu.style.display = 'none';
-    document.getElementById('msgBox').classList.remove('blur-sm');
-    document.removeEventListener('click', closeMenu);
-}
 
 // 3. Swipe to Reply (Surish orqali javob berish)
 function initSwipe(element, msgId, text, sender) {
@@ -2527,11 +2813,6 @@ function setupReply(id, text, sender) {
     document.getElementById('msgInp').focus();
 }
 
-function cancelReply() {
-    replyToId = null;
-    document.getElementById('replyPreview').classList.add('hidden');
-}
-
 // 2. Selection (Tanlash) rejimi
 function toggleSelectMode() {
     isSelectionMode = true;
@@ -2574,8 +2855,10 @@ function cancelReply() {
     replyToId = null;
     replyToText = "";
     replyToSender = "";
-    document.getElementById('replyPreview').classList.add('hidden');
+    const preview = document.getElementById('replyPreview');
+    if (preview) preview.classList.add('hidden');
 }
+
 // 5. Forward (Boshqaga yuborish)
 function handleForward() {
     const forwardText = selectedMsgText;
@@ -2604,264 +2887,83 @@ function bindContextEvents(element, data) {
         return false;
     };
 
-    // 1. Qurilmani aniqlash
+    // --- MOBILE: UZOQ BOSISH ---
+    element.addEventListener('touchstart', () => {
+        pressTimer = setTimeout(() => {
+            showMenu(null, data.id, data.content, isMe);
+        }, 600);
+    });
+
+    element.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+    });
+}
+
+/**
+ * SAFECHAT CORE JAVASCRIPT
+ * 1. Qurilma va Tizim Sozlamalari
+ * 2. Foydalanuvchi Interfeysi (UI) Yangilash
+ * 3. Profil va Ma'lumotlarni Tahrirlash
+ * 4. Xavfsizlik (2FA va PIN)
+ * 5. Admin Panel Funksiyalari
+ * 6. Foydalanuvchi Profili (View Mode) va Media
+ */
+
+// ==========================================
+// 1. QURILMA VA TIZIM SOZLAMALARI
+// ==========================================
+
 function updateDeviceInfo() {
     const ua = navigator.userAgent;
     let device = "Personal Computer";
 
     if (/Android/i.test(ua)) device = "Android Smartphone";
-    if (/iPhone/i.test(ua)) device = "Apple iPhone";
-    if (/iPad/i.test(ua)) device = "Apple iPad";
-    if (/Windows/i.test(ua)) device = "Windows Kompyuter";
-    if (/Macintosh/i.test(ua)) device = "MacOS Kompyuter";
+    else if (/iPhone/i.test(ua)) device = "Apple iPhone";
+    else if (/iPad/i.test(ua)) device = "Apple iPad";
+    else if (/Windows/i.test(ua)) device = "Windows Kompyuter";
+    else if (/Macintosh/i.test(ua)) device = "MacOS Kompyuter";
 
-    document.getElementById("currentDevice").innerText = device;
+    const deviceEl = document.getElementById("currentDevice");
+    if (deviceEl) deviceEl.innerText = device;
 
-    // Saqlab qo'yish (ixtiyoriy)
     localStorage.setItem("device", device);
+    
+    // Sessions logi (Console uchun)
+    const sessions = [
+        { device: device, time: "Hozir faol", ip: "94.158.xx.xx (Siz)" },
+        { device: "Telegram Desktop / Windows", time: "2 soat oldin", ip: "178.218.xx.xx" }
+    ];
+    console.log("Sessions updated:", sessions);
 }
 
-// 2. Dark Mode
 function toggleDarkMode(checkbox) {
     if (checkbox.checked) {
         document.documentElement.classList.add('dark');
+        document.body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
         document.body.style.backgroundColor = '#1c1c1e';
     } else {
         document.documentElement.classList.remove('dark');
+        document.body.classList.remove('dark-mode');
         localStorage.setItem('theme', 'light');
         document.body.style.backgroundColor = '#f2f2f7';
     }
 }
 
-// Sahifa yuklanganda barcha sozlamalarni tiklash
-window.addEventListener('DOMContentLoaded', () => {
-    // 1. Dark mode holatini tekshirish
+function loadTheme() {
     const savedTheme = localStorage.getItem("theme");
-    const darkSwitch = document.querySelector('input[onchange="toggleDarkMode(this)"]');
-    
     if (savedTheme === "dark") {
         document.documentElement.classList.add('dark');
         document.body.classList.add('dark-mode');
-        if (darkSwitch) darkSwitch.checked = true;
-    }
-
-    // 2. Profilni yuklash (agar login qilingan bo'lsa)
-    if (localStorage.getItem('username')) {
-        updateAllUI();
-    }
-});
-
-// // 2. Tab almashtirishda Profilni yangilash
-// const originalSwitchTab = switchTab; // Agar switchTab avval e'lon qilingan bo'lsa
-// switchTab = function(tabName) {
-//     // Eski switchTab funksiyasini chaqirish
-//     document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-//     document.getElementById(tabName + 'Tab').classList.remove('hidden');
-    
-//     // Profil yoki Sozlamalar ochilganda UI ni yangilash
-//     if(tabName === 'profile' || tabName === 'settings') {
-//         updateProfileUI();
-//         checkAdminAccess(); // Admin tugmasini tekshirish
-//     }
-    
-//     // Navigatsiyani yangilash (Oldingi kodingizga moslash)
-//     updateNavUI(tabName); 
-// }
-
-// 3. Admin Panelni ochish (Haqiqiy interfeys)
-function showAdminPanel() {
-    const panel = document.createElement('div');
-    panel.id = "adminOverlay";
-    panel.className = "fixed inset-0 bg-black z-[100] p-6 font-mono text-green-500 overflow-y-auto";
-    panel.innerHTML = `
-        <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
-            <h2 class="text-xl font-bold tracking-tighter">SAFECHAT_CORE_ROOT</h2>
-            <button onclick="document.getElementById('adminOverlay').remove()" class="bg-red-600 text-white px-3 py-1 rounded text-xs">EXIT</button>
-        </div>
-        <div class="space-y-4">
-            <div class="bg-green-950/30 p-4 rounded border border-green-900">
-                <p class="text-xs opacity-50 mb-2">SYSTEM_STATUS:</p>
-                <div class="flex justify-between text-sm">
-                    <span>Server: <b class="text-green-400">ONLINE</b></span>
-                    <span>Users: <b class="text-green-400">1,240</b></span>
-                </div>
-            </div>
-            <table class="w-full text-[10px] text-left">
-                <thead class="bg-green-900 text-black">
-                    <tr><th class="p-2">User</th><th class="p-2">IP</th><th class="p-2">Status</th></tr>
-                </thead>
-                <tbody id="adminUsersList">
-                    <tr class="border-b border-green-900/30"><td class="p-2">@admin</td><td class="p-2">127.0.0.1</td><td class="p-2">Root</td></tr>
-                    <tr class="border-b border-green-900/30"><td class="p-2">@jasur_dev</td><td class="p-2">94.158.1.1</td><td class="p-2 text-yellow-500">Active</td></tr>
-                </tbody>
-            </table>
-        </div>
-    `;
-    document.body.appendChild(panel);
-}
-
-function loadTheme() {
-    const savedTheme = localStorage.getItem("theme");
-
-    if (savedTheme === "dark") {
-        document.body.classList.add("dark-mode");
-    }
-}
-loadTheme(); // birinchi chaqirilishi
-
-
-// 3. Ma'lumotlarni o'zgartirish (Prompt orqali)
-async function editValue(type) {
-    let newVal = prompt(`Yangi ${type}ni kiriting:`);
-
-    if (!newVal || newVal.trim() === "") {
-        alert("Qiymat bo'sh bo‘la olmaydi!");
-        return;
-    }
-
-    // Username bo‘lsa, domain qo‘shamiz
-    if (type === "username") {
-        if (!newVal.includes(".connect.uz")) {
-            newVal = newVal + ".connect.uz";
-        }
-    }
-
-    // API endpoint
-    const endpoint =
-        type === "password"
-            ? "/api/update_password"
-            : "/api/update_user";
-
-    // Yuboriladigan ma'lumot
-    const body = {
-        user: currentUser,
-        field: type,
-        value: newVal
-    };
-
-    try {
-        const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
-        });
-
-        if (res.ok) {
-            alert("Ma'lumotlar muvaffaqiyatli yangilandi!");
-
-            // Username yangilanganda localStorage yangilaymiz
-            if (type === "username") {
-                localStorage.setItem("user", newVal);
-            }
-
-            // Logout qilish
-            alert("Iltimos, tizimga qaytadan kiring.");
-            logout();
-        } else {
-            alert("Xatolik yuz berdi, yana urinib ko‘ring.");
-        }
-    } catch (err) {
-        console.error("Xato:", err);
-        alert("Server bilan ulanishda muammo!");
+        document.body.style.backgroundColor = '#1c1c1e';
     }
 }
 
-async function loadAdminStats() {
-    const res = await fetch('/api/admin/stats');
-    const data = await res.json();
-    // Admin paneldagi HTML elementlarga qiymatlarni yozish
-    document.getElementById('stat_total').innerText = data.total;
-    document.getElementById('stat_online').innerText = data.online;
-}
+// ==========================================
+// 2. FOYDALANUVCHI INTERFEYSI (UI) YANGILASH
+// ==========================================
 
-function submitApplication() {
-    const data = {
-        name: document.getElementById('app_name').value,
-        phone: document.getElementById('app_phone').value,
-        reason: document.getElementById('app_reason').value
-    };
-    fetch('/api/apply', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    }).then(() => {
-        alert("Ariza yuborildi!");
-        closeSheet('applySheet');
-    });
-}
-
-// 4. Admin tugmasini tekshirish (Faqat sizning raqam uchun)
-function checkAdminAccess() {
-    const phone = localStorage.getItem('user_phone');
-    if(phone === '958883851' || phone === '+998958883851') {
-        document.getElementById('adminAccessBtn').classList.remove('hidden');
-    }
-}
-
-// Sahifa yuklanganda barchasini ishga tushirish
-window.addEventListener('load', () => {
-    updateDeviceInfo();
-    checkAdminAccess();
-});
-    // --- MOBILE: UZOQ BOSIB TURISH ---
-    element.addEventListener('touchstart', function(e) {
-        // Agar tanlash (select) rejimida bo'lsak, menyu chiqmasin
-        if (isSelectionMode) return;
-
-        pressTimer = setTimeout(() => {
-            if (navigator.vibrate) navigator.vibrate(50); // Vibratsiya
-            
-            // Sensor nuqtasini olish
-            const touch = e.touches[0];
-            showMenu(touch, data.id, data.content, isMe);
-        }, 600); // 600ms - uzoq bosish vaqti
-    }, { passive: true });
-
-    element.addEventListener('touchend', function() {
-        clearTimeout(pressTimer);
-    });
-
-    element.addEventListener('touchmove', function() {
-        clearTimeout(pressTimer); // Skrol qilinganda menyuni chiqarmaslik
-    });
-}
-
-function saveStatus() {
-    const val = prompt("Yangi status kiriting:", localStorage.getItem("userStatus") || "");
-    if (val !== null) {
-        localStorage.setItem("userStatus", val);
-        loadStatus();
-    }
-}
-
-
-// --- 3. DEVICE SESSIONS ---
-function updateDeviceInfo() {
-    const currentDevice = navigator.userAgent.split(')')[0].split('(')[1] || "Noma'lum qurilma";
-    const sessions = [
-        { device: currentDevice, time: "Hozir faol", ip: "94.158.xx.xx (Siz)" },
-        { device: "Telegram Desktop / Windows", time: "2 soat oldin", ip: "178.218.xx.xx" },
-        { device: "iPhone 15 Pro / Safari", time: "Kecha, 22:45", ip: "213.230.xx.xx" }
-    ];
-    // Bu ma'lumotlarni sheet ochilganda innerHTML qilib chiqarsangiz bo'ladi
-    console.log("Sessions updated", sessions);
-}
-
-// --- 5. 2FA (TWO-STEP VERIFICATION) ---
-function setup2FA() {
-    const pass = prompt("Ikki bosqichli himoya parolini yarating:");
-    if(pass && pass.length >= 4) {
-        localStorage.setItem("twoFA", pass);
-        document.getElementById('twoFAStatusLabel').innerText = "ON";
-        document.getElementById('twoFAStatusLabel').className = "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg";
-        alert("2FA faollashtirildi!");
-    }
-}
-
-// --- BARCHA UI ELEMENTLARINI YANGILASH (PROFIL VA SOZLAMALAR) ---
 function updateAllUI() {
-    // 1. Ma'lumotlarni localStorage'dan yig'ib olish
     const user = {
         name: localStorage.getItem('username') || 'Foydalanuvchi',
         phone: localStorage.getItem('user_phone') || '+998 00 000 00 00',
@@ -2873,13 +2975,12 @@ function updateAllUI() {
         hiddenPin: localStorage.getItem('hiddenPin')
     };
 
-    // 2. Yordamchi funksiya: Elementni xavfsiz yangilash
     const safeUpdate = (id, value, type = 'innerText') => {
         const el = document.getElementById(id);
         if (el) el[type] = value;
     };
 
-    // 3. Matnli ma'lumotlarni joylashtirish
+    // Matnlar
     safeUpdate('profileName', user.name);
     safeUpdate('settingsName', user.name);
     safeUpdate('profileUsername', '@' + user.username);
@@ -2888,175 +2989,68 @@ function updateAllUI() {
     safeUpdate('settingsBio', user.bio);
     safeUpdate('profilePhone', user.phone);
 
-    // 4. Avatar (Profil rasmi) boshqaruvi
+    // Avatar
     const savedAvatar = localStorage.getItem('userAvatarBase64');
     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
     const finalAvatar = savedAvatar || defaultAvatar;
-
     safeUpdate('profileAvatar', finalAvatar, 'src');
-    safeUpdate('userAvatar', finalAvatar, 'src'); // Navbardagi kichik rasm
+    safeUpdate('userAvatar', finalAvatar, 'src');
 
-    // 5. 2-Step Verification (2FA) Statusi
+    // 2FA Status Label
     const twoFALabel = document.getElementById('twoFAStatusLabel');
     if (twoFALabel) {
-        if (user.twoFA) {
-            twoFALabel.innerText = "ON";
-            twoFALabel.className = "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg border border-green-100";
-        } else {
-            twoFALabel.innerText = "OFF";
-            twoFALabel.className = "text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg border border-red-100";
-        }
+        twoFALabel.innerText = user.twoFA ? "ON" : "OFF";
+        twoFALabel.className = user.twoFA ? 
+            "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg border border-green-100" : 
+            "text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg border border-red-100";
     }
 
-    // 6. Yashirin Chatlar (PIN) Ikonkasi
+    // Pin Lock Icon
     const lockIcon = document.getElementById('lockStatusIcon');
     if (lockIcon) {
-        if (user.hiddenPin) {
-            lockIcon.classList.replace('text-gray-300', 'text-purple-600');
-        } else {
-            lockIcon.classList.replace('text-purple-600', 'text-gray-300');
-        }
+        lockIcon.classList.toggle('text-purple-600', !!user.hiddenPin);
+        lockIcon.classList.toggle('text-gray-300', !user.hiddenPin);
     }
 
-    // 7. Dark Mode Holatini tiklash
+    // Theme Switcher Sync
     const themeToggle = document.querySelector('input[onchange="toggleDarkMode(this)"]');
-    if (user.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark-mode');
-        if (themeToggle) themeToggle.checked = true;
-    } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark-mode');
-        if (themeToggle) themeToggle.checked = false;
-    }
-    const savedTheme = localStorage.getItem('theme');
-
-    if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-        if (themeToggle) themeToggle.checked = true;
-        document.body.style.backgroundColor = '#1c1c1e';
-    }
-    // 8. Faol seanslar sonini ko'rsatish
-    const deviceBadge = document.querySelector('#profileTab span.bg-green-100');
-    if (deviceBadge) {
-        // Haqiqiy mantiqda bu yerda session list uzunligi olinadi
-        deviceBadge.innerText = "1 active"; 
-    }
-
-    console.log("🚀 Barcha interfeys elementlari yangilandi!");
+    if (themeToggle) themeToggle.checked = (user.theme === 'dark');
 }
 
-// --- 2. YASHIRIN CHATLAR (PIN LOCK) ---
-function unlockHiddenChats() {
-    const savedPin = localStorage.getItem("hiddenPin");
-    if (!savedPin) {
-        alert("Avval Sozlamalar bo'limida PIN-kod o'rnating!");
-        switchTab('settings');
-        return;
+// ==========================================
+// 3. PROFIL VA MA'LUMOTLARNI TAHRIRLASH
+// ==========================================
+
+async function editValue(type) {
+    let newVal = prompt(`Yangi ${type}ni kiriting:`);
+    if (!newVal || newVal.trim() === "") return alert("Qiymat bo'sh bo‘la olmaydi!");
+
+    if (type === "username" && !newVal.includes(".connect.uz")) {
+        newVal += ".connect.uz";
     }
-    const entered = prompt("Yashirin chatlar uchun PIN kiriting:");
-    if (entered === savedPin) {
-        alert("Xush kelibsiz! Yashirin chatlar ro'yxati ochilmoqda...");
-        // Bu yerda chatList filtrlanadi
-    } else {
-        alert("PIN noto'g'ri!");
-    }
-}
 
+    const endpoint = type === "password" ? "/api/update_password" : "/api/update_user";
+    const body = { user: localStorage.getItem('username'), field: type, value: newVal };
 
-// --- 5. RASMNI ALMASHTIRISH (AVATAR) ---
-function triggerAvatarUpload() {
-    document.getElementById('avatarInput').click();
-}
-
-function handleAvatarSelection(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            localStorage.setItem('userAvatarBase64', e.target.result);
-            updateAllUI();
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
- 
-// --- 1. STATUS FUNKSIYASI ---
-function openStatusSheet() {
-    const currentStatus = localStorage.getItem("userStatus") || "";
-    const newStatus = prompt("Yangi status kiriting (masalan: Band, O'qishda):", currentStatus);
-    
-    if (newStatus !== null) {
-        localStorage.setItem("userStatus", newStatus.trim());
-        updateAllUI(); // Profil sahifasidagi matnni yangilaydi
-    }
-}
-
-function copyMyID() {
-    const username = localStorage.getItem('username') || "User";
-    const mainLink = `https://safeechat-uz.onrender.com`;
-    const profileLink = `${mainLink}/user/${username.toLowerCase()}`;
-    
-    const shareText = `Salom, men SafeChat messenjeridan foydalanyapman. Men bilan suhbat qurish uchun profilimga kiring: ${profileLink}\n\nIlovani yuklab olish: ${mainLink}`;
-
-    if (navigator.share) {
-        navigator.share({
-            title: 'SafeChat Profili',
-            text: shareText
-        }).catch(console.error);
-    } else {
-        navigator.clipboard.writeText(shareText).then(() => {
-            alert("Havola va xabar nusxalandi!");
+    try {
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
         });
+
+        if (res.ok) {
+            alert("Ma'lumotlar yangilandi!");
+            if (type === "username") localStorage.setItem("username", newVal);
+            location.reload(); 
+        } else {
+            alert("Xatolik yuz berdi!");
+        }
+    } catch (err) {
+        alert("Server bilan ulanishda muammo!");
     }
 }
 
-// --- 3. IKKI BOSQICHLI TEKSHIRUV (2FA) ---
-function openTwoFASheet() {
-    const isEnabled = localStorage.getItem("twoFA");
-    
-    if (isEnabled) {
-        const confirmDisable = confirm("Ikki bosqichli tekshiruv yoqilgan. Uni o'chirmoqchimisiz?");
-        if (confirmDisable) {
-            const pass = prompt("O'chirish uchun joriy 2FA parolini kiriting:");
-            if (pass === isEnabled) {
-                localStorage.removeItem("twoFA");
-                alert("Xavfsizlik o'chirildi.");
-            } else {
-                alert("Parol noto'g'ri!");
-            }
-        }
-    } else {
-        const newPass = prompt("Yangi 2FA parolini o'rnating (kamida 4 ta belgi yoki raqam):");
-        if (newPass && newPass.trim().length >= 4) {
-            localStorage.setItem("twoFA", newPass.trim());
-            alert("🔒 Ikki bosqichli himoya faollashtirildi!");
-        } else if (newPass !== null) {
-            alert("Xato: Parol kamida 4 ta belgidan iborat bo'lishi kerak!");
-        }
-    }
-    updateAllUI(); // ON/OFF belgisini yangilash uchun
-}
-
-// --- 4. FAOL SEANSLAR (DEVICES) ---
-function openDeviceSheet() {
-    const platform = navigator.platform;
-    const browser = navigator.userAgent.includes("Chrome") ? "Chrome" : "Safari";
-    const now = new Date().toLocaleTimeString();
-    
-    // Kelajakda bu yerda haqiqiy Sheet ochilishi kerak, hozircha alert:
-    alert(`📱 Joriy seans:\nQurilma: ${platform}\nBrauzer: ${browser}\nIP: 94.158.52.xx\nStatus: Faol (Hozir)\n\nBarcha boshqa seanslar yakunlandi.`);
-}
-
-// --- 5. SAQLANGAN XABARLAR ---
-function openSavedMessages() {
-    // Chat bo'limiga yo'naltirish yoki maxsus chatni ochish
-    alert("Saqlangan xabarlar bo'limi yuklanmoqda...");
-    // switchTab('chats'); // Misol uchun chatlar bo'limiga o'tkazish
-}
-
-// --- 6. FIELDLARNI TAHRIRLASH (Name, Bio, Username) ---
 function editField(fieldName) {
     const keys = { 'Name': 'username', 'Username': 'username', 'Bio': 'user_bio' };
     const key = keys[fieldName];
@@ -3069,26 +3063,163 @@ function editField(fieldName) {
     }
 }
 
-// --- 7. LOAD STATUS (Tab o'zgarganda chaqiriladi) ---
-function loadStatus() {
-    const status = localStorage.getItem("userStatus") || "Status o'rnatish...";
-    const el = document.getElementById("profileStatusDisplay");
-    if (el) el.innerText = status;
+function openStatusSheet() {
+    const currentStatus = localStorage.getItem("userStatus") || "";
+    const newStatus = prompt("Yangi status kiriting:", currentStatus);
+    if (newStatus !== null) {
+        localStorage.setItem("userStatus", newStatus.trim());
+        updateAllUI();
+    }
 }
-// Global o'zgaruvchi: Hozirgi ko'rilayotgan foydalanuvchi ma'lumotlarini saqlash uchun
+
+function handleAvatarSelection(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            localStorage.setItem('userAvatarBase64', e.target.result);
+            updateAllUI();
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function triggerAvatarUpload() {
+    const input = document.getElementById('avatarInput');
+    if(input) input.click();
+}
+
+// ==========================================
+// 4. XAVFSIZLIK (2FA VA PIN)
+// ==========================================
+
+function setup2FA() {
+    const pass = prompt("Ikki bosqichli himoya parolini yarating (min 4 ta belgi):");
+    if(pass && pass.length >= 4) {
+        localStorage.setItem("twoFA", pass);
+        updateAllUI();
+        alert("2FA faollashtirildi!");
+    }
+}
+
+function openTwoFASheet() {
+    const isEnabled = localStorage.getItem("twoFA");
+    if (isEnabled) {
+        if (confirm("2FA ni o'chirmoqchimisiz?")) {
+            const pass = prompt("Parolni kiriting:");
+            if (pass === isEnabled) {
+                localStorage.removeItem("twoFA");
+                alert("Xavfsizlik o'chirildi.");
+            } else {
+                alert("Parol noto'g'ri!");
+            }
+        }
+    } else {
+        setup2FA();
+    }
+    updateAllUI();
+}
+
+function unlockHiddenChats() {
+    const savedPin = localStorage.getItem("hiddenPin");
+    if (!savedPin) {
+        alert("Avval Sozlamalarda PIN-kod o'rnating!");
+        return;
+    }
+    const entered = prompt("PIN kiriting:");
+    if (entered === savedPin) {
+        alert("Xush kelibsiz! Yashirin chatlar ochildi.");
+    } else {
+        alert("PIN noto'g'ri!");
+    }
+}
+
+// ==========================================
+// 5. ADMIN PANEL FUNKSIYALARI
+// ==========================================
+
+function checkAdminAccess() {
+    const phone = localStorage.getItem('user_phone');
+    const adminBtn = document.getElementById('adminAccessBtn');
+    if((phone === '958883851' || phone === '+998958883851') && adminBtn) {
+        adminBtn.classList.remove('hidden');
+    }
+}
+
+function showAdminPanel() {
+    const panel = document.createElement('div');
+    panel.id = "adminOverlay";
+    panel.className = "fixed inset-0 bg-black z-[100] p-6 font-mono text-green-500 overflow-y-auto";
+    panel.innerHTML = `
+        <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
+            <h2 class="text-xl font-bold tracking-tighter">SAFECHAT_CORE_ROOT</h2>
+            <button onclick="document.getElementById('adminOverlay').remove()" class="bg-red-600 text-white px-3 py-1 rounded text-xs">EXIT</button>
+        </div>
+        <div class="space-y-4">
+            <div class="bg-green-950/30 p-4 rounded border border-green-900 text-sm">
+                <span>Server: <b class="text-green-400">ONLINE</b></span> | 
+                <span>Users: <b class="text-green-400" id="stat_total">...</b></span>
+            </div>
+            <table class="w-full text-[10px] text-left">
+                <thead class="bg-green-900 text-black">
+                    <tr><th class="p-2">User</th><th class="p-2">IP</th><th class="p-2">Action</th></tr>
+                </thead>
+                <tbody id="adminUsersList"></tbody>
+            </table>
+        </div>
+    `;
+    document.body.appendChild(panel);
+    loadAdminStats();
+}
+
+async function loadAdminStats() {
+    try {
+        const res = await fetch('/api/admin/stats');
+        const data = await res.json();
+        const totalEl = document.getElementById('stat_total');
+        if(totalEl) totalEl.innerText = data.total;
+    } catch(e) { console.log("Admin stats error"); }
+}
+
+async function adminDeleteUser(username) {
+    if(!confirm(`${username}ni o'chirmoqchimisiz?`)) return;
+    const res = await fetch(`${API}/api/admin/delete_user`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ admin: localStorage.getItem('username'), target: username })
+    });
+    if(res.ok) alert("O'chirildi!");
+}
+
+// ==========================================
+// 6. FOYDALANUVCHI PROFILI (VIEW) VA MEDIA
+// ==========================================
+
 let currentViewedUser = null;
 
-// --- 1. PROFILNI OCHISH (Socket/Data bilan) ---
+function renderProfileUI(user) {
+    const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
+    safeSet('fullProfileName', user.name);
+    safeSet('fullProfileStatus', user.status);
+    safeSet('fullProfilePhone', user.phone);
+    safeSet('fullProfileUsername', user.username);
+    safeSet('fullProfileBio', user.bio);
+    
+    const imgEl = document.getElementById('fullProfileImg');
+    const blurEl = document.getElementById('bgBlurImg');
+    if(imgEl) imgEl.src = user.img;
+    if(blurEl) blurEl.src = user.img;
+}
+
 function openUserMenu(userData = null) {
-    // Agar data kelmasa, chat headerdan ma'lumotlarni yig'ish
     if (!userData) {
         currentViewedUser = {
-            id: document.getElementById('activeChatImg').getAttribute('data-user-id'),
-            name: document.getElementById('activeName').innerText,
-            img: document.getElementById('activeChatImg').src,
-            phone: "+998 90 123 45 67", // Bularni bazadan chaqirish kerak
-            username: "@" + document.getElementById('activeName').innerText.toLowerCase().replace(/\s/g, ''),
-            bio: "SafeChat Connection Connection a'zosi",
+            id: document.getElementById('activeChatImg')?.getAttribute('data-user-id'),
+            name: document.getElementById('activeName')?.innerText || "User",
+            img: document.getElementById('activeChatImg')?.src,
+            phone: "+998 90 123 45 67",
+            username: "@" + (document.getElementById('activeName')?.innerText || "user").toLowerCase().replace(/\s/g, ''),
+            bio: "SafeChat Connection a'zosi",
             status: "online"
         };
     } else {
@@ -3096,339 +3227,62 @@ function openUserMenu(userData = null) {
     }
 
     renderProfileUI(currentViewedUser);
-
-    document.getElementById('fullUserProfile').classList.remove('hidden');
-    document.getElementById('fullUserProfile').classList.add('flex');
-    
+    const profileModal = document.getElementById('fullUserProfile');
+    if(profileModal) {
+        profileModal.classList.remove('hidden');
+        profileModal.classList.add('flex');
+    }
     loadSharedMedia();
-}
-
-// UI-ni yangilash funksiyasi
-function renderProfileUI(user) {
-    document.getElementById('fullProfileName').innerText = user.name;
-    document.getElementById('fullProfileImg').src = user.img;
-    document.getElementById('bgBlurImg').src = user.img;
-    document.getElementById('fullProfileStatus').innerText = user.status;
-    document.getElementById('fullProfilePhone').innerText = user.phone;
-    document.getElementById('fullProfileUsername').innerText = user.username;
-    document.getElementById('fullProfileBio').innerText = user.bio;
-}
-
-// 1. Socket orqali real-time yangilanishni eshitish (Yagona va to'liq variant)
-socket.on('user_update', (data) => {
-    console.log("Real-time yangilanish keldi:", data);
-    
-    // A. AGAR PROFIL OYNASI OCHIQ BO'LSA
-    // (currentViewedUser va data.userId orqali tekshiramiz)
-    if (currentViewedUser && (currentViewedUser.id === data.userId || currentViewedUser.username === data.userId)) {
-        // Obyektni yangilaymiz
-        currentViewedUser = { ...currentViewedUser, ...data.updatedFields };
-        
-        // UI elementlarini yangilash
-        if (data.updatedFields.name) document.getElementById('fullProfileName').innerText = data.updatedFields.name;
-        if (data.updatedFields.bio) document.getElementById('fullProfileBio').innerText = data.updatedFields.bio;
-        if (data.updatedFields.phone) document.getElementById('fullProfilePhone').innerText = data.updatedFields.phone;
-        
-        if (data.updatedFields.img) {
-            const fullUrl = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
-            document.getElementById('fullProfileImg').src = fullUrl;
-            document.getElementById('bgBlurImg').src = fullUrl;
-        }
-    }
-
-    // B. CHAT HEADERINI YANGILASH (Tepadagi kichik rasm va ism)
-    const headerImg = document.getElementById('activeChatImg');
-    // data-user-id atributi orqali tekshiramiz
-    if (headerImg && headerImg.getAttribute('data-user-id') === data.userId) {
-        if (data.updatedFields.name) document.getElementById('activeName').innerText = data.updatedFields.name;
-        if (data.updatedFields.img) {
-            headerImg.src = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
-        }
-    }
-
-    // C. CHAT LIST (RO'YXAT)DAGI RASMLARNI YANGILASH
-    // Bu qism ro'yxatda turgan foydalanuvchini ham o'sha zaxoti yangilaydi
-    document.querySelectorAll('.chat-card').forEach(card => {
-        // Chat card ichida ismni topish (h5 tegi)
-        const cardName = card.querySelector('h5').innerText;
-        if (cardName === data.userId) {
-            const img = card.querySelector('img');
-            if (img && data.updatedFields.img) {
-                img.src = data.updatedFields.img.startsWith('http') ? data.updatedFields.img : API + data.updatedFields.img;
-            }
-        }
-    });
-});
-
-// --- 3. TELEFON AMALLARI ---
-function openPhoneActions() {
-    const phone = document.getElementById('fullProfilePhone').innerText;
-    document.getElementById('actionSheetNumber').innerText = phone;
-    document.getElementById('callBtn').href = "tel:" + phone;
-    
-    document.getElementById('phoneActionOverlay').classList.add('active');
-    document.getElementById('phoneActionSheet').classList.add('active');
-}
-
-function closePhoneMenu() {
-    document.getElementById('phoneActionOverlay').classList.remove('active');
-    document.getElementById('phoneActionSheet').classList.remove('active');
-}
-
-
-// --- 4. RASM VA MEDIA ---
-function expandImage() {
-    const src = document.getElementById('fullProfileImg').src;
-    if (src.includes('ui-avatars')) return; // Rasm bo'lmasa ochmaydi
-
-    document.getElementById('expandedImg').src = src;
-    document.getElementById('viewerName').innerText = currentViewedUser.name;
-    document.getElementById('photoViewer').classList.remove('hidden');
-    document.getElementById('photoViewer').classList.add('flex');
-}
-
-function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
-function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
-
-async function downloadProfileImg() {
-    const link = document.createElement('a');
-    link.href = document.getElementById('fullProfileImg').src;
-    link.download = 'profile.jpg';
-    link.click();
 }
 
 function loadSharedMedia() {
     const container = document.getElementById('sharedMediaContent');
+    if(!container) return;
     container.innerHTML = '';
     const images = document.querySelectorAll('#msgBox img');
+    
     images.forEach(img => {
         const div = document.createElement('div');
-        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100";
-        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover">`;
+        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer";
+        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover" onclick="expandImage('${img.src}')">`;
         container.appendChild(div);
     });
-}
-/**
- * 2. UI-NI YANGILASH (Real-time uchun alohida funksiya)
- */
-function renderProfileData(user) {
-    if (!user) return;
-    
-    document.getElementById('fullProfileName').innerText = user.name;
-    document.getElementById('fullProfileImg').src = user.img;
-    document.getElementById('bgBlurImg').src = user.img;
-    document.getElementById('fullProfileStatus').innerText = user.status || "online";
-    document.getElementById('fullProfilePhone').innerText = user.phone || "Mavjud emas";
-    document.getElementById('fullProfileUsername').innerText = user.username || "@user";
-    document.getElementById('fullProfileBio').innerText = user.bio || "Bio kiritilmagan";
+    if(images.length === 0) container.innerHTML = "<p class='text-center text-gray-400 text-xs w-full col-span-3'>Media yo'q</p>";
 }
 
-
-// Rasmni yuklab olish
-async function downloadProfileImg() {
-    const url = document.getElementById('fullProfileImg').src;
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `SafeChat_${currentViewedUser.name}.jpg`;
-        a.click();
-        URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-        alert("Rasmni yuklab bo'lmadi.");
+function expandImage(src) {
+    const viewer = document.getElementById('photoViewer');
+    const img = document.getElementById('expandedImg');
+    if(viewer && img) {
+        img.src = src || document.getElementById('fullProfileImg').src;
+        viewer.classList.remove('hidden');
+        viewer.classList.add('flex');
     }
 }
 
-// --- 1. TELEFON MENYUSINI OCHISH ---
+function closePhotoViewer() { document.getElementById('photoViewer')?.classList.add('hidden'); }
+function closeFullProfile() { document.getElementById('fullUserProfile')?.classList.add('hidden'); }
+
 function copyInfo(type) {
-    if (type === 'phone') {
-        const phone = document.getElementById('fullProfilePhone').innerText;
-        document.getElementById('actionSheetNumber').innerText = phone;
-        document.getElementById('callBtn').href = "tel:" + phone; // Haqiqiy qo'ng'iroq uchun
-        
-        // Menyuni ko'rsatish
-        document.getElementById('phoneActionOverlay').classList.add('active');
-        document.getElementById('phoneActionSheet').classList.add('active');
-    } else {
-        // Username uchun oddiy nusxalash
-        const username = document.getElementById('fullProfileUsername').innerText;
-        navigator.clipboard.writeText(username).then(() => alert("Username nusxalandi!"));
+    let val = "";
+    if(type === 'phone') val = document.getElementById('fullProfilePhone')?.innerText;
+    else val = document.getElementById('fullProfileUsername')?.innerText;
+
+    navigator.clipboard.writeText(val).then(() => alert(type + " nusxalandi!"));
+}
+
+// ==========================================
+// INITIALIZATION (ISHGA TUSHIRISH)
+// ==========================================
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
+    updateDeviceInfo();
+    checkAdminAccess();
+    if (localStorage.getItem('username')) {
+        updateAllUI();
     }
-}
-
-
-// --- 3. MENYUNI YOPISH ---
-function closePhoneMenu() {
-    document.getElementById('phoneActionOverlay').classList.remove('active');
-    document.getElementById('phoneActionSheet').classList.remove('active');
-}
-
-// Ulashish (Share)
-function shareUserProfile() {
-    if (navigator.share) {
-        navigator.share({
-            title: currentViewedUser.name,
-            text: `SafeChat'da ${currentViewedUser.name} bilan bog'laning`,
-            url: window.location.href
-        });
-    }
-}
-
-// Profilni va Photo Viewerni yopish
-function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
-function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
-
-function loadSharedMedia(userId) {
-    const container = document.getElementById('sharedMediaContent');
-    container.innerHTML = ''; // Tozalash
-
-    // Bu yerda chatBox (msgBox) ichidagi barcha rasmlarni qidiramiz
-    const allMessages = document.querySelectorAll('#msgBox img');
-    let count = 0;
-
-    allMessages.forEach(img => {
-        count++;
-        const div = document.createElement('div');
-        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer active:scale-95 transition";
-        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover" onclick="openFullImage('${img.src}')">`;
-        container.appendChild(div);
-    });
-
-    if (count === 0) {
-        container.innerHTML = `<p class="col-span-3 text-center text-gray-400 text-[10px] py-10">Media mavjud emas</p>`;
-    }
-}
-
-function switchMediaTab(type, btn) {
-    // Tab rangini o'zgartirish
-    document.querySelectorAll('.active-tab').forEach(el => {
-        el.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
-        el.classList.add('text-gray-400');
-    });
-    btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
-    
-    // Kontentni filterlash (Bu yerda fayl yoki linklarni yuklash mantiqi bo'ladi)
-    loadSharedMedia(currentViewedUser.id);
-}
-///
-// OPEN / CLOSE FULL PROFILE
-  function closeFullProfile() { document.getElementById('fullUserProfile').classList.add('hidden'); }
-  
-  // PHOTO VIEWER
-  function expandImage() { document.getElementById('photoViewer').classList.remove('hidden'); }
-  function closePhotoViewer() { document.getElementById('photoViewer').classList.add('hidden'); }
-
-  // PHONE ACTION SHEET
-  function openPhoneActions() {
-    document.getElementById('phoneActionOverlay').classList.remove('hidden');
-    document.getElementById('phoneActionSheet').classList.add('active');
-  }
-  function closePhoneMenu() {
-    document.getElementById('phoneActionOverlay').classList.add('hidden');
-    document.getElementById('phoneActionSheet').classList.remove('active');
-  }
-
-  // COPY PHONE / INFO
-  function copyPhoneNumber() { navigator.clipboard.writeText(document.getElementById('fullProfilePhone').textContent); alert("Raqam nusxalandi!"); }
-  function copyInfo(type) {
-    let val = type === 'username' ? document.getElementById('fullProfileUsername').textContent : '';
-    navigator.clipboard.writeText(val); alert(type + " nusxalandi!");
-  }
-
-  // MEDIA TABS
-  function switchMediaTab(tab, el) {
-    const buttons = el.parentElement.querySelectorAll('button');
-    buttons.forEach(b => b.classList.remove('text-blue-600', 'border-b-2'));
-    el.classList.add('text-blue-600', 'border-b-2', 'border-blue-600', 'active-tab');
-    // TODO: load media/files/links based on tab
-    console.log("Active Tab:", tab);
-  }
-
-  /**
- * 1. ADMIN PANELNI OCHISH VA MA'LUMOTLARNI TAHLIL QILISH
- */
-async function openAdminPanelV2() {
-    const adminUser = localStorage.getItem('username');
-    document.getElementById('adminPanel').classList.remove('hidden');
-
-    // Stats
-    const stats = await (await fetch(`${API}/api/admin/stats?username=${adminUser}`)).json();
-    renderAdminStats(stats);
-
-    // Users
-    const users = await (await fetch(`${API}/api/admin/users?username=${adminUser}`)).json();
-    renderAdminUsers(users);
-
-    // Groups
-    loadAdminEntities();
-}
-
-function renderAdminStats(stats) {
-    const grid = document.getElementById('adminStatsGrid');
-    const items = [
-        { label: 'Jami Userlar', val: stats.total, color: 'text-blue-500', icon: 'fa-users' },
-        { label: 'Hozir Online', val: stats.online, color: 'text-green-500', icon: 'fa-signal' },
-        { label: 'Xabarlar soni', val: stats.messages, color: 'text-purple-500', icon: 'fa-message' },
-        { label: 'Barcha Guruhlar', val: stats.groups, color: 'text-orange-500', icon: 'fa-folder' }
-    ];
-    grid.innerHTML = items.map(i => `
-        <div class="admin-stat-card">
-            <div class="flex items-center gap-3 mb-2">
-                <i class="fa-solid ${i.icon} ${i.color} text-xs"></i>
-                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">${i.label}</span>
-            </div>
-            <div class="text-3xl font-black">${i.val}</div>
-        </div>
-    `).join('');
-}
-
-
-async function adminEditUser(username) {
-    const newName = prompt(`${username} uchun yangi ism kiriting:`);
-    const newBio = prompt(`Yangi bio:`);
-    if(!newName) return;
-
-    const res = await fetch(`${API}/api/admin/edit_user`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ 
-            admin: localStorage.getItem('username'),
-            target: username,
-            name: newName,
-            bio: newBio
-        })
-    });
-    if(res.ok) { alert("O'zgartirildi!"); openAdminPanelV2(); }
-}
-
-function broadcastPrompt() {
-    const msg = prompt("Barcha foydalanuvchilarga nima deb xabar yubormoqchisiz?");
-    if(msg) {
-        socket.emit('admin_broadcast', {
-            message: msg,
-            sender: 'Tizim Mamuri'
-        });
-        alert("Xabar yuborildi!");
-    }
-}
-
-
-async function adminDeleteUser(username) {
-    if(!confirm(`${username} akkauntini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!`)) return;
-
-    const res = await fetch(`${API}/api/admin/delete_user`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ 
-            admin: localStorage.getItem('username'),
-            target: username
-        })
-    });
-    if(res.ok) { alert("Akkaunt o'chirildi!"); openAdminPanelV2(); }
-}
-
+});
 /**
  * ADMIN YUBORGAN GLOBAL XABARNI QABUL QILISH
  */
@@ -3518,6 +3372,49 @@ window.addEventListener('appinstalled', () => {
     deferredPrompt = null;
 });
 
+// 1. Notification funksiyasi
+    function showIOSNotification(title, message, icon = "fa-comment") {
+        const old = document.getElementById('iosNotif');
+        if (old) old.remove();
+
+        const notif = document.createElement('div');
+        notif.id = 'iosNotif';
+        notif.className = "fixed top-4 left-4 right-4 bg-white/90 backdrop-blur-xl z-[9999] rounded-[24px] p-4 shadow-2xl border border-white/20 flex items-center gap-4 animate-slide-down cursor-pointer";
+        notif.innerHTML = `
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid ${icon}"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="text-sm font-black text-gray-900">${title}</h4>
+                <p class="text-xs text-gray-500 line-clamp-1">${message}</p>
+            </div>
+            <div class="w-1 h-8 bg-gray-200 rounded-full"></div>
+        `;
+        document.body.appendChild(notif);
+
+        setTimeout(() => {
+            if(notif) {
+                notif.classList.replace('animate-slide-down', 'animate-slide-up');
+                setTimeout(() => notif.remove(), 500);
+            }
+        }, 4000);
+    }
+
+    // 2. Logout funksiyasi
+    async function logout() {
+        if (!confirm("Haqiqatdan ham hisobdan chiqmoqchimisiz?")) return;
+        const username = localStorage.getItem("chat_user");
+        try {
+            await fetch('/api/logout', { // API yo'lini to'g'rilang
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username })
+            });
+        } catch (e) { console.log("Server error"); }
+
+        localStorage.clear(); 
+        window.location.href = "/"; 
+    }
          </script>
 </body>
 </html>

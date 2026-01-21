@@ -71,22 +71,51 @@ class Message(db.Model):
 
 class Entity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    creator = db.Column(db.String(80), nullable=False)
-    entity_type = db.Column(db.String(20))  # 'group' yoki 'channel'
-    members = db.Column(db.Text)
-
-# YANGI: Reels uchun model
-class Reel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False)          # kim yuklagan
-    url = db.Column(db.String(500), nullable=False)              # video manzili
-    caption = db.Column(db.Text, nullable=True)                  # tavsif
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(20))  # 'group' yoki 'channel'
+    creator = db.Column(db.String(100))
+    image = db.Column(db.String(200), default='https://ui-avatars.com/api/?name=G&background=random')
+    # Dizayn sozlamalari (rang, gradient va hokazo)
+    theme_color = db.Column(db.String(50), default='from-blue-500 to-indigo-600')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    likes = db.Column(db.Integer, default=0)
-    views = db.Column(db.Integer, default=0)
-    liked_by = db.Column(db.Text, default="[]")  # JSON string sifatida usernames ro'yxati
-    
+
+class EntityMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    entity_id = db.Column(db.Integer, db.ForeignKey('entity.id'))
+    username = db.Column(db.String(100))
+    role = db.Column(db.String(20), default='member') # 'admin' yoki 'member'
+
+# --- API YO'NALISHLARI ---
+@app.route('/api/create_entity', methods=['POST'])
+def create_entity():
+    data = request.json
+    name = data.get('name')
+    etype = data.get('type')
+    username = data.get('username')
+
+    if not name:
+        return jsonify({"status": "error", "message": "Nom kiritilmagan"}), 400
+
+    new_ent = Entity(
+        name=name, 
+        type=etype, 
+        creator=username,
+        theme_color='from-purple-600 to-blue-500' if etype == 'group' else 'from-orange-500 to-red-500'
+    )
+    db.session.add(new_ent)
+    db.session.commit()
+    return jsonify({"status": "success", "name": name})
+
+@app.route('/api/entities')
+def get_entities():
+    ents = Entity.query.all()
+    return jsonify([{
+        "name": e.name, 
+        "type": e.type, 
+        "theme": e.theme_color,
+        "member_count": 1 # Default
+    } for e in ents])
+
 class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
@@ -659,16 +688,15 @@ def get_admin_stats():
 @app.route('/api/update_profile', methods=['POST'])
 def update_profile():
     data = request.json
-    user = User.query.filter_by(username=data['username']).first()
+    user = User.query.filter_by(username=data.get('username')).first()
     if user:
-        user.bio = data.get('bio', user.bio)
+        field = data.get('field')
+        value = data.get('value')
+        if field == 'name': user.username = value
+        if field == 'bio': user.bio = value
         db.session.commit()
-        socketio.emit('user_update', {  # Yangi emit qo'shilgan
-            "userId": user.username,
-            "updatedFields": {"bio": user.bio}
-        }, broadcast=True)
-        return jsonify({"status": "success"})
-    return jsonify({"message": "User topilmadi"}), 404
+        return jsonify({"success": True})
+    return jsonify({"success": False}), 404
 
 @app.route('/api/update_user', methods=['POST'])
 def update_user():
@@ -742,33 +770,44 @@ def handle_join(data):
 def handle_send(data):
     try:
         sender_u = data.get('sender')
-        receiver_u = data.get('receiver')
+        receiver_u = data.get('receiver') # Guruh nomi yoki foydalanuvchi nomi
         msg_type = data.get('type', 'text')
         content = data.get('content', '')
+        chat_type = data.get('chat_type', 'private') # 'private' yoki 'group'
         
-        is_entity = Entity.query.filter_by(name=receiver_u).first()
-        if not is_entity:
+        # 1. Bloklanganligini tekshirish (faqat shaxsiy chat uchun)
+        if chat_type == 'private':
             if user_is_blocked_by(receiver_u, sender_u):
-                print(f"BLOCKED: {sender_u} -> {receiver_u}")
                 return
         
+        # 2. Bazaga saqlash
         reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
         new_msg = Message(
             sender=sender_u,
             receiver=receiver_u,
             content=content,
             msg_type=msg_type,
-            reply_info=reply_json
+            reply_info=reply_json,
+            # Agarda Message modelida chat_type ustuni bo'lsa:
+            # chat_type=chat_type 
         )
         db.session.add(new_msg)
         db.session.commit()
         
+        # 3. Ma'lumotlarni boyitish
         data['id'] = new_msg.id
         data['timestamp'] = datetime.utcnow().strftime('%H:%M')
         
-        emit('receive_message', data, to=receiver_u)
-        if receiver_u != sender_u:
-            emit('receive_message', data, to=sender_u)
+        # 4. Xabarni tarqatish
+        if chat_type == 'group':
+            # Guruh xonasidagi hamma a'zolarga (shu jumladan yuboruvchiga ham)
+            emit('receive_message', data, room=receiver_u)
+        else:
+            # Shaxsiy xabar: qabul qiluvchiga va yuboruvchining o'ziga
+            emit('receive_message', data, room=receiver_u)
+            if receiver_u != sender_u:
+                emit('receive_message', data, room=sender_u)
+                
     except Exception as e:
         print(f"ERROR_SEND: {e}")
         db.session.rollback()
@@ -909,36 +948,59 @@ def handle_profile_update(data):
             "bio": new_bio
         }, broadcast=False)
 
-@app.route('/api/posts/<username>')
-def get_user_posts(username):
-    # Hozircha namunaviy ma'lumot
-    posts = [
-        {"id": 1, "url": "https://picsum.photos/400/400?random=1", "likes": 12},
-        {"id": 2, "url": "https://picsum.photos/400/400?random=2", "likes": 5},
-        {"id": 3, "url": "https://picsum.photos/400/400?random=3", "likes": 44},
-    ]
-    return jsonify(posts)
+
+# Postlar uchun media papkasi
+POSTS_FOLDER = os.path.join('uploads', 'posts')
+os.makedirs(POSTS_FOLDER, exist_ok=True)
+
+# app.py ichiga qo'shing
+@app.route('/api/news/view/<int:post_id>', methods=['POST'])
+def update_post_view(post_id):
+    post = Post.query.get(post_id)
+    if post:
+        post.views += 1
+        db.session.commit()
+        # Barcha foydalanuvchilarga yangi ko'rishlar sonini yuborish
+        socketio.emit('update_views', {'post_id': post_id, 'views': post.views})
+        return jsonify({"status": "success", "new_views": post.views})
+    return jsonify({"status": "error"}), 404
+
+# Modelni yangilash
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    media_urls = db.Column(db.JSON)  # ['uploads/posts/1.jpg', ...]
+    post_type = db.Column(db.String(50)) # 'video', 'image', 'reels', 'audio'
+    views = db.Column(db.Integer, default=0) # KO'RISHLAR SONI
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+@app.route('/api/news-feed')
+def get_news_feed():
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    output = []
+    for post in posts:
+        output.append({
+            "id": post.id,
+            "type": post.post_type,
+            "title": post.title,
+            "description": post.description,
+            "media": post.media_urls,
+            "links": post.links
+        })
+    return jsonify(output)
 
 @app.route('/api/logout', methods=['POST'])
 def logout_api():
     data = request.json
     username = data.get('username')
-    
     if username:
         user = User.query.filter_by(username=username).first()
         if user:
             user.is_online = False
             db.session.commit()
-            
-            # Socket.io dan disconnect (ixtiyoriy, lekin yaxshi)
-            try:
-                socketio.emit('user_disconnected', {'username': username}, broadcast=True)
-            except:
-                pass  # Agar socket ishlamasa, xato bermaydi
-            
-            return jsonify({"success": True, "message": "Muvaffaqiyatli tizimdan chiqdingiz"})
-    
-    return jsonify({"success": False, "message": "Username topilmadi"}), 400
+            socketio.emit('user_disconnected', {'username': username}, broadcast=True)
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
