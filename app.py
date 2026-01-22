@@ -107,7 +107,7 @@ def create_entity():
     return jsonify({"status": "success", "name": name})
 
 @app.route('/api/entities')
-def get_entities():
+def get_all_entities():
     # Barcha ommaviy guruh/kanallarni olish
     ents = Entity.query.all()
     return jsonify([{
