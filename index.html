@@ -2513,6 +2513,7 @@ function publishAnnouncement() {
 // 1. Ovozli xabarnoma fayli (Istalgan qisqa mp3 linkini qo'yishingiz mumkin)
 const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
+// SOCKET.ON RECEIVE_MESSAGE (TO‘LIQ YANGILANGAN VERSIYA)
 socket.on('receive_message', (data) => {
     console.log("Yangi xabar keldi:", data);
 
@@ -2522,11 +2523,11 @@ socket.on('receive_message', (data) => {
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // Agar hozirgi ochiq chat bo‘lsa
+    // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
     if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
-        // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (chunki sendMsg() da allaqachon qo‘shilgan)
+        // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (sendMsg da allaqachon qo‘shilgan)
         if (data.sender === currentUser) {
-            // Faqat vaqtinchalik xabarni yangilash (masalan, serverdan kelgan id ni qo‘yish)
+            // Vaqtinchalik xabarni yangilash (serverdan kelgan id ni qo‘yish)
             const tempMsg = document.querySelector(`[id^="container-temp-"]`);
             if (tempMsg) {
                 tempMsg.id = `container-${data.id}`;
@@ -2543,81 +2544,160 @@ socket.on('receive_message', (data) => {
             msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
         }
     } else {
-        // Boshqa chatda bo‘lsa bildirishnoma
-        showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar");
+        // Boshqa chatda bo‘lsa — bildirishnoma va ro‘yxatni yangilash
+        showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar", data.sender);
     }
 
-    // Chat ro‘yxatini yangilash
+    // Har doim chat ro‘yxatini yangilash (kim yozsa tepaga chiqadi)
     refreshChatListSilently();
 });
 
-async function refreshChatListSilently() {
-    const chatList = document.getElementById('chatList');
-    if (!chatList || !currentUser) return;
+// LOADLIST FUNKSİYASI (TO‘LIQ YANGILANGAN VERSIYA)
+async function loadList(tab) {
+    let list;
+    if (tab === 'chats') {
+        list = document.getElementById('chatList');
+    } else if (tab === 'groups') {
+        list = document.getElementById('groupsList');
+    } else {
+        return;
+    }
+    if (!list) return;
+
+    // Skeleton yuklanmoqda holati
+    list.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
+            <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
+            <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
+            <div class="h-2 w-20 bg-gray-50 rounded"></div>
+        </div>`;
 
     try {
-        const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-        if (!res.ok) throw new Error("Chatlar ro'yxati yuklanmadi");
+        if (tab === 'chats') {
+            const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
+            if (!res.ok) throw new Error(`Server xatosi: ${res.status}`);
+            const contacts = await res.json();
+            list.innerHTML = "";
 
-        const contacts = await res.json();
-        chatList.innerHTML = ""; // Eski ro'yxatni tozalash
+            if (!contacts || contacts.length === 0) {
+                list.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                        <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
+                        <p class="font-bold text-sm">Suhbatlar yo‘q</p>
+                    </div>`;
+                return;
+            }
 
-        if (contacts.length === 0) {
-            chatList.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
-                    <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
-                    <p class="font-bold text-sm">Suhbatlar yo‘q</p>
-                </div>`;
-            return;
+            contacts.forEach(contact => {
+                const name = typeof contact === 'object' ? contact.username : contact;
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50 transition";
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black">${name}</h3>
+                        <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
+                    </div>
+                `;
+                div.onclick = () => openChat(name, 'private');
+                div.oncontextmenu = e => {
+                    e.preventDefault();
+                    openDeleteActionSheet(name, 'chat');
+                };
+                list.appendChild(div);
+            });
+        } 
+        else if (tab === 'groups') {
+            const res = await fetch(`${API}/api/entities`);
+            if (!res.ok) throw new Error(`Server xatosi: ${res.status}`);
+            const entities = await res.json();
+            list.innerHTML = "";
+
+            if (!entities || entities.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-20 opacity-60">
+                        <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
+                        <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
+                    </div>`;
+                return;
+            }
+
+            entities.forEach(ent => {
+                const isGroup = ent.type === 'group';
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50 transition";
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
+                        <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black">${ent.name}</h3>
+                        <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
+                    </div>
+                `;
+                div.onclick = () => openChat(ent.name, ent.type);
+                div.oncontextmenu = e => {
+                    e.preventDefault();
+                    openDeleteActionSheet(ent.name, 'group');
+                };
+                list.appendChild(div);
+            });
         }
-
-        contacts.forEach(contact => {
-            const name = contact.username || contact;
-            const div = document.createElement('div');
-            div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50 transition";
-            div.innerHTML = `
-                <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-                <div class="flex-1">
-                    <h3 class="font-black">${name}</h3>
-                    <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                </div>
-            `;
-            div.onclick = () => openChat(name, 'private');
-            div.oncontextmenu = e => {
-                e.preventDefault();
-                openDeleteActionSheet(name, 'chat');
-            };
-            chatList.appendChild(div);
-        });
     } catch (e) {
-        console.error("Chat ro'yxatini yangilashda xato:", e);
-        chatList.innerHTML = `<div class="text-center py-10 text-red-500 text-sm">Ro'yxat yuklanmadi</div>`;
+        console.error("LOAD LIST ERROR:", e);
+        list.innerHTML = `
+            <div class="text-center py-20 text-red-500 font-bold">
+                <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
+                Ulanishda xatolik<br>
+                <small class="text-xs opacity-70">Internetni tekshiring yoki keyinroq urinib ko‘ring</small>
+            </div>`;
     }
 }
 
-function showToast(title, body) {
-    // Brauzer bildirishnomasi
+function showToast(title, body, senderUsername = null) {
+    // Brauzer bildirishnomasi (fon rejimida)
     if (Notification.permission === "granted") {
         new Notification(title, {
             body: body,
             icon: 'https://ui-avatars.com/api/?name=SafeChat&background=007aff&color=fff'
         });
     } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                new Notification(title, { body: body, icon: '...' });
-            }
-        });
+        Notification.requestPermission();
     }
 
-    // Ekrandagi chiroyli bildirishnoma (ixtiyoriy)
+    // iOS-style ekrandagi bildirishnoma (yuqoridan tushadi)
     const toast = document.createElement('div');
-    toast.className = "fixed top-4 right-4 bg-blue-600 text-white p-4 rounded-xl shadow-lg z-[9999] animate-slide-down";
-    toast.innerHTML = `<strong>${title}</strong><br><small>${body}</small>`;
+    toast.id = 'iosNotif';
+    toast.className = "fixed top-4 left-4 right-4 bg-white/90 backdrop-blur-xl z-[9999] rounded-[24px] p-4 shadow-2xl border border-white/20 flex items-center gap-4 animate-slide-down cursor-pointer";
+    toast.innerHTML = `
+        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+            <i class="fa-solid fa-comment"></i>
+        </div>
+        <div class="flex-1">
+            <h4 class="text-sm font-black text-gray-900">${title}</h4>
+            <p class="text-xs text-gray-500 line-clamp-1">${body}</p>
+        </div>
+        <div class="w-1 h-8 bg-gray-200 rounded-full"></div>
+    `;
+
+    // Agar bildirishnomaga bossangiz — chatga o‘tadi
+    if (senderUsername) {
+        toast.onclick = () => {
+            openChat(senderUsername, 'private');
+            switchTab('chats');
+            toast.remove();
+        };
+    }
+
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+
+    // 4 soniyadan keyin yo‘qoladi
+    setTimeout(() => {
+        toast.classList.replace('animate-slide-down', 'animate-slide-up');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
 }
 
 // Sahifa yuklanganda bildirishnomaga ruxsat so'rash
