@@ -85,6 +85,31 @@
         @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
         .refresh-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #007aff; animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Tab nomlarini butunlay yashirish - messenjer chiroyli ko'rinishi uchun */
+#tabTitle {
+    display: none !important;  /* "Chatlar", "Yangiliklar" va hokazo nomlar yo'qoladi */
+}
+
+/* Header (yuqori qism) ni toza qilish */
+header.p-4.bg-white\/80 {
+    padding-top: 1rem;
+    border-bottom: none;  /* Chegarani olib tashlaymiz */
+}
+
+/* Xabar oynasini to'liq ekran balandligiga moslashtirish */
+#msgBox {
+    height: calc(100vh - 150px);  /* Header va footer balandligini ayirib, to'liq joy egallaydi */
+    overflow-y: auto;
+}
+
+/* Javob oldindan ko'rinishi (reply preview) to'g'ri ko'rinishi uchun */
+#replyPreview {
+    display: block !important;
+    background: #f0f0f0;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
 
 </style>
 </head>
@@ -647,6 +672,13 @@
         let currentUploadType = 'file';
         let activeChatType = 'private';
 
+        // Socket ulanishini tekshirish (muammo bo'lsa konsolda ko'rinadi)
+socket.on('connect', () => {
+    console.log('Socket muvaffaqiyatli ulandi!');
+});
+socket.on('connect_error', (err) => {
+    console.error('Socket ulanish xatosi:', err);
+});
         // --- AUTH & CORE ---
         function toggleAuth(isReg) {
             document.getElementById('loginView').classList.toggle('hidden', isReg);
@@ -1519,8 +1551,9 @@ async function addMemberToGroup(groupName, username) {
 
 function openChat(name, type = 'private') {
     activeChat = name;
-    activeChatType = type;  // 'private' yoki 'group' — bu yerda to'g'ri o'rnatilishi SHART!
+    activeChatType = type;
 
+    // Chat oynasini ochish
     const chatArea = document.getElementById('chatArea');
     chatArea.style.display = 'flex';
     chatArea.classList.remove('hidden');
@@ -1528,14 +1561,31 @@ function openChat(name, type = 'private') {
     // Header ma'lumotlarini yangilash
     document.getElementById('activeName').innerText = name;
     document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
-    document.getElementById('activeStatus').innerText = type === 'group' ? "Guruh" : "online";
 
-    // Xabarlar oynasini tozalash
+    // Statusni to'g'ri ko'rsatish
+    const statusEl = document.getElementById('activeStatus');
+    if (statusEl) {
+        statusEl.innerText = type === 'group' ? "Guruh" : "online";
+    }
+
+    // Xabarlar oynasini tozalash va yuklanmoqda deb ko'rsatish
     const msgBox = document.getElementById('msgBox');
     msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
 
+    // Xabarlar ro'yxatini yuklash
     fetchMessages(name, type);
+
+    // Barcha ochiq sheetlarni yopish
     closeAllSheets();
+
+    // Shaxsiy chat bo'lsa — socket roomga qo'shilish (xabar almashish uchun muhim!)
+    if (type === 'private') {
+        socket.emit('join_private_chat', { 
+            user1: currentUser, 
+            user2: name 
+        });
+        console.log(`Shaxsiy chat roomiga qo'shildi: ${currentUser} va ${name}`);
+    }
 }
 async function fetchMessages(name, type) {
     const msgBox = document.getElementById('msgBox');
@@ -1574,37 +1624,33 @@ fixMobileHeight();
 function sendMsg(type = 'text', content = null) {
     const inp = document.getElementById('msgInp');
     const val = content || inp.value.trim();
-    if (!val || !activeChat) return alert("Xabar yoki suhbat tanlanmagan!");
+    if (!val || !activeChat) return alert("Xabar yozing!");
 
     const messageData = {
         sender: currentUser,
-        receiver: activeChat,              // guruh bo'lsa guruh nomi, shaxsiy bo'lsa username
+        receiver: activeChat,
         content: val,
-        chat_type: activeChatType,         // 'private' yoki 'group' — bu muhim!
         type: type,
-        reply_to: replyToId ? { 
-            id: replyToId, 
-            text: replyToText, 
-            sender: replyToSender 
-        } : null,
+        chat_type: activeChatType,
+        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    console.log("Yuborilayotgan xabar:", messageData); // debug uchun
+    console.log("Yuborilayotgan xabar:", messageData);  // Tekshirish uchun log
 
-    // Serverga yuborish
-    socket.emit('send_message', messageData);
+    if (isEditing) {
+        // Agar tahrirlayotgan bo'lsa
+        socket.emit('edit_message', { id: selectedMsgEditId, content: val });
+        isEditing = false;
+        selectedMsgEditId = null;
+        document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
+    } else {
+        socket.emit('send_message', messageData);
+    }
 
-    // Optimistik UI: o'z xabarini darhol ko'rsatish
-    appendMessage({
-        ...messageData,
-        id: 'temp-' + Date.now(),
-        isMe: true
-    });
-
+    appendMessage({ ...messageData, id: 'temp-' + Date.now(), isMe: true });
     inp.value = "";
-    inp.focus();
-    if (replyToId) cancelReply();
+    cancelReply();
 }
 
 function updateHeight() {
@@ -1677,14 +1723,14 @@ function appendMessage(data) {
     }
 
     // Reply
-    let replyMarkup = "";
-    if (data.reply_to) {
-        replyMarkup = `
-            <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80 cursor-pointer" onclick="scrollToMessage('${data.reply_to.id}')">
-                <b class="text-blue-600 block">${data.reply_to.sender}</b>
-                <p class="truncate text-gray-600">${data.reply_to.text}</p>
-            </div>`;
-    }
+let replyMarkup = "";
+if (data.reply_to) {
+    replyMarkup = `
+        <div class="bg-gray-100 p-2 rounded mb-2 text-xs">
+            <b>${data.reply_to.sender}:</b> ${data.reply_to.text}
+        </div>`;
+}
+// replyMarkup ni bubble innerHTML ga qo'shing
 
     // Guruhda yuboruvchi ismi
     let senderNameHTML = "";
@@ -1760,18 +1806,27 @@ function refreshProfileUI() {
             menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
             document.getElementById('sheetOverlay').classList.add('active');
         }
-
         function copyMsg() {
             const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
-            navigator.clipboard.writeText(txt);
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(txt).then(() => alert('Nusxalandi!'));
+            } else {
+                const el = document.createElement('textarea');
+                el.value = txt;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                alert('Nusxalandi!');
+            }
             closeAllSheets();
         }
 
         function startEditMsg() {
             isEditing = true;
+            selectedMsgEditId = selectedMsgId;
             const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
             document.getElementById('msgInp').value = txt;
-            document.getElementById('msgInp').focus();
             document.getElementById('sendBtnIcon').className = "fa-solid fa-check";
             closeAllSheets();
         }
@@ -2293,7 +2348,7 @@ socket.on('receive_message', (data) => {
     }
 
     // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
-    if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
+    if (activeChat && (activeChat === data.sender || activeChat === data.receiver || activeChat === data.room)) {
         // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (sendMsg da allaqachon qo‘shilgan)
         if (data.sender === currentUser) {
             // Vaqtinchalik xabarni yangilash (serverdan kelgan id ni qo‘yish)
@@ -2710,22 +2765,24 @@ function cancelReply() {
     if (preview) preview.classList.add('hidden');
 }
 
-// 5. Forward (Boshqaga yuborish)
 function handleForward() {
     const forwardText = selectedMsgText;
-    const targetUser = prompt("Kimga yubormoqchisiz? (Username)");
-    if(targetUser) {
-    // To'g'ri misol:
-        socket.emit('send_message', {
-            sender: currentUser,
-            receiver: activeChat,
-            content: messageText,
-            type: 'text'
-        });
-        alert("Yuborildi!");
+    const target = prompt("Kimga uzatmoqchisiz? (username kiriting)");
+    if (target) {
+        const originalChat = activeChat;
+        activeChat = target;
+        sendMsg('text', forwardText);
+        activeChat = originalChat;
+        alert("Uzatildi!");
     }
-    closeMenu();
+    closeAllSheets();
 }
+
+function handleReply() {
+    setupReply(selectedMsgId, selectedMsgText, selectedMsgSender);
+    closeAllSheets();
+}
+
 function bindContextEvents(element, data) {
     let pressTimer;
     const isMe = data.sender === currentUser;

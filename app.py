@@ -619,6 +619,14 @@ def upload_avatar():
     return jsonify({"message": "Xato"}), 400
 
 
+@socketio.on('join_private_chat')
+def join_private_chat(data):
+    user1 = data['user1']
+    user2 = data['user2']
+    room = '_'.join(sorted([user1, user2]))
+    join_room(room)
+    print(f"{user1} {user2} bilan shaxsiy chatga qo'shildi: {room}")
+
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
@@ -645,10 +653,13 @@ def handle_send(data):
     chat_type = data.get('chat_type')  # 'private' yoki 'group'
 
     if not sender or not receiver or not content:
+        print("Xato: yuboruvchi, qabul qiluvchi yoki kontent yo'q")
         return
 
+    # Guruh ekanligini tekshirish
     is_group = Entity.query.filter_by(name=receiver, type='group').first() is not None
 
+    # Yangi xabarni bazaga saqlash
     new_msg = Message(
         sender=sender,
         receiver=receiver,
@@ -660,6 +671,7 @@ def handle_send(data):
     db.session.add(new_msg)
     db.session.commit()
 
+    # Frontendga yuboriladigan ma'lumot
     message_data = {
         'id': new_msg.id,
         'sender': sender,
@@ -670,25 +682,29 @@ def handle_send(data):
         'timestamp': new_msg.timestamp.strftime('%H:%M')
     }
 
-    print(f"Xabar yuborildi: {message_data}")  # server konsolida ko'rinadi
+    print(f"Xabar yuborildi: {message_data}")  # Server konsolida ko'rinadi
 
+    # Xonani aniqlash va xabarni yuborish
     if is_group or chat_type == 'group':
+        # Guruh bo'lsa — faqat guruh xonasiga yuboramiz
         emit('receive_message', message_data, room=receiver, include_self=True)
+        print(f"Guruh xabari yuborildi: {receiver}")
     else:
-        emit('receive_message', message_data, to=receiver)
-        emit('receive_message', message_data, to=sender)
+        # Shaxsiy chat bo'lsa — ikkala foydalanuvchiga ham yuboramiz
+        # (room ishlatish uchun oldin join_private_chat orqali qo'shilgan bo'lishi kerak)
+        room = '_'.join(sorted([sender, receiver]))
+        emit('receive_message', message_data, room=room, include_self=True)
+        print(f"Shaxsiy xabar yuborildi: {room}")
 
 @socketio.on('edit_message')
 def handle_edit(data):
-    try:
-        msg = Message.query.get(data['id'])
-        if msg and msg.sender == data.get('sender'):
-            msg.content = data['content']
-            db.session.commit()
-            emit('message_edited', data, to=msg.receiver)
-            emit('message_edited', data, to=msg.sender)
-    except Exception as e:
-        print(f"EDIT_ERROR: {e}")
+    msg = Message.query.get(data['id'])
+    if msg and msg.sender == data.get('sender'):
+        msg.content = data['content']
+        db.session.commit()
+        room = msg.receiver if msg.chat_type == 'group' else '_'.join(sorted([msg.sender, msg.receiver]))
+        emit('message_edited', data, room=room)
+        print(f"Xabar tahrirlandi: {room}")
 
 @socketio.on('delete_message')
 def handle_delete(data):
