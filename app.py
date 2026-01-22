@@ -71,11 +71,10 @@ class Message(db.Model):
 
 class Entity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(20))  # 'group' yoki 'channel'
-    creator = db.Column(db.String(100))
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    type = db.Column(db.String(20), nullable=False)  # 'group' yoki 'channel'
+    creator = db.Column(db.String(100), nullable=False)
     image = db.Column(db.String(200), default='https://ui-avatars.com/api/?name=G&background=random')
-    # Dizayn sozlamalari (rang, gradient va hokazo)
     theme_color = db.Column(db.String(50), default='from-blue-500 to-indigo-600')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -657,23 +656,54 @@ def handle_delete(data):
         print(f"DELETE_ERROR: {e}")
 
 @socketio.on('create_entity')
-def handle_create_entity(data):
+@app.route('/api/create_entity', methods=['POST'])
+def create_entity():
+    if request.method == 'POST':
+        data = request.json
+    else:
+        data = request.get_json()
+
     name = data.get('name')
-    entity_type = data.get('type')
-    creator = data.get('creator')
+    etype = data.get('type')
+    username = data.get('username')
+
+    if not name or not etype or not username:
+        return jsonify({"status": "error", "message": "Barcha maydonlar to‘ldirilishi shart"}), 400
+
     if Entity.query.filter_by(name=name).first():
-        emit('entity_error', {"message": "Bu nom band!"}, to=creator)
-        return
-    new_entity = Entity(
-        name=name,
-        creator=creator,
-        entity_type=entity_type,
-        members=creator  # Yangi qo'shilgan: members ga creator qo'shiladi
-    )
-    db.session.add(new_entity)
-    db.session.commit()
-    join_room(name)
-    emit('entity_created', data, broadcast=True)
+        return jsonify({"status": "error", "message": "Bu nom band!"}), 400
+
+    try:
+        new_entity = Entity(
+            name=name,
+            type=etype,
+            creator=username
+        )
+        db.session.add(new_entity)
+        db.session.flush()  # ID ni olish uchun
+
+        # Creatorni EntityMember ga qo‘shish
+        member = EntityMember(
+            entity_id=new_entity.id,
+            username=username,
+            role='admin'  # Creator admin bo‘ladi
+        )
+        db.session.add(member)
+        db.session.commit()
+
+        # Realtime yangilash
+        socketio.emit('entity_created', {
+            "name": name,
+            "type": etype,
+            "creator": username
+        }, broadcast=True)
+
+        return jsonify({"status": "success", "message": f"{etype.capitalize()} yaratildi", "name": name})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Guruh yaratish xatosi: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @socketio.on('add_member')
 def handle_add_member(data):
