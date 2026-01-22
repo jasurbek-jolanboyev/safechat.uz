@@ -661,7 +661,7 @@ def submit_apply():
 def get_admin_stats():
     total_users = User.query.count()
     total_messages = Message.query.count()
-    total_groups = Entity.query.filter_by(type='group').count()
+    total_groups = Entity.query.filter_by(entity_type='group').count()
     online_now = User.query.filter_by(is_online=True).count()
     return jsonify({
         "total": total_users,
