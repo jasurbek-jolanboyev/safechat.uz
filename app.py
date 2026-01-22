@@ -637,9 +637,14 @@ def upload_avatar():
 
 @socketio.on('join_private_chat')
 def join_private_chat(data):
-    user1 = data['user1']
-    user2 = data['user2']
-    room = '_'.join(sorted([user1, user2]))
+    user1 = data.get('user1')
+    user2 = data.get('user2')
+    room = data.get('room')  # Frontenddan yuborilgan room nomi
+
+    if not user1 or not user2 or not room:
+        print("Xato: join_private_chat uchun ma'lumot yetarli emas")
+        return
+
     join_room(room)
     print(f"{user1} {user2} bilan shaxsiy chatga qo'shildi: {room}")
 
@@ -666,7 +671,7 @@ def handle_send(data):
     msg_type = data.get('type', 'text')
     content = data.get('content', '')
     reply_to = data.get('reply_to')
-    chat_type = data.get('chat_type')  # 'private' yoki 'group'
+    chat_type = data.get('chat_type')  # 'private' yoki 'group' — BU MUHIM!
 
     if not sender or not receiver or not content:
         print("Xato: yuboruvchi, qabul qiluvchi yoki kontent yo'q")
@@ -687,7 +692,6 @@ def handle_send(data):
     db.session.add(new_msg)
     db.session.commit()
 
-    # Frontendga yuboriladigan ma'lumot
     message_data = {
         'id': new_msg.id,
         'sender': sender,
@@ -702,12 +706,10 @@ def handle_send(data):
 
     # Xonani aniqlash va xabarni yuborish
     if is_group or chat_type == 'group':
-        # Guruh bo'lsa — faqat guruh xonasiga yuboramiz
         emit('receive_message', message_data, room=receiver, include_self=True)
         print(f"Guruh xabari yuborildi: {receiver}")
     else:
-        # Shaxsiy chat bo'lsa — ikkala foydalanuvchiga ham yuboramiz
-        # (room ishlatish uchun oldin join_private_chat orqali qo'shilgan bo'lishi kerak)
+        # Shaxsiy chat uchun room nomi: sorted user1_user2
         room = '_'.join(sorted([sender, receiver]))
         emit('receive_message', message_data, room=room, include_self=True)
         print(f"Shaxsiy xabar yuborildi: {room}")

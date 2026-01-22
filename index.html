@@ -1542,38 +1542,32 @@ function openChat(name, type = 'private') {
     activeChat = name;
     activeChatType = type;
 
-    // Chat oynasini ochish
     const chatArea = document.getElementById('chatArea');
     chatArea.style.display = 'flex';
     chatArea.classList.remove('hidden');
 
-    // Header ma'lumotlarini yangilash
     document.getElementById('activeName').innerText = name;
     document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
 
-    // Statusni to'g'ri ko'rsatish
     const statusEl = document.getElementById('activeStatus');
-    if (statusEl) {
-        statusEl.innerText = type === 'group' ? "Guruh" : "online";
-    }
+    if (statusEl) statusEl.innerText = type === 'group' ? "Guruh" : "online";
 
-    // Xabarlar oynasini tozalash va yuklanmoqda deb ko'rsatish
     const msgBox = document.getElementById('msgBox');
     msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
 
-    // Xabarlar ro'yxatini yuklash
     fetchMessages(name, type);
-
-    // Barcha ochiq sheetlarni yopish
     closeAllSheets();
 
-    // Shaxsiy chat bo'lsa — socket roomga qo'shilish (xabar almashish uchun muhim!)
+    // Shaxsiy chat bo'lsa — roomga qo'shilish (MUHIM!)
     if (type === 'private') {
+        const roomUsers = [currentUser, name].sort();
+        const roomName = roomUsers.join('_');
         socket.emit('join_private_chat', { 
             user1: currentUser, 
-            user2: name 
+            user2: name,
+            room: roomName 
         });
-        console.log(`Shaxsiy chat roomiga qo'shildi: ${currentUser} va ${name}`);
+        console.log(`Shaxsiy chat roomiga qo'shildi: ${roomName}`);
     }
 }
 async function fetchMessages(name, type) {
@@ -1620,26 +1614,25 @@ function sendMsg(type = 'text', content = null) {
         receiver: activeChat,
         content: val,
         type: type,
-        chat_type: activeChatType,
+        chat_type: activeChatType,  // 'private' yoki 'group' — BU MUHIM!
         reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    console.log("Yuborilayotgan xabar:", messageData);  // Tekshirish uchun log
+    console.log("Yuborilayotgan xabar:", messageData);  // Log qo'shildi — konsolda ko'rasiz
 
-    if (isEditing) {
-        // Agar tahrirlayotgan bo'lsa
-        socket.emit('edit_message', { id: selectedMsgEditId, content: val });
-        isEditing = false;
-        selectedMsgEditId = null;
-        document.getElementById('sendBtnIcon').className = "fa-solid fa-arrow-up";
-    } else {
-        socket.emit('send_message', messageData);
-    }
+    socket.emit('send_message', messageData);  // Serverga yuborish
 
-    appendMessage({ ...messageData, id: 'temp-' + Date.now(), isMe: true });
+    // Optimistik UI: o'z xabarini darhol ko'rsatish
+    appendMessage({
+        ...messageData,
+        id: 'temp-' + Date.now(),
+        isMe: true
+    });
+
     inp.value = "";
-    cancelReply();
+    inp.focus();
+    if (replyToId) cancelReply();
 }
 
 function updateHeight() {
