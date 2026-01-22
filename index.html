@@ -1888,7 +1888,7 @@ function appendMessage(data) {
     const isMe = data.sender === currentUser;
     const isGroup = activeChatType === 'group';
 
-    // 1. Multimedia qismi
+    // Multimedia
     let mediaHTML = "";
     if (data.type === 'image') {
         mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
@@ -1903,7 +1903,7 @@ function appendMessage(data) {
             </div>`;
     }
 
-    // 2. Reply (javob) qismi
+    // Reply
     let replyMarkup = "";
     if (data.reply_to) {
         replyMarkup = `
@@ -1913,29 +1913,26 @@ function appendMessage(data) {
             </div>`;
     }
 
-    // 3. Guruhda yuboruvchi ismini ko‘rsatish
+    // Guruhda yuboruvchi ismi
     let senderNameHTML = "";
     if (isGroup && !isMe) {
         senderNameHTML = `<span class="text-[11px] font-bold text-indigo-500 block mb-1">${data.sender}</span>`;
     }
 
-    // 4. Matn qismi
-    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "")
+    // Matn
+    let textHTML = (data.type !== 'location' && data.content && data.content.trim())
         ? `<p class="text-sm leading-relaxed">${data.content}</p>`
         : "";
 
-    // 5. Bubble sinfi (o‘ng yoki chap)
     const bubbleClass = isMe
         ? 'bg-blue-600 text-white rounded-tr-none self-end'
         : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 self-start';
 
-    // 6. Konteyner yaratish
     const container = document.createElement('div');
-    container.id = `container-${data.id || Date.now()}`; // Agar id bo‘lmasa vaqt bo‘yicha yaratamiz
     container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 px-2 w-full animate-fade-in`;
 
     container.innerHTML = `
-        <div class="msg-bubble relative max-w-[85%] p-3 rounded-2xl shadow-sm ${bubbleClass}" id="msg-${data.id || Date.now()}">
+        <div class="msg-bubble relative max-w-[85%] p-3 rounded-2xl shadow-sm ${bubbleClass}">
             ${senderNameHTML}
             ${replyMarkup}
             <div class="msg-body">
@@ -1943,24 +1940,13 @@ function appendMessage(data) {
                 ${textHTML}
             </div>
             <div class="flex items-center justify-end gap-2 mt-1 text-[10px] opacity-70">
-                <span>${data.timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
+                <span>${data.timestamp}</span>
                 ${isMe ? '<i class="fa-solid fa-check-double text-xs"></i>' : ''}
             </div>
         </div>
     `;
 
     box.appendChild(container);
-
-    // Hodisalarni bog‘lash
-    const bubble = container.querySelector('.msg-bubble');
-    if (bubble) {
-        bindContextEvents(bubble, data);
-        if (typeof initSwipe === "function") {
-            initSwipe(bubble, data.id, data.content, data.sender);
-        }
-    }
-
-    // Avtomatik pastga tushish
     box.scrollTop = box.scrollHeight;
 }
 function refreshProfileUI() {
@@ -2523,30 +2509,32 @@ function publishAnnouncement() {
 // 1. Ovozli xabarnoma fayli (Istalgan qisqa mp3 linkini qo'yishingiz mumkin)
 const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
-// --- SOCKET REAL-TIME ---
-
 socket.on('receive_message', (data) => {
     console.log("Yangi xabar keldi:", data);
 
-    // Ovoz va tebranish (faqat o‘z xabarim bo‘lmasa)
+    // Ovoz va tebranish (o‘z xabarim bo‘lmasa)
     if (data.sender !== currentUser) {
         msgSound.play().catch(e => console.error("Ovoz xatosi:", e));
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // Agar hozirgi ochiq chat bo‘lsa → xabarni qo‘shish
-    if (activeChat === data.sender || activeChat === data.receiver) {
-        appendMessage(data);
+    // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
+    if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
+        appendMessage({
+            ...data,
+            timestamp: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+
         const msgBox = document.getElementById('msgBox');
         if (msgBox) {
             msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
         }
     } else {
         // Boshqa chatda bo‘lsa bildirishnoma
-        showToast(`Yangi xabar: ${data.sender}`, data.content);
+        showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar");
     }
 
-    // Chat ro‘yxatini yangilash (kim yozsa u tepaga chiqadi)
+    // Chat ro‘yxatini yangilash (kim yozsa tepaga chiqadi)
     refreshChatListSilently();
 });
 

@@ -591,7 +591,6 @@ def handle_join(data):
 
     print(f"✅ {username} barcha xonalarga ulandi")
 
-
 @socketio.on('send_message')
 def handle_send(data):
     try:
@@ -599,32 +598,37 @@ def handle_send(data):
         receiver_u = data.get('receiver')
         msg_type = data.get('type', 'text')
         content = data.get('content', '')
-        
-        is_entity = Entity.query.filter_by(name=receiver_u).first()
-        if not is_entity:
-            if user_is_blocked_by(receiver_u, sender_u):
-                print(f"BLOCKED: {sender_u} -> {receiver_u}")
-                return
-        
-        reply_json = json.dumps(data.get('reply_to')) if data.get('reply_to') else None
+        reply_to = data.get('reply_to')
+
+        # Bazaga saqlash
         new_msg = Message(
             sender=sender_u,
             receiver=receiver_u,
             content=content,
             msg_type=msg_type,
-            reply_info=reply_json
+            reply_info=json.dumps(reply_to) if reply_to else None,
+            timestamp=datetime.utcnow()
         )
         db.session.add(new_msg)
         db.session.commit()
-        
-        data['id'] = new_msg.id
-        data['timestamp'] = datetime.utcnow().strftime('%H:%M')
-        
-        emit('receive_message', data, to=receiver_u)
-        if receiver_u != sender_u:
-            emit('receive_message', data, to=sender_u)
+
+        # To‘g‘ri formatda broadcast qilish
+        message_data = {
+            'id': new_msg.id,
+            'sender': sender_u,
+            'receiver': receiver_u,
+            'content': content,
+            'type': msg_type,
+            'reply_to': reply_to,
+            'timestamp': new_msg.timestamp.strftime('%H:%M')
+        }
+
+        # Qabul qiluvchiga va yuboruvchiga yuborish
+        emit('receive_message', message_data, to=receiver_u)
+        emit('receive_message', message_data, to=sender_u)
+
     except Exception as e:
-        print(f"ERROR_SEND: {e}")
+        print(f"Xabar yuborishda xato: {e}")
         db.session.rollback()
 
 @socketio.on('edit_message')
