@@ -659,7 +659,7 @@ header.p-4.bg-white\/80 {
 </div>
     <script>
         const API = "https://safe-chat-60ot.onrender.com";
-        const socket = io(API);
+        const socket = io(API, { transports: ['websocket'] }); // websocket bilan barqarorroq
         let currentUser = null;
         let activeChat = null;
         let currentEntityType = 'group';
@@ -671,13 +671,19 @@ header.p-4.bg-white\/80 {
         let selectedMsgEditId = null;
         let currentUploadType = 'file';
         let activeChatType = 'private';
+        let replyToId = null;
+        let replyToText = "";
+        let replyToSender = "";
 
-        // Socket ulanishini tekshirish (muammo bo'lsa konsolda ko'rinadi)
+// Socket ulanishini tekshirish
 socket.on('connect', () => {
     console.log('Socket muvaffaqiyatli ulandi!');
+    if (currentUser) socket.emit('join', { username: currentUser });
 });
+
 socket.on('connect_error', (err) => {
     console.error('Socket ulanish xatosi:', err);
+    alert("Server bilan ulanishda xato! Internetni tekshiring.");
 });
         // --- AUTH & CORE ---
         function toggleAuth(isReg) {
@@ -1306,17 +1312,9 @@ function closeNewsDetail() {
 window.addEventListener('load', renderMyNews);
 
 async function loadList(tab) {
-    let list;
-    if (tab === 'chats') {
-        list = document.getElementById('chatList');
-    } else if (tab === 'groups') {
-        list = document.getElementById('groupsList');
-    } else {
-        return;
-    }
+    let list = tab === 'chats' ? document.getElementById('chatList') : document.getElementById('groupsList');
     if (!list) return;
 
-    /* === SKELETON (yuklanmoqda ko'rinishi) === */
     list.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 animate-pulse">
             <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
@@ -1325,23 +1323,17 @@ async function loadList(tab) {
         </div>`;
 
     try {
-        /* ================= CHATLAR ================= */
         if (tab === 'chats') {
             const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-            if (!res.ok) throw new Error(`Chatlar yuklanmadi: ${res.status}`);
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
             const contacts = await res.json();
-            console.log("Recent chats yuklandi:", contacts);  // Tekshirish uchun log
+            console.log("Chatlar:", contacts);
 
-            list.innerHTML = "";
-            if (!contacts || contacts.length === 0) {
-                // To'g'ri empty state: ikonka + yozuv
-                list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
-                        <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
-                        <p class="font-bold text-sm">Suhbatlar hozircha yo‘q</p>
-                    </div>`;
-                return;
-            }
+            list.innerHTML = contacts.length === 0 ? `
+                <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                    <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
+                    <p class="font-bold text-sm">Suhbatlar hozircha yo‘q</p>
+                </div>` : "";
 
             contacts.forEach(contact => {
                 const name = typeof contact === 'object' ? contact.username : contact;
@@ -1356,31 +1348,20 @@ async function loadList(tab) {
                         <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
                     </div>`;
                 div.onclick = () => openChat(name, 'private');
-                div.oncontextmenu = e => {
-                    e.preventDefault();
-                    openDeleteActionSheet(name, 'chat');
-                };
                 list.appendChild(div);
             });
-        }
-
-        /* ================= GROUPS (Ommaviy) ================= */
+        } 
         else if (tab === 'groups') {
             const res = await fetch(`${API}/api/entities`);
-            if (!res.ok) throw new Error(`Guruhlar yuklanmadi: ${res.status} - ${res.statusText}`);
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
             const entities = await res.json();
-            console.log("Entities yuklandi:", entities);  // Tekshirish uchun log
+            console.log("Entities:", entities);
 
-            list.innerHTML = "";
-            if (!entities || entities.length === 0) {
-                // To'g'ri empty state: ikonka + yozuv
-                list.innerHTML = `
-                    <div class="text-center py-20 opacity-60">
-                        <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
-                        <p class="font-bold text-sm">Hech qanday guruh/kanal yo‘q</p>
-                    </div>`;
-                return;
-            }
+            list.innerHTML = entities.length === 0 ? `
+                <div class="text-center py-20 opacity-60">
+                    <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
+                    <p class="font-bold text-sm">Hech qanday guruh/kanal yo‘q</p>
+                </div>` : "";
 
             entities.forEach(ent => {
                 const isGroup = ent.type === 'group';
@@ -1395,21 +1376,16 @@ async function loadList(tab) {
                         <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
                     </div>`;
                 div.onclick = () => openChat(ent.name, ent.type);
-                div.oncontextmenu = e => {
-                    e.preventDefault();
-                    openDeleteActionSheet(ent.name, 'group');
-                };
                 list.appendChild(div);
             });
         }
     } catch (e) {
         console.error("LOAD LIST ERROR:", e);
-        // To'g'ri xato ko'rinishi: ikonka + batafsil xabar
         list.innerHTML = `
             <div class="text-center py-10 text-red-500 font-bold text-xs">
                 <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
                 Server bilan ulanishda xato<br>
-                <small class="text-xs">${e.message}</small>
+                <small>${e.message}</small>
             </div>`;
     }
 }
@@ -1558,16 +1534,15 @@ function openChat(name, type = 'private') {
     fetchMessages(name, type);
     closeAllSheets();
 
-    // Shaxsiy chat bo'lsa — roomga qo'shilish (MUHIM!)
+    // Shaxsiy chat bo'lsa roomga qo'shilish
     if (type === 'private') {
-        const roomUsers = [currentUser, name].sort();
-        const roomName = roomUsers.join('_');
+        const room = [currentUser, name].sort().join('_');
         socket.emit('join_private_chat', { 
             user1: currentUser, 
             user2: name,
-            room: roomName 
+            room: room 
         });
-        console.log(`Shaxsiy chat roomiga qo'shildi: ${roomName}`);
+        console.log(`Roomga qo'shildi: ${room}`);
     }
 }
 async function fetchMessages(name, type) {
@@ -1614,14 +1589,14 @@ function sendMsg(type = 'text', content = null) {
         receiver: activeChat,
         content: val,
         type: type,
-        chat_type: activeChatType,  // 'private' yoki 'group' — BU MUHIM!
+        chat_type: activeChatType, // 'private' yoki 'group' — BU MUHIM!
         reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    console.log("Yuborilayotgan xabar:", messageData);  // Log qo'shildi — konsolda ko'rasiz
+    console.log("Yuborilayotgan xabar:", messageData); // Tekshirish uchun
 
-    socket.emit('send_message', messageData);  // Serverga yuborish
+    socket.emit('send_message', messageData);
 
     // Optimistik UI: o'z xabarini darhol ko'rsatish
     appendMessage({
@@ -2076,26 +2051,23 @@ function setEntityType(type) {
 
 function createEntity() {
     const name = document.getElementById("entityName").value.trim();
-    if (name.length < 2) {
-        alert("Nomi juda qisqa!");
-        return;
-    }
+    if (name.length < 2) return alert("Nomi juda qisqa!");
 
-    // Backendga yuboriladi
-    socket.emit("create_entity", { 
-        type: entityType,
-        name: name 
+    socket.emit("create_entity", {
+        type: currentEntityType,
+        name: name,
+        username: currentUser // creator sifatida currentUser yuboriladi
     });
 
-    // UIga qo‘shib qo‘yamiz (real vaqtda ko‘rinishi uchun)
-    if (entityType === "group") {
-        addToGroupList(name);
-    } else {
-        addToChannelList(name);
-    }
-
-    closeSheet();
+    closeSheet('createEntityModal');
+    document.getElementById("entityName").value = "";
 }
+
+// Yangi guruh/kanal yaratilganda ro‘yxatni yangilash
+socket.on('entity_created', (data) => {
+    console.log("Yangi entity yaratildi:", data);
+    loadList('groups'); // Ommaviy tabni yangilash
+});
 
 // Frontendga yangi element qo‘shish
 function addToGroupList(name) {
@@ -2439,9 +2411,7 @@ async function installApp() {
     deferredPrompt = null;
 }
 
-let replyToId = null;
-let replyToText = "";
-let replyToSender = "";
+
 let selectedMessages = new Set();
 let isSelectionMode = false;
 
