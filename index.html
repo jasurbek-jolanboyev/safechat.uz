@@ -4,338 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SafeChat Connection | Secure Messaging</title>
-    
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
-    
-<style>
-    .media-grid-1 { grid-template-columns: 1fr; }
-    .media-grid-2 { grid-template-columns: 1fr 1fr; }
-    .media-grid-3 { grid-template-columns: repeat(3, 1fr); }
-    
-    .aspect-video-custom { aspect-ratio: 16 / 9; }
-    .aspect-reels-custom { aspect-ratio: 9 / 16; }
-    /* Telegram Style Minimalist Design */
-.tg-input-group {
-    position: relative;
-    width: 100%;
-    border-bottom: 2px solid #dfe1e5;
-    transition: border-color 0.2s ease;
-}
-
-.tg-input-group:focus-within {
-    border-color: #24A1DE;
-}
-
-.tg-input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 16px;
-    color: #000;
-    padding: 8px 0;
-    z-index: 1;
-}
-
-.tg-label {
-    position: absolute;
-    left: 0;
-    top: 8px;
-    color: #999;
-    font-size: 16px;
-    transition: all 0.2s ease;
-    pointer-events: none;
-}
-
-/* Floating label effekti */
-.tg-input:focus ~ .tg-label,
-.tg-input:not(:placeholder-shown) ~ .tg-label {
-    top: -18px;
-    font-size: 13px;
-    color: #24A1DE;
-    font-weight: 500;
-}
-
-.tg-suffix {
-    position: absolute;
-    right: 0;
-    top: 8px;
-    color: #bbb;
-    font-size: 14px;
-}
-
-/* Mobil qurilmalarda to'liq ekran */
-@media (max-width: 640px) {
-    #authScreen { background: white; }
-}
-.admin-card-v2 {
-    background: #161b22;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 24px;
-    padding: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.admin-stat-card {
-    background: linear-gradient(145deg, #1c2128, #161b22);
-    padding: 20px;
-    border-radius: 24px;
-    border: 1px solid rgba(255,255,255,0.03);
-}
-
-.btn-icon {
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    border-radius: 10px; transition: all 0.2s;
-}
-/* =========================================================
-   0. ROOT VA ASOSIY SOZLAMALAR
-========================================================= */
-:root {
-    --ios-bg: #f2f2f7;
-    --ios-accent: #007aff;
-    --glass: rgba(255, 255, 255, 0.85);
-    --radius-xl: 32px;
-    --vh: 1vh;
-}
-
-* { 
-    -webkit-tap-highlight-color: transparent; 
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; 
-    box-sizing: border-box;
-}
-
-body, html {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden; /* Skrol faqat ichki elementlarda bo'ladi */
-    background-color: var(--ios-bg);
-}
-
-/* Dark Mode asosiy tana ranglari */
-.dark body { background-color: #1c1c1e; color: white; }
-.dark .bg-white { background-color: #2c2c2e !important; color: white !important; }
-
-#mainApp {
-    height: calc(var(--vh, 1vh) * 100);
-    display: flex;
-    flex-direction: column;
-}
-
-/* =========================================================
-   1. ANIMATSIYALAR
-========================================================= */
-
-@keyframes slide-down {
-    from { transform: translateY(-100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-@keyframes slide-up {
-    from { transform: translateY(0); opacity: 1; }
-    to { transform: translateY(-100%); opacity: 0; }
-}
-.animate-slide-down { animation: slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-@keyframes slideUpFull {
-    from { transform: translateY(100%); opacity: 0.8; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-slide-up { animation: slideUpFull 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-.animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-
-/* =========================================================
-   2. NAVIGATSIYA & INDIKATOR
-========================================================= */
-#navIndicator {
-    position: absolute;
-    bottom: 8px;
-    height: 52px;
-    background: rgba(0, 122, 255, 0.1);
-    border-radius: 28px;
-    transition: all 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-    z-index: 0;
-}
-
-.bottom-nav { 
-    position: fixed; bottom: 0; left: 0; right: 0; 
-    height: 85px; background: var(--glass); 
-    backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); 
-    display: flex; justify-content: space-around; 
-    padding-top: 10px; z-index: 100; 
-}
-
-.nav-item { 
-    display: flex; flex-direction: column; align-items: center; 
-    color: #8e8e93; font-size: 11px; flex: 1; transition: 0.2s; 
-}
-.nav-item.active { color: var(--ios-accent); }
-.nav-item i { font-size: 24px; margin-bottom: 4px; }
-
-/* =========================================================
-   3. CHAT AREA & XABARLAR
-========================================================= */
-#chatArea {
-    position: fixed;
-    inset: 0;
-    background: #F2F2F7;
-    z-index: 5000; 
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-}
-
-#msgBox {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-    background: #e5ddd5;
-    display: flex;
-    flex-direction: column;
-    -webkit-overflow-scrolling: touch;
-}
-
-.bubble { 
-    max-width: 75%; 
-    padding: 10px 14px; 
-    border-radius: 18px; 
-    font-size: 16px; 
-    margin-bottom: 8px; 
-    line-height: 1.4; 
-    word-wrap: break-word; 
-    position: relative;
-    cursor: pointer;
-    transition: transform 0.1s;
-}
-
-.bubble.sent { 
-    background: var(--ios-accent); 
-    color: white; 
-    align-self: flex-end; 
-    border-bottom-right-radius: 4px; 
-}
-
-.bubble.received { 
-    background: white; 
-    color: black; 
-    align-self: flex-start; 
-    border-bottom-left-radius: 4px; 
-}
-
-.bubble:active { transform: scale(0.97); }
-
-/* =========================================================
-   4. EMPTY STATE (Telegram-style)
-========================================================= */
-.empty-state {
-    opacity: 1 !important;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    color: #1c1c1e;
-}
-
-.empty-state p {
-    margin: 4px 0;
-    font-size: 13px;
-    color: #4b5563; /* kontrast gray */
-}
-
-.empty-state button {
-    margin-top: 12px;
-    background-color: #007aff;
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 24px;
-    font-size: 12px;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
-    transition: 0.2s all;
-    cursor: pointer;
-}
-.empty-state button:hover { transform: scale(1.05); }
-
-/* =========================================================
-   5. FULL PROFILE
-========================================================= */
-#profileCircle {
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-#profileCircle:active { transform: scale(0.9) rotate(-2deg); }
-
-#fullUserProfile { background-color: #ffffff; }
-#fullProfileScrollArea { background-color: #f2f2f7; }
-
-.dark #fullUserProfile { background-color: #000000 !important; }
-.dark #fullProfileScrollArea { background-color: #000000 !important; }
-.dark #fullUserProfile .bg-white { background-color: #1c1c1e !important; color: #ffffff !important; }
-.dark #fullUserProfile .text-gray-800, .dark #fullUserProfile .text-gray-900 { color: #ffffff !important; }
-.dark #fullUserProfile .text-gray-600, .dark #fullUserProfile .text-gray-700 { color: #a1a1a6 !important; }
-.dark #fullUserProfile .text-gray-400 { color: #8e8e93 !important; }
-.dark #fullUserProfile .border-gray-50, .dark #fullUserProfile .divide-gray-50 > * { border-color: #2c2c2e !important; }
-
-/* =========================================================
-   6. IOS SHEETS & OVERLAY
-========================================================= */
-.ios-sheet {
-    position: fixed;
-    bottom: -100%;
-    left: 0;
-    right: 0;
-    background: white;
-    z-index: 6000; 
-    transition: bottom 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    border-radius: 24px 24px 0 0;
-    padding-bottom: env(safe-area-inset-bottom, 20px);
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-    max-height: 90%;
-    overflow-y: auto;
-}
-.ios-sheet.active { bottom: 0; }
-
-.sheet-handle { width: 36px; height: 5px; background: #c7c7cc; border-radius: 3px; margin: 12px auto; }
-
-.sheet-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-    z-index: 5500; display: none; backdrop-filter: blur(4px);
-    animation: fadeIn 0.3s ease;
-}
-.sheet-overlay.active { display: block; }
-
-/* =========================================================
-   7. QO'SHIMCHA ELEMENTLAR
-========================================================= */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; display: block; }
-
-#adminPanel { 
-    display: none; background: #1c1c1e; color: #32d74b; 
-    position: fixed; inset: 0; z-index: 9999; padding: 20px; 
-}
-
-/* =========================================================
-   8. DARK MODE ADDITIONAL
-========================================================= */
-.dark .ios-sheet { background: #1c1c1e !important; color: white; }
-.dark .ios-sheet .bg-gray-50 { background: #2c2c2e !important; }
-.dark .ios-sheet span { color: white !important; }
-
+    <style>
+        /* Barcha CSS kodlaringiz shu yerda bo'ladi - oldingi xabarda berilgan */
+        .media-grid-1 { grid-template-columns: 1fr; }
+        .media-grid-2 { grid-template-columns: 1fr 1fr; }
+        .media-grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .aspect-video-custom { aspect-ratio: 16 / 9; }
+        .aspect-reels-custom { aspect-ratio: 9 / 16; }
+        .tg-input-group {
+            position: relative; width: 100%; border-bottom: 2px solid #dfe1e5; transition: border-color 0.2s ease;
+        }
+        .tg-input-group:focus-within { border-color: #24A1DE; }
+        .tg-input { width: 100%; border: none; outline: none; background: transparent; font-size: 16px; color: #000; padding: 8px 0; z-index: 1; }
+        .tg-label { position: absolute; left: 0; top: 8px; color: #999; font-size: 16px; transition: all 0.2s ease; pointer-events: none; }
+        .tg-input:focus ~ .tg-label, .tg-input:not(:placeholder-shown) ~ .tg-label { top: -18px; font-size: 13px; color: #24A1DE; font-weight: 500; }
+        .tg-suffix { position: absolute; right: 0; top: 8px; color: #bbb; font-size: 14px; }
+        @media (max-width: 640px) { #authScreen { background: white; } }
+        .admin-card-v2 { background: #161b22; border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .admin-stat-card { background: linear-gradient(145deg, #1c2128, #161b22); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.03); }
+        .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 10px; transition: all 0.2s; }
+        :root { --ios-bg: #f2f2f7; --ios-accent: #007aff; --glass: rgba(255,255,255,0.85); --radius-xl: 32px; --vh: 1vh; }
+        * { -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; box-sizing: border-box; }
+        body, html { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: var(--ios-bg); }
+        .dark body { background-color: #1c1c1e; color: white; }
+        .dark .bg-white { background-color: #2c2c2e !important; color: white !important; }
+        #mainApp { height: calc(var(--vh, 1vh) * 100); display: flex; flex-direction: column; }
+        @keyframes slide-down { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slide-up { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
+        .animate-slide-down { animation: slide-down 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-up { animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUpFull { from { transform: translateY(100%); opacity: 0.8; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-up { animation: slideUpFull 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        #navIndicator { position: absolute; bottom: 8px; height: 52px; background: rgba(0,122,255,0.1); border-radius: 28px; transition: all 0.4s cubic-bezier(0.2,1,0.3,1); z-index: 0; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 85px; background: var(--glass); backdrop-filter: blur(20px); border-top: 0.5px solid rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding-top: 10px; z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #8e8e93; font-size: 11px; flex: 1; transition: 0.2s; }
+        .nav-item.active { color: var(--ios-accent); }
+        .nav-item i { font-size: 24px; margin-bottom: 4px; }
+        #chatArea { position: fixed; inset: 0; background: #F2F2F7; z-index: 5000; display: none; flex-direction: column; width: 100%; height: 100%; }
+        #msgBox { flex: 1; overflow-y: auto; padding: 15px; background: #e5ddd5; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        .bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 16px; margin-bottom: 8px; line-height: 1.4; word-wrap: break-word; position: relative; cursor: pointer; transition: transform 0.1s; }
+        .bubble.sent { background: var(--ios-accent); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .bubble.received { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .bubble:active { transform: scale(0.97); }
+        .empty-state { opacity: 1 !important; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: #1c1c1e; }
+        .empty-state p { margin: 4px 0; font-size: 13px; color: #4b5563; }
+        .empty-state button { margin-top: 12px; background-color: #007aff; color: #fff; padding: 8px 16px; border-radius: 24px; font-size: 12px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,122,255,0.3); transition: 0.2s all; cursor: pointer; }
+        .empty-state button:hover { transform: scale(1.05); }
+        #profileCircle { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #profileCircle:active { transform: scale(0.9) rotate(-2deg); }
+        #fullUserProfile { background-color: #ffffff; }
+        #fullProfileScrollArea { background-color: #f2f2f7; }
+        .dark #fullUserProfile { background-color: #000000 !important; }
+        .dark #fullProfileScrollArea { background-color: #000000 !important; }
+        .dark #fullUserProfile .bg-white { background-color: #1c1c1e !important; color: #ffffff !important; }
+        .dark #fullUserProfile .text-gray-800, .dark #fullUserProfile .text-gray-900 { color: #ffffff !important; }
+        .dark #fullUserProfile .text-gray-600, .dark #fullUserProfile .text-gray-700 { color: #a1a1a6 !important; }
+        .dark #fullUserProfile .text-gray-400 { color: #8e8e93 !important; }
+        .dark #fullUserProfile .border-gray-50, .dark #fullUserProfile .divide-gray-50 > * { border-color: #2c2c2e !important; }
+        .ios-sheet { position: fixed; bottom: -100%; left: 0; right: 0; background: white; z-index: 6000; transition: bottom 0.4s cubic-bezier(0.19,1,0.22,1); border-radius: 24px 24px 0 0; padding-bottom: env(safe-area-inset-bottom,20px); box-shadow: 0 -10px 40px rgba(0,0,0,0.15); max-height: 90%; overflow-y: auto; }
+        .ios-sheet.active { bottom: 0; }
+        .sheet-handle { width: 36px; height: 5px; background: #c7c7cc; border-radius: 3px; margin: 12px auto; }
+        .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 5500; display: none; backdrop-filter: blur(4px); animation: fadeIn 0.3s ease; }
+        .sheet-overlay.active { display: block; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .media-content { border-radius: 12px; margin-top: 5px; max-width: 100%; display: block; }
+        #adminPanel { display: none; background: #1c1c1e; color: #32d74b; position: fixed; inset: 0; z-index: 9999; padding: 20px; }
+        .dark .ios-sheet { background: #1c1c1e !important; color: white; }
+        .dark .ios-sheet .bg-gray-50 { background: #2c2c2e !important; }
+        .dark .ios-sheet span { color: white !important; }
+        .create-entity-btn { position: fixed; bottom: 100px; right: 20px; z-index: 100; width: 56px; height: 56px; background: linear-gradient(135deg, #007aff, #005bb5); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; box-shadow: 0 8px 25px rgba(0,122,255,0.4); transition: all 0.3s; cursor: pointer; }
+        .create-entity-btn:hover { transform: scale(1.1); }
+        .empty-state-icon { font-size: 48px; color: #007aff; margin-bottom: 16px; opacity: 0.8; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+        .refresh-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 24px; color: #007aff; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 </style>
 </head>
@@ -884,730 +633,508 @@ body, html {
   </div>
 </div>
     <script>
-        const API = "https://safe-chat-60ot.onrender.com";
-        const socket = io(API);
-        let currentUser = null;
-        let activeChat = null;
-        let currentEntityType = 'group';
-        let selectedMsgId = null;
-        let selectedMsgText = "";
-        let selectedMsgSender = null;
-        let isMeSelected = false;
-        let isEditing = false;
-        let selectedMsgEditId = null;
-        let currentUploadType = 'file';
-        let activeChatType = 'private';
+    // Global o'zgaruvchilar va konstantalar
+    const API = "https://safe-chat-60ot.onrender.com";
+    const socket = io(API);
+    let currentUser = null;
+    let activeChat = null;
+    let activeChatType = 'private'; // 'private' yoki 'group'
+    let selectedEntityType = 'group';
+    let selectedMsgId = null;
+    let selectedMsgText = "";
+    let selectedMsgSender = null;
+    let isEditing = false;
+    let replyToId = null;
+    let replyToText = "";
+    let replyToSender = "";
+    let selectedMessages = new Set();
+    let isSelectionMode = false;
 
-        // --- AUTH & CORE ---
-        function toggleAuth(isReg) {
-            document.getElementById('loginView').classList.toggle('hidden', isReg);
-            document.getElementById('registerView').classList.toggle('hidden', !isReg);
-        }
-function toggleAuth(showRegister) {
-    const loginView = document.getElementById('loginView');
-    const registerView = document.getElementById('registerView');
-    
-    if (showRegister) {
-        loginView.classList.add('hidden');
-        registerView.classList.remove('hidden');
-    } else {
-        registerView.classList.add('hidden');
-        loginView.classList.remove('hidden');
-    }
-}
 
-async function register() {
-    const code = document.getElementById('phoneCode').value;
-    const phoneNum = document.getElementById('reg_phone').value.trim();
-    const u = document.getElementById('reg_u').value.trim();
-    const p = document.getElementById('reg_p').value.trim();
+    let currentDeleteTarget = { name: '', type: '' };
+    let deferredPrompt;
 
-    if(!phoneNum || !u || !p) return alert("Hamma maydonlarni to'ldiring!");
-
-    const fullPhone = code + phoneNum; // Masalan: +998901234567
-
-    try {
-        const res = await fetch(`${API}/api/register`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                phone: fullPhone, 
-                username: u + ".connect.uz", 
-                password: p 
-            })
-        });
-        const d = await res.json();
-        if(res.ok) { 
-            alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!"); 
-            toggleAuth(false); 
-        } else { 
-            alert(d.message); 
-        }
-    } catch(e) { 
-        alert("Server bilan ulanishda xato!"); 
-    }
-}
-
-async function login() {
-    let u = document.getElementById('login_u').value.trim();
-    const p = document.getElementById('login_p').value.trim();
-
-    // 1️⃣ Maydonlar bo‘sh bo‘lsa
-    if (!u || !p) {
-        alert("Iltimos, username va parolni to'ldiring!");
-        return;
-    }
-
-    try {
-        // 2️⃣ API ga login so‘rovi
-        const res = await fetch(`${API}/api/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                username: u,
-                password: p
-            })
-        });
-
-        const d = await res.json();
-
-        // 3️⃣ Login muvaffaqiyatli bo'lsa
-        if (res.ok) {
-            currentUser = d.username;
-
-            // LocalStorage ga saqlaymiz
-            localStorage.setItem("chat_user", d.username);
-            if (d.phone) {
-                localStorage.setItem("user_phone", d.phone);
-            }
-
-            // UI ni yangilash
-            document.getElementById("authScreen").classList.add("hidden");
-            document.getElementById("mainApp").classList.remove("hidden");
-
-            // SOCKET orqali tizimga qo‘shish
-            socket.emit("join", { username: d.username });
-
-            // Admin tekshiruvi
-            if (typeof checkAdminAccess === "function") {
-                checkAdminAccess();
-            }
-
-            // Dastlabki yuklanish funksiyasi bo‘lsa chaqiramiz
-            if (typeof initApp === "function") {
-                initApp();
-            }
-
+    // Auth funksiyalari
+    function toggleAuth(showRegister) {
+        const loginView = document.getElementById('loginView');
+        const registerView = document.getElementById('registerView');
+        if (showRegister) {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
         } else {
-            // 4️⃣ Noaniq xatoda aniq habar
-            alert("Xato: " + (d.message || "Login amalga oshmadi!"));
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
         }
-
-    } catch (err) {
-        // 5️⃣ Serverga ulanishda muammo — internet yoki API ishlamayapti
-        console.error("Ulanish xatosi:", err);
-        alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
     }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname; 
-    console.log("Hozirgi manzil:", path);
+    async function register() {
+        const code = document.getElementById('phoneCode').value;
+        const phoneNum = document.getElementById('reg_phone').value.trim();
+        const u = document.getElementById('reg_u').value.trim();
+        const p = document.getElementById('reg_p').value.trim();
+        if (!phoneNum || !u || !p) return alert("Hamma maydonlarni to'ldiring!");
+        const fullPhone = code + phoneNum;
+        try {
+            const res = await fetch(`${API}/api/register`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    phone: fullPhone,
+                    username: u + ".connect.uz",
+                    password: p
+                })
+            });
+            const d = await res.json();
+            if (res.ok) {
+                alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
+                toggleAuth(false);
+            } else {
+                alert(d.message);
+            }
+        } catch (e) {
+            alert("Server bilan ulanishda xato!");
+        }
+    }
 
-    if (path.includes('/user/')) {
-        const parts = path.split('/');
-        const targetUser = parts[parts.indexOf('user') + 1];
+    async function login() {
+        let u = document.getElementById('login_u').value.trim();
+        const p = document.getElementById('login_p').value.trim();
+        if (!u || !p) {
+            alert("Iltimos, username va parolni to'ldiring!");
+            return;
+        }
+        try {
+            const res = await fetch(`${API}/api/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: u,
+                    password: p
+                })
+            });
+            const d = await res.json();
+            if (res.ok) {
+                currentUser = d.username;
+                localStorage.setItem("chat_user", d.username);
+                if (d.phone) {
+                    localStorage.setItem("user_phone", d.phone);
+                }
+                document.getElementById("authScreen").classList.add("hidden");
+                document.getElementById("mainApp").classList.remove("hidden");
+                socket.emit("join", { username: d.username });
+                if (typeof checkAdminAccess === "function") checkAdminAccess();
+                switchTab('chats');
+            } else {
+                alert("Xato: " + (d.message || "Login amalga oshmadi!"));
+            }
+        } catch (err) {
+            console.error("Ulanish xatosi:", err);
+            alert("Server bilan ulanishda xato! Iltimos qayta urinib ko‘ring.");
+        }
+    }
 
-        if (targetUser) {
-            console.log("Profil yuklanmoqda:", targetUser);
-            
-            // Server bilan ulanish va ma'lumot olish uchun biroz kutamiz
-            setTimeout(async () => {
-                try {
-                    // Avval foydalanuvchi ma'lumotlarini serverdan olamiz
-                    const res = await fetch(`${API}/api/user_info/${targetUser}`);
-                    const userData = await res.json();
-                    
-                    if (userData && !userData.error) {
-                        // Profil oynasini ochish funksiyasi
-                        openFullProfile(userData.username); 
-                    } else {
-                        console.error("Foydalanuvchi topilmadi");
+    // DOMContentLoaded hodisasi
+    document.addEventListener('DOMContentLoaded', () => {
+        const path = window.location.pathname;
+        console.log("Hozirgi manzil:", path);
+        if (path.includes('/user/')) {
+            const parts = path.split('/');
+            const targetUser = parts[parts.indexOf('user') + 1];
+            if (targetUser) {
+                console.log("Profil yuklanmoqda:", targetUser);
+                setTimeout(async () => {
+                    try {
+                        const res = await fetch(`${API}/api/user_info/${targetUser}`);
+                        const userData = await res.json();
+                        if (userData && !userData.error) {
+                            openFullProfile(userData.username);
+                        } else {
+                            console.error("Foydalanuvchi topilmadi");
+                        }
+                    } catch (err) {
+                        console.error("Profilni yuklashda xato:", err);
                     }
-                } catch (err) {
-                    console.error("Profilni yuklashda xato:", err);
-                }
-            }, 1500); // 1.5 soniya kutish (Socket ulanishi uchun)
+                }, 1500);
+            }
         }
-    }
-});
+    });
 
-function renderNewsFeed(posts) {
-    const feed = document.getElementById('newsFeed');
-    feed.innerHTML = '';
-
-    posts.forEach(post => {
-        const postCard = document.createElement('div');
-        postCard.className = "bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-4";
-        
-        let mediaContent = '';
-        
-        // 1. YouTube yoki Reels linklarini tekshirish
-        if (post.links && post.links.length > 0) {
-            post.links.forEach(link => {
-                if (link.includes('youtube.com/shorts') || link.includes('instagram.com/reels')) {
-                    // Reels uslubida (9:16)
-                    mediaContent += `<div class="aspect-reels-custom bg-black w-full">
-                        <iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe>
-                    </div>`;
-                } else if (link.includes('youtube.com/watch')) {
-                    // YouTube uslubida (16:9)
-                    mediaContent += `<div class="aspect-video-custom bg-black w-full">
-                        <iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe>
-                    </div>`;
-                }
-            });
-        }
-
-        // 2. Local Media (Rasm, Video, Ovozli)
-        if (post.media && post.media.length > 0) {
-            const gridClass = post.media.length > 2 ? 'media-grid-3' : `media-grid-${post.media.length}`;
-            mediaContent += `<div class="grid ${gridClass} gap-1">`;
-            
-            post.media.forEach(m => {
-                if (m.endsWith('.mp4') || m.endsWith('.mov')) {
-                    mediaContent += `<video src="${m}" controls class="w-full h-full object-cover"></video>`;
-                } else if (m.endsWith('.mp3') || m.endsWith('.ogg')) {
-                    mediaContent += `
-                        <div class="col-span-full p-4 bg-blue-50 flex items-center gap-3">
-                            <i class="fa-solid fa-play-circle text-blue-600 text-3xl"></i>
-                            <audio src="${m}" controls class="flex-1"></audio>
-                        </div>`;
-                } else {
-                    mediaContent += `<img src="${m}" class="w-full h-full object-cover cursor-pointer" onclick="expandImage('${m}')">`;
-                }
-            });
-            mediaContent += `</div>`;
-        }
-
-        // 3. Tavsif va Sarlavha
-        const textContent = `
-            <div class="p-4">
-                <h3 class="text-lg font-black text-gray-900 leading-tight">${post.title}</h3>
-                <p class="mt-2 text-sm text-gray-600 leading-relaxed">${post.description}</p>
-                <div class="mt-4 flex items-center justify-between text-gray-400">
-                    <div class="flex gap-4">
-                        <button class="active:text-red-500"><i class="fa-regular fa-heart"></i></button>
-                        <button><i class="fa-regular fa-comment"></i></button>
-                        <button><i class="fa-regular fa-paper-plane"></i></button>
+    // News render funksiyalari
+    function renderNewsFeed(posts) {
+        const feed = document.getElementById('newsFeed');
+        feed.innerHTML = '';
+        posts.forEach(post => {
+            const postCard = document.createElement('div');
+            postCard.className = "bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-4";
+            let mediaContent = '';
+            if (post.links && post.links.length > 0) {
+                post.links.forEach(link => {
+                    if (link.includes('youtube.com/shorts') || link.includes('instagram.com/reels')) {
+                        mediaContent += `<div class="aspect-reels-custom bg-black w-full"><iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe></div>`;
+                    } else if (link.includes('youtube.com/watch')) {
+                        mediaContent += `<div class="aspect-video-custom bg-black w-full"><iframe class="w-full h-full" src="${formatEmbedUrl(link)}" frameborder="0" allowfullscreen></iframe></div>`;
+                    }
+                });
+            }
+            if (post.media && post.media.length > 0) {
+                const gridClass = post.media.length > 2 ? 'media-grid-3' : `media-grid-${post.media.length}`;
+                mediaContent += `<div class="grid ${gridClass} gap-1">`;
+                post.media.forEach(m => {
+                    if (m.endsWith('.mp4') || m.endsWith('.mov')) {
+                        mediaContent += `<video src="${m}" controls class="w-full h-full object-cover"></video>`;
+                    } else if (m.endsWith('.mp3') || m.endsWith('.ogg')) {
+                        mediaContent += `
+                            <div class="col-span-full p-4 bg-blue-50 flex items-center gap-3">
+                                <i class="fa-solid fa-play-circle text-blue-600 text-3xl"></i>
+                                <audio src="${m}" controls class="flex-1"></audio>
+                            </div>`;
+                    } else {
+                        mediaContent += `<img src="${m}" class="w-full h-full object-cover cursor-pointer" onclick="expandImage('${m}')">`;
+                    }
+                });
+                mediaContent += `</div>`;
+            }
+            const textContent = `
+                <div class="p-4">
+                    <h3 class="text-lg font-black text-gray-900 leading-tight">${post.title}</h3>
+                    <p class="mt-2 text-sm text-gray-600 leading-relaxed">${post.description}</p>
+                    <div class="mt-4 flex items-center justify-between text-gray-400">
+                        <div class="flex gap-4">
+                            <button class="active:text-red-500"><i class="fa-regular fa-heart"></i></button>
+                            <button><i class="fa-regular fa-comment"></i></button>
+                            <button><i class="fa-regular fa-paper-plane"></i></button>
+                        </div>
+                        <span class="text-[10px] font-bold uppercase">${post.date || 'Hozirgina'}</span>
                     </div>
-                    <span class="text-[10px] font-bold uppercase">${post.date || 'Hozirgina'}</span>
+                </div>
+            `;
+            postCard.innerHTML = mediaContent + textContent;
+            feed.appendChild(postCard);
+        });
+    }
+
+    function createPostHTML(post) {
+        return `
+            <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-6">
+                ${renderMedia(post)} <div class="p-5">
+                    <h3 class="font-black text-lg">${post.title}</h3>
+                    <p class="text-sm text-gray-500 mt-2">${post.description}</p>
+                    <div class="mt-4 pt-4 border-t flex justify-between items-center text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-eye text-xs"></i>
+                            <span class="text-xs font-bold">${post.views} marta ko'rildi</span>
+                        </div>
+                        <button onclick="likePost(${post.id})" class="active:scale-125 transition">
+                            <i class="fa-regular fa-heart"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
-
-        postCard.innerHTML = mediaContent + textContent;
-        feed.appendChild(postCard);
-    });
-}
-// Postni render qilishda 'views' qismini qo'shing
-function createPostHTML(post) {
-    return `
-        <div class="bg-white rounded-[24px] overflow-hidden shadow-sm border border-gray-100 mb-6">
-            ${renderMedia(post)} <div class="p-5">
-                <h3 class="font-black text-lg">${post.title}</h3>
-                <p class="text-sm text-gray-500 mt-2">${post.description}</p>
-                
-                <div class="mt-4 pt-4 border-t flex justify-between items-center text-gray-400">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-eye text-xs"></i>
-                        <span class="text-xs font-bold">${post.views} marta ko'rildi</span>
-                    </div>
-                    <button onclick="likePost(${post.id})" class="active:scale-125 transition">
-                        <i class="fa-regular fa-heart"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Post ko'rilganda serverga xabar berish (IntersectionObserver ishlatish tavsiya etiladi)
-async function markAsSeen(postId) {
-    await fetch(`/api/posts/view/${postId}`, { method: 'POST' });
-}
-async function submitNewPost() {
-    const postData = {
-        admin_phone: localStorage.getItem('user_phone'),
-        title: document.getElementById('postTitle').value,
-        description: document.getElementById('postDesc').value,
-        media: document.getElementById('postMedia').value.split(','),
-        type: document.getElementById('postType').value
-    };
-
-    const res = await fetch('/api/admin/add_post', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(postData)
-    });
-
-    if(res.ok) {
-        alert("Yangilik muvaffaqiyatli qo'shildi!");
-        closeAdmin();
-        switchTab('news');
-    }
-}
-
-// YouTube linkini Embed formatiga o'tkazish
-function formatEmbedUrl(url) {
-    if (url.includes('youtube.com/watch?v=')) {
-        return url.replace('watch?v=', 'embed/');
-    }
-    if (url.includes('youtube.com/shorts/')) {
-        return url.replace('shorts/', 'embed/');
-    }
-    return url;
-}
-
-// Qidiruv maydonini ochish/yopish
-function toggleSearch() {
-    const searchContainer = document.getElementById('searchBarContainer');
-    searchContainer.classList.toggle('hidden');
-
-    // Agar qidiruv ochilsa, inputga fokus berish
-    if(!searchContainer.classList.contains('hidden')) {
-        document.getElementById('userSearch').focus();
-    }
-}
-
-let selectedEntityType = 'group';
-
-function setMType(type) {
-    selectedEntityType = type;
-    document.getElementById('mTypeGroup').classList.toggle('bg-white', type === 'group');
-    document.getElementById('mTypeGroup').classList.toggle('text-blue-600', type === 'group');
-    document.getElementById('mTypeGroup').classList.toggle('text-gray-400', type !== 'group');
-
-    document.getElementById('mTypeChannel').classList.toggle('bg-white', type === 'channel');
-    document.getElementById('mTypeChannel').classList.toggle('text-blue-600', type === 'channel');
-    document.getElementById('mTypeChannel').classList.toggle('text-gray-400', type !== 'channel');
-}
-
-async function submitNewEntity() {
-    const nameInput = document.getElementById('mEntityName');
-    const name = nameInput.value.trim();
-    const username = localStorage.getItem("chat_user") || currentUser;
-
-    if (!name) {
-        alert("Guruh/Kanal nomini kiriting!");
-        return;
-    }
-    if (!username) {
-        alert("Avval tizimga kiring!");
-        return;
     }
 
-    try {
-        const res = await fetch(`${API}/api/create_entity`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                name: name,
-                type: selectedEntityType,
-                username: username
-            })
+    async function markAsSeen(postId) {
+        await fetch(`/api/posts/view/${postId}`, { method: 'POST' });
+    }
+
+    async function submitNewPost() {
+        const postData = {
+            admin_phone: localStorage.getItem('user_phone'),
+            title: document.getElementById('postTitle').value,
+            description: document.getElementById('postDesc').value,
+            media: document.getElementById('postMedia').value.split(','),
+            type: document.getElementById('postType').value
+        };
+        const res = await fetch('/api/admin/add_post', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(postData)
         });
-
-        const data = await res.json();
-
-        if (res.ok && data.status === "success") {
-            alert(`${selectedEntityType === 'group' ? 'Guruh' : 'Kanal'} "${name}" muvaffaqiyatli yaratildi!`);
-            closeEntityModal();
-            nameInput.value = "";
-            loadList('groups'); // Ro‘yxatni yangilash
-            socket.emit('entity_created', { name, type: selectedEntityType, id: data.id });
-        } else {
-            alert(data.message || "Xatolik yuz berdi!");
-        }
-    } catch (e) {
-        console.error("Guruh yaratish xatosi:", e);
-        alert("Server bilan ulanishda xato!");
-    }
-}
-
-// Universal search (chat, group, channel)
-function universalSearch(query) {
-    query = query.toLowerCase();
-
-    // Chatlarni filtrlash
-    document.querySelectorAll('#chatList .chat-item').forEach(chat => {
-        chat.style.display = chat.innerText.toLowerCase().includes(query) ? '' : 'none';
-    });
-
-    // Guruhlarni filtrlash
-    document.querySelectorAll('#groupList .group-item').forEach(group => {
-        group.style.display = group.innerText.toLowerCase().includes(query) ? '' : 'none';
-    });
-
-    // Kanallarni filtrlash
-    document.querySelectorAll('#channelsTab .channel-item').forEach(channel => {
-        channel.style.display = channel.innerText.toLowerCase().includes(query) ? '' : 'none';
-    });
-}
-
-function updateNavUI(tabName) {
-    const btn = document.getElementById(`nav-${tabName}`);
-    const indicator = document.getElementById('navIndicator');
-    if (btn && indicator) {
-        indicator.style.width = `${btn.offsetWidth}px`;
-        indicator.style.left = `${btn.offsetLeft}px`;
-    }
-}
-
-function switchTab(tab) {
-    // 1. Navigatsiya tugmalarining vizual holatini yangilash (Ranglar)
-    document.querySelectorAll('.nav-item').forEach(i => {
-        i.classList.remove('text-[#007aff]');
-        i.classList.add('text-gray-400');
-    });
-
-    // 2. Tanlangan navigatsiya tugmasini aktiv (ko'k) qilish
-    const navBtn = document.getElementById(`nav-${tab}`);
-    if (navBtn) {
-        navBtn.classList.remove('text-gray-400');
-        navBtn.classList.add('text-[#007aff]');
-
-        // iOS uslubidagi ko'k indikatorni harakatlantirish
-        const indicator = document.getElementById('navIndicator');
-        if (indicator) {
-            indicator.style.width = `${navBtn.offsetWidth}px`;
-            indicator.style.left = `${navBtn.offsetLeft}px`;
+        if (res.ok) {
+            alert("Yangilik muvaffaqiyatli qo'shildi!");
+            closeAdmin();
+            switchTab('news');
         }
     }
 
-    // 3. Tab kontentlarini almashtirish (Hidden/Visible)
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    const tabCont = document.getElementById(`${tab}Tab`);
-    if (tabCont) {
-        tabCont.classList.remove('hidden');
+    function formatEmbedUrl(url) {
+        if (url.includes('youtube.com/watch?v=')) {
+            return url.replace('watch?v=', 'embed/');
+        }
+        if (url.includes('youtube.com/shorts/')) {
+            return url.replace('shorts/', 'embed/');
+        }
+        return url;
     }
 
-    // 4. Yuqori sarlavha (Header Title) matnini yangilash
-    const titles = { 
-        chats: 'Chatlar', 
-        groups: 'Ommaviy', 
-        profile: 'Profil', 
-        settings: 'Yangiliklar' 
-    };
-
-    const titleEl = document.getElementById('tabTitle');
-    if (titleEl) {
-        titleEl.innerText = titles[tab] || 'SafeChat';
-    }
-
-    // 5. Chatlar va Guruhlar bo'limi uchun ro'yxatni yuklash
-    if (tab === 'chats' || tab === 'groups') {
-        if (typeof loadList === 'function') {
-            loadList(tab);
-        }
-    } 
-    
-    // 6. Profil va Sozlamalar bo'limi uchun barcha ma'lumotlarni yangilash
-    if (tab === 'profile' || tab === 'settings') {
-        
-        // --- Siz so'ragan asosiy yangilash funksiyalari ---
-        if (typeof updateAllUI === 'function') {
-            updateAllUI(); // Barcha matnlar, ism, bio va rasmlarni yuklash
-        }
-
-        if (typeof updateDeviceInfo === 'function') {
-            updateDeviceInfo(); // Faol seanslar (Devices) ro'yxatini yuklash
-        }
-
-        // --- Qo'shimcha Premium funksiyalar ---
-        if (typeof loadStatus === 'function') {
-            loadStatus(); // Foydalanuvchi statusini yuklash
-        }
-
-        if (typeof updateProfileUI === 'function') {
-            updateProfileUI(); // Eski mantiqdan qolgan UI yangilanishi
-        }
-
-        if (typeof checkAdminAccess === 'function') {
-            checkAdminAccess(); // Admin huquqlarini tekshirish
+    // Tab va loadList
+    function toggleSearch() {
+        const searchContainer = document.getElementById('searchBarContainer');
+        searchContainer.classList.toggle('hidden');
+        if (!searchContainer.classList.contains('hidden')) {
+            document.getElementById('userSearch').focus();
         }
     }
 
-    // 7. Navigatsiya UI qo'shimcha yangilanishi (FaceID/PIN holati)
-    if (typeof updateNavUI === 'function') {
-        updateNavUI(tab);
+    function setMType(type) {
+        selectedEntityType = type;
+        document.getElementById('mTypeGroup').classList.toggle('bg-white', type === 'group');
+        document.getElementById('mTypeGroup').classList.toggle('text-blue-600', type === 'group');
+        document.getElementById('mTypeGroup').classList.toggle('text-gray-400', type !== 'group');
+        document.getElementById('mTypeChannel').classList.toggle('bg-white', type === 'channel');
+        document.getElementById('mTypeChannel').classList.toggle('text-blue-600', type === 'channel');
+        document.getElementById('mTypeChannel').classList.toggle('text-gray-400', type !== 'channel');
     }
 
-    // 8. Yashirin chatlar uchun PIN lock belgisini boshqarish
-    if (tab === 'chats') {
-        const lockIcon = document.getElementById('lockStatusIcon');
-        if (lockIcon) {
-            // Agar PIN o'rnatilgan bo'lsa qulf belgisini ko'rsatish
-            const hasPin = localStorage.getItem("hiddenPin");
-            if (hasPin) {
-                lockIcon.classList.remove('hidden');
-            } else {
-                lockIcon.classList.add('hidden');
-            }
-        }
-    }
-
-    // Konsolga ma'lumot chiqarish (Tekshirish uchun)
-    console.log(`[SafeChat] Tab switched to: ${tab}`);
-}
-
-// 1. Sonlarni formatlash funksiyasi (Eng tepaga qo'ying)
-function formatViews(num) {
-    if (!num) return 0;
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num;
-}
-
-const myNews = [
-{
-    id: 1,
-    title: "Facebook qanday boshlangan? Mark Zuckerberg va Eduardo Saverin",
-    shortDesc: "Dunyo tarixidagi eng yirik ijtimoiy tarmoqning ilk bor ishga tushirilishi va do'stlar hamkorligi.",
-    fullText: `2004-yil, Harvard yotoqxonasi. Mark Zuckerberg va uning do'sti Eduardo Saverin birgalikda 'TheFacebook' saytini ishga tushirishadi. 
-
-    Ushbu tarixiy voqea haqida qiziqarli faktlar:
-    • Mark kod yozish bilan band bo'lgan bo'lsa, Eduardo loyihaning birinchi 1000$ sarmoyasini kiritgan.
-    • Sayt dastlab faqat Harvard talabalari uchun yaratilgan, ammo bir necha kunda minglab odamlar ro'yxatdan o'tgan.
-    • Filmda Markning Eduardo bilan birgalikda 'Go live' (saytni yoqish) tugmasini bosishi va o'sha hayajonli lahzalar aks etgan.
-    
-    Mark Zuckerberg shunday degan: "Odamlar siz nima deganingiz bilan emas, nima yaratganingiz bilan qiziqishadi."
-
-    Muvaffaqiyatli loyihalar doimo oddiy bir g'oya va kuchli ishonchdan boshlanadi.`,
-    type: "local_video",
-    mediaPath: "postlar/zuck.mp4", // Fayl nomi loyihangizga qarab
-    views: 100,
-    date: "Bugun",
-    links: [
-        { name: "YouTube", url: "https://www.youtube.com/@Jasurbek_Jolanboyev", icon: "fa-youtube" },
-        { name: "Telegram", url: "t.me/vscoderr", icon: "fa-telegram" }
-    ]
-},
-    {
-    id: 3,
-    title: "Raqamli Qullik: Snouden ogohlantirishi hamon dolzarbmi?",
-    shortDesc: "Bugungi kunda har bir qadamingiz, har bir xabaringiz va hatto ovozingiz ham nazorat ostidami?",
-    fullText: `Edvard Snouden o'z vaqtida fosh etgan haqiqatlar shunchaki tarix emas, balki bugungi kunimizning achchiq haqiqatidir. 
-
-    Hozirgi kunda:
-    • Siz qidirgan mahsulot bir zumda reklama bo'lib chiqishi — bu tasodif emas, balki algoritmik kuzatuv.
-    • Ijtimoiy tarmoqlar siz haqingizda o'zingizdan ko'ra ko'proq ma'lumotga ega.
-    • Smartfoningiz o'chiq bo'lsa ham, u raqamli iz qoldirishda davom etadi.
-    
-    Snouden aytganidek: "Maxfiylik — bu sizda yashiradigan narsa borligini emas, balki siz himoya qilishingiz kerak bo'lgan narsa borligini anglatadi". 
-    
-    Bizning raqamli dunyoda qanday qilib xavfsiz qolish, kiber-gigiyena qoidalariga amal qilish va dasturlash orqali o'z tizimlarimizni yaratishni o'rganish vaqti keldi. 
-
-    Mening ijtimoiy tarmoqlarimda kiberxavfsizlik va zamonaviy texnologiyalar haqida eng so'nggi ma'lumotlarni berib boraman. Albatta obuna bo'ling!`,
-    type: "local_video",
-    mediaPath: "postlar/kuzatuv.mp4", 
-    views: 100,
-    date: "Bugun",
-    links: [
-        { name: "YouTube", url: "https://www.youtube.com/@Jasurbek_Jolanboyev", icon: "fa-youtube" },
-        { name: "Telegram", url: "t.me/vscoderr", icon: "fa-telegram" },
-        { name: "Instagram", url: "https://www.instagram.com/jasurbek.official.uz/", icon: "fa-instagram" },
-        { name: "LinkedIn", url: "https://www.linkedin.com/in/jasurbek-jo-lanboyev-74b758351", icon: "fa-linkedin" }
-    ]
-}
-];
-
-function renderMyNews() {
-    const feed = document.getElementById('newsFeed');
-    if (!feed) return;
-    feed.innerHTML = '';
-
-    myNews.forEach(post => {
-        let mediaTag = '';
-
-        if (post.type === 'local_video') {
-            mediaTag = `
-                <div class="aspect-video w-full bg-black rounded-t-[32px] overflow-hidden">
-                    <video src="${post.mediaPath}" controls class="w-full h-full object-cover"></video>
-                </div>`;
-        } else {
-            mediaTag = `
-                <img src="${post.mediaPath}" class="w-full h-56 object-cover rounded-t-[32px]" 
-                onerror="this.src='https://picsum.photos/800/400?random=${post.id}'">`;
-        }
-
-        const card = `
-            <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 mb-6 group animate-fade-in">
-                ${mediaTag}
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-md">${post.date}</span>
-                        <span class="text-[10px] font-bold text-gray-400"><i class="fa-solid fa-eye mr-1"></i>${formatViews(post.views)}</span>
-                    </div>
-                    <h3 class="text-lg font-black text-gray-900 mb-2">${post.title}</h3>
-                    <p class="text-sm text-gray-500 line-clamp-2">${post.shortDesc}</p>
-                    <button onclick="openNewsDetail(${post.id})" class="mt-4 w-full py-3 bg-gray-900 text-white text-[10px] font-black rounded-full uppercase tracking-widest hover:bg-blue-600 transition-all">Batafsil</button>
-                </div>
-            </div>`;
-        feed.innerHTML += card;
-    });
-}
-
-function openNewsDetail(id) {
-    const post = myNews.find(n => n.id === id);
-    const modal = document.getElementById('newsDetailModal');
-    const content = document.getElementById('detailContent');
-
-    if (!post) return;
-
-    // 1. Linklar bo'limini shakllantirish
-    let linksHTML = '';
-    if (post.links && post.links.length > 0) {
-        linksHTML = `
-            <div class="mt-8 pt-6 border-t border-gray-100">
-                <p class="text-[11px] font-black text-blue-600 uppercase tracking-[2px] mb-4">
-                    Batafsil ma'lumot uchun havolalar:
-                </p>
-                <div class="grid gap-3">
-                    ${post.links.map(link => `
-                        <a href="${link.url}" target="_blank" 
-                           class="flex items-center gap-4 p-4 bg-gray-50 rounded-[20px] hover:bg-blue-600 hover:text-white transition-all duration-300 group shadow-sm">
-                            <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-500">
-                                <i class="fa-brands ${link.icon} text-xl text-blue-600 group-hover:text-white"></i>
-                            </div>
-                            <div class="flex-1">
-                                <span class="block text-[10px] uppercase font-black opacity-60 group-hover:opacity-100">Platformaga o'tish</span>
-                                <span class="text-sm font-bold">${link.name} sahifasini ko'rish</span>
-                            </div>
-                            <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-white group-hover:translate-x-1 transition-all"></i>
-                        </a>
-                    `).join('')}
-                </div>
-            </div>`;
-    }
-
-    // 2. Modal ichidagi kontentni yig'ish
-    content.innerHTML = `
-        <div class="space-y-4">
-            <h2 class="text-2xl font-black text-gray-900 leading-tight">${post.title}</h2>
-            
-            <div class="flex items-center gap-2">
-                <div class="h-1.5 w-12 bg-blue-600 rounded-full"></div>
-                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${post.date}</span>
-            </div>
-
-            <div class="text-gray-700 leading-relaxed font-medium text-base mt-6">
-                ${post.fullText.replace(/\n/g, '<br>')}
-            </div>
-
-            ${linksHTML}
-            
-            <p class="text-[10px] text-center text-gray-400 mt-6 font-bold uppercase tracking-widest">SafeChat Secure News</p>
-        </div>
-    `;
-
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-// 5. MODALNI YOPISH
-function closeNewsDetail() {
-    document.getElementById('newsDetailModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-// 6. ISHGA TUSHIRISH
-// Faqat bitta joyda turishi kerak
-window.addEventListener('load', renderMyNews);
-
-async function loadList(tab) {
-    let list;
-
-    if (tab === 'chats') {
-        list = document.getElementById('chatList');
-    } else if (tab === 'groups') {
-        list = document.getElementById('groupsList');
-    } else {
-        return;
-    }
-
-    if (!list) return;
-
-    /* === SKELETON === */
-    list.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
-            <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
-            <div class="h-2 w-20 bg-gray-50 rounded"></div>
-        </div>`;
-
-    try {
-        /* ================= CHATLAR ================= */
-        if (tab === 'chats') {
-            const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-            const contacts = await res.json();
-            list.innerHTML = "";
-
-            if (!contacts || contacts.length === 0) {
-                list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
-                        <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
-                        <p class="font-bold text-sm">Suhbatlar yo‘q</p>
-                    </div>`;
-                return;
-            }
-
-            contacts.forEach(contact => {
-                const name = typeof contact === 'object' ? contact.username : contact;
-
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border";
-
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-black">${name}</h3>
-                        <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                    </div>
-                `;
-
-                div.onclick = () => openChat(name);
-                div.oncontextmenu = e => {
-                    e.preventDefault();
-                    openDeleteActionSheet(name, 'chat');
-                };
-
-                list.appendChild(div);
+    async function submitNewEntity() {
+        const nameInput = document.getElementById('mEntityName');
+        const name = nameInput.value.trim();
+        const username = localStorage.getItem("chat_user") || currentUser;
+        if (!name) return alert("Guruh/Kanal nomini kiriting!");
+        if (!username) return alert("Avval tizimga kiring!");
+        try {
+            const res = await fetch(`${API}/api/create_entity`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: name,
+                    type: selectedEntityType,
+                    username: username
+                })
             });
-        }
-
-        /* ================= GROUPS ================= */
-        if (tab === 'groups') {
-            const res = await fetch(`${API}/api/entities`);
-            const entities = await res.json();
-            list.innerHTML = "";
-
-            if (!entities || entities.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-20 opacity-60">
-                        <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
-                        <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
-                    </div>`;
-                return;
+            const data = await res.json();
+            if (res.ok && data.status === "success") {
+                alert(`${selectedEntityType === 'group' ? 'Guruh' : 'Kanal'} "${name}" muvaffaqiyatli yaratildi!`);
+                closeEntityModal();
+                nameInput.value = "";
+                loadList('groups');
+                socket.emit('entity_created', { name, type: selectedEntityType, id: data.id });
+            } else {
+                alert(data.message || "Xatolik yuz berdi!");
             }
+        } catch (e) {
+            console.error("Guruh yaratish xatosi:", e);
+            alert("Server bilan ulanishda xato!");
+        }
+    }
 
+    function universalSearch(query) {
+        query = query.toLowerCase();
+        document.querySelectorAll('#chatList .chat-item').forEach(chat => {
+            chat.style.display = chat.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+        document.querySelectorAll('#groupList .group-item').forEach(group => {
+            group.style.display = group.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+        document.querySelectorAll('#channelsTab .channel-item').forEach(channel => {
+            channel.style.display = channel.innerText.toLowerCase().includes(query) ? '' : 'none';
+        });
+    }
+
+    function updateNavUI(tabName) {
+        const btn = document.getElementById(`nav-${tabName}`);
+        const indicator = document.getElementById('navIndicator');
+        if (btn && indicator) {
+            indicator.style.width = `${btn.offsetWidth}px`;
+            indicator.style.left = `${btn.offsetLeft}px`;
+        }
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.nav-item').forEach(i => {
+            i.classList.remove('text-[#007aff]');
+            i.classList.add('text-gray-400');
+        });
+        const navBtn = document.getElementById(`nav-${tab}`);
+        if (navBtn) {
+            navBtn.classList.remove('text-gray-400');
+            navBtn.classList.add('text-[#007aff]');
+            const indicator = document.getElementById('navIndicator');
+            if (indicator) {
+                indicator.style.width = `${navBtn.offsetWidth}px`;
+                indicator.style.left = `${navBtn.offsetLeft}px`;
+            }
+        }
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        const tabCont = document.getElementById(`${tab}Tab`);
+        if (tabCont) tabCont.classList.remove('hidden');
+        const titles = { chats: 'Chatlar', groups: 'Ommaviy', profile: 'Profil', news: 'Yangiliklar' };
+        const titleEl = document.getElementById('tabTitle');
+        if (titleEl) titleEl.innerText = titles[tab] || 'SafeChat';
+        if (tab === 'chats' || tab === 'groups') loadList(tab);
+        if (tab === 'profile' || tab === 'news') updateAllUI();
+        if (typeof updateNavUI === 'function') updateNavUI(tab);
+        console.log(`[SafeChat] Tab switched to: ${tab}`);
+    }
+
+    // 1. Sonlarni formatlash
+    function formatViews(num) {
+        if (!num) return 0;
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num;
+    }
+
+    // myNews massivi (oldingi xabarda berilgan)
+    const myNews = [
+        // ... (oldingi myNews massivi shu yerda bo'ladi)
+    ];
+
+    function renderMyNews() {
+        const feed = document.getElementById('newsFeed');
+        if (!feed) return;
+        feed.innerHTML = '';
+        myNews.forEach(post => {
+            let mediaTag = '';
+            if (post.type === 'local_video') {
+                mediaTag = `
+                    <div class="aspect-video w-full bg-black rounded-t-[32px] overflow-hidden">
+                        <video src="${post.mediaPath}" controls class="w-full h-full object-cover"></video>
+                    </div>`;
+            } else {
+                mediaTag = `
+                    <img src="${post.mediaPath}" class="w-full h-56 object-cover rounded-t-[32px]"
+                    onerror="this.src='https://picsum.photos/800/400?random=${post.id}'">`;
+            }
+            const card = `
+                <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 mb-6 group animate-fade-in">
+                    ${mediaTag}
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-md">${post.date}</span>
+                            <span class="text-[10px] font-bold text-gray-400"><i class="fa-solid fa-eye mr-1"></i>${formatViews(post.views)}</span>
+                        </div>
+                        <h3 class="text-lg font-black text-gray-900 mb-2">${post.title}</h3>
+                        <p class="text-sm text-gray-500 line-clamp-2">${post.shortDesc}</p>
+                        <button onclick="openNewsDetail(${post.id})" class="mt-4 w-full py-3 bg-gray-900 text-white text-[10px] font-black rounded-full uppercase tracking-widest hover:bg-blue-600 transition-all">Batafsil</button>
+                    </div>
+                </div>`;
+            feed.innerHTML += card;
+        });
+    }
+
+    function openNewsDetail(id) {
+        const post = myNews.find(n => n.id === id);
+        const modal = document.getElementById('newsDetailModal');
+        const content = document.getElementById('detailContent');
+        if (!post) return;
+        let linksHTML = '';
+        if (post.links && post.links.length > 0) {
+            linksHTML = `
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <p class="text-[11px] font-black text-blue-600 uppercase tracking-[2px] mb-4">
+                        Batafsil ma'lumot uchun havolalar:
+                    </p>
+                    <div class="grid gap-3">
+                        ${post.links.map(link => `
+                            <a href="${link.url}" target="_blank" class="flex items-center gap-4 p-4 bg-gray-50 rounded-[20px] hover:bg-blue-600 hover:text-white transition-all duration-300 group shadow-sm">
+                                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-500">
+                                    <i class="fa-brands ${link.icon} text-xl text-blue-600 group-hover:text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <span class="block text-[10px] uppercase font-black opacity-60 group-hover:opacity-100">Platformaga o'tish</span>
+                                    <span class="text-sm font-bold">${link.name} sahifasini ko'rish</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-gray-300 group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>`;
+        }
+        content.innerHTML = `
+            <div class="space-y-4">
+                <h2 class="text-2xl font-black text-gray-900 leading-tight">${post.title}</h2>
+                <div class="flex items-center gap-2">
+                    <div class="h-1.5 w-12 bg-blue-600 rounded-full"></div>
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">${post.date}</span>
+                </div>
+                <div class="text-gray-700 leading-relaxed font-medium text-base mt-6">
+                    ${post.fullText.replace(/\n/g, '<br>')}
+                </div>
+                ${linksHTML}
+                <p class="text-[10px] text-center text-gray-400 mt-6 font-bold uppercase tracking-widest">SafeChat Secure News</p>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeNewsDetail() {
+        document.getElementById('newsDetailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    window.addEventListener('load', renderMyNews);
+
+    // loadList
+    async function loadList(tab) {
+        let list;
+        if (tab === 'chats') {
+            list = document.getElementById('chatList');
+        } else if (tab === 'groups') {
+            list = document.getElementById('groupsList');
+        } else {
+            return;
+        }
+        if (!list) return;
+        /* === SKELETON === */
+        list.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-20 animate-pulse">
+                <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
+                <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
+                <div class="h-2 w-20 bg-gray-50 rounded"></div>
+            </div>`;
+        try {
+            /* ================= CHATLAR ================= */
+            if (tab === 'chats') {
+                const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
+                const contacts = await res.json();
+                list.innerHTML = "";
+                if (!contacts || contacts.length === 0) {
+                    list.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                            <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
+                            <p class="font-bold text-sm">Suhbatlar yo‘q</p>
+                        </div>`;
+                    return;
+                }
+                contacts.forEach(contact => {
+                    const name = typeof contact === 'object' ? contact.username : contact;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border";
+                    div.innerHTML = `
+                        <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-black">${name}</h3>
+                            <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
+                        </div>
+                    `;
+                    div.onclick = () => openChat(name);
+                    div.oncontextmenu = e => {
+                        e.preventDefault();
+                        openDeleteActionSheet(name, 'chat');
+                    };
+                    list.appendChild(div);
+                });
+            }
+            /* ================= GROUPS ================= */
+            if (tab === 'groups') {
+                const res = await fetch(`${API}/api/entities`);
+                const entities = await res.json();
+                list.innerHTML = "";
+                if (!entities || entities.length === 0) {
+                    list.innerHTML = `
+                        <div class="text-center py-20 opacity-60">
+                            <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
+                            <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
+                        </div>`;
+                    return;
+                }
                 entities.forEach(ent => {
                     const isGroup = ent.type === 'group';
-
                     const div = document.createElement('div');
                     div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer";
-
                     div.innerHTML = `
                         <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
                             <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
@@ -1617,57 +1144,45 @@ async function loadList(tab) {
                             <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
                         </div>
                     `;
-
-                    div.onclick = () => openChat(ent.name); // ✅ TO‘G‘RILANDI
+                    div.onclick = () => openChat(ent.name);
                     div.oncontextmenu = e => {
                         e.preventDefault();
                         openDeleteActionSheet(ent.name, 'group');
                     };
-
                     list.appendChild(div);
                 });
-
+            }
+        } catch (e) {
+            console.error("LOAD LIST ERROR:", e);
+            list.innerHTML = `
+                <div class="text-center py-10 text-red-500 font-bold text-xs">
+                    ulanishda xato
+                </div>`;
         }
-
-    } catch (e) {
-        console.error("LOAD LIST ERROR:", e);
-        list.innerHTML = `
-            <div class="text-center py-10 text-red-500 font-bold text-xs">
-                ulanishda xato 
-            </div>`;
     }
-}
 
-
-// QIDIRUV FUNKSIYASI (O'zgarishsiz qoladi, lekin openChat ni to'g'ri chaqiradi)
-const toggleBtn = document.getElementById('toggleSearch');
+    // Qidiruv
+    const toggleBtn = document.getElementById('toggleSearch');
     const searchWrapper = document.getElementById('searchWrapper');
-
     toggleBtn.addEventListener('click', () => {
-        // Qidiruv oynasini ochish/yopish
         searchWrapper.classList.toggle('hidden');
-        // focus input, agar ochilgan bo'lsa
-        if(!searchWrapper.classList.contains('hidden')){
+        if (!searchWrapper.classList.contains('hidden')) {
             document.getElementById('userSearch').focus();
         }
     });
 
-    // QIDIRUV FUNKSIYASI (o'zgarmadi)
     async function liveSearch(val) {
         const list = document.getElementById('chatList');
         if (val.length < 1) { loadList('chats'); return; }
-
         try {
             const res = await fetch(`${API}/api/users/search`);
             const users = await res.json();
             const filtered = users.filter(u => u.username.toLowerCase().includes(val.toLowerCase()) && u.username !== currentUser);
-
             list.innerHTML = "";
-            if(filtered.length === 0) {
+            if (filtered.length === 0) {
                 list.innerHTML = `<p class="text-center text-red-400 mt-10 text-sm">Foydalanuvchi topilmadi</p>`;
                 return;
             }
-
             filtered.forEach(u => {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-3 p-4 bg-white rounded-2xl cursor-pointer hover:bg-blue-50 transition shadow-sm mb-2 active:scale-95";
@@ -1681,1804 +1196,1104 @@ const toggleBtn = document.getElementById('toggleSearch');
                 div.onclick = () => openChat(u.username);
                 list.appendChild(div);
             });
-        } catch(e) { console.error("Search error", e); }
-    }
-
-    // O'chirilayotgan narsani vaqtinchalik saqlash
-let currentDeleteTarget = { name: '', type: '' };
-
-// Menyuni ochish
-function openDeleteActionSheet(name, type) {
-    currentDeleteTarget = { name, type };
-    const sheet = document.getElementById('deleteActionSheet');
-    
-    // Matnlarni to'g'rilash
-    document.getElementById('deleteTargetName').innerText = name;
-    document.getElementById('deleteBtnText').innerText = (type === 'chat') ? "Chatni o'chirish" : "Guruhdan chiqish";
-    
-    // Ko'rsatish
-    sheet.classList.remove('hidden');
-    
-    // Haptic feedback (Mobil qurilmalarda tebranish)
-    if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(40);
-    }
-}
-
-// Menyuni yopish
-function closeDeleteSheet() {
-    document.getElementById('deleteActionSheet').classList.add('hidden');
-}
-
-// O'chirishni amalga oshirish
-async function executeDelete() {
-    // currentTarget bu yerda {name: '...', type: '...'} shaklida bo'lishi kerak
-    if (!currentTarget.name) return;
-
-    try {
-        const res = await fetch(`${API}/api/delete_entity`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: currentUser, // localStorage.getItem('username')
-                target: currentTarget.name,
-                type: currentTarget.type
-            })
-        });
-
-        // Server javob bermasa (masalan 404 yoki 500), res.ok false bo'ladi
-        if (!res.ok) throw new Error('Server xatosi');
-
-        const data = await res.json();
-        
-        if (data.success) {
-            closeDeleteSheet();
-            // Ro'yxatni yangilash
-            loadList(currentTarget.type === 'chat' ? 'chats' : 'groups');
-            // Muvaffaqiyat xabari (ixtiyoriy)
-            console.log(data.message);
-        } else {
-            alert("Xatolik: " + data.message);
+        } catch (e) {
+            console.error("Search error", e);
         }
-    } catch (e) {
-        console.error("Fetch xatosi:", e);
-        alert("Server bilan ulanishda xato!");
     }
-}
 
-async function addMemberToGroup(groupName, username) {
-    try {
-        const res = await fetch(`${API}/api/add_member`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                group: groupName,
-                username: username,
-                added_by: currentUser
-            })
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-            alert(`${username} guruhga qo‘shildi!`);
-        } else {
-            alert(data.message);
-        }
-    } catch (e) {
-        alert("Xato yuz berdi!");
-    }
-}
-
-function openChat(name, type = 'private') {
-    activeChat = name;
-    activeChatType = type;  // 'private' yoki 'group' — bu yerda to'g'ri o'rnatilishi SHART!
-
-    const chatArea = document.getElementById('chatArea');
-    chatArea.style.display = 'flex';
-    chatArea.classList.remove('hidden');
-
-    // Header ma'lumotlarini yangilash
-    document.getElementById('activeName').innerText = name;
-    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
-    document.getElementById('activeStatus').innerText = type === 'group' ? "Guruh" : "online";
-
-    // Xabarlar oynasini tozalash
-    const msgBox = document.getElementById('msgBox');
-    msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
-
-    fetchMessages(name, type);
-    closeAllSheets();
-}
-async function fetchMessages(name, type) {
-    const msgBox = document.getElementById('msgBox');
-    try {
-        let url = type === 'group' || type === 'channel'
-            ? `${API}/api/group_messages?group_name=${encodeURIComponent(name)}`
-            : `${API}/api/messages?user1=${encodeURIComponent(currentUser)}&user2=${encodeURIComponent(name)}`;
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Xabarlar yuklanmadi: ${res.status}`);
-
-        const messages = await res.json();
-        msgBox.innerHTML = "";
-
-        if (messages.length === 0) {
-            msgBox.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Xabarlar hali yo‘q</div>';
-        } else {
-            messages.forEach(msg => appendMessage(msg));
-            msgBox.scrollTop = msgBox.scrollHeight;
-        }
-    } catch (e) {
-        console.error("Xabar yuklash xatosi:", e);
-        msgBox.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Xabarlar yuklanmadi! Internetni tekshiring.</div>';
-    }
-}
-/////menuni tepaga chiqaradi 
-function fixMobileHeight() {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-
-window.addEventListener('resize', fixMobileHeight);
-window.addEventListener('load', fixMobileHeight);
-fixMobileHeight();
-
-function sendMsg(type = 'text', content = null) {
-    const inp = document.getElementById('msgInp');
-    const val = content || inp.value.trim();
-    if (!val || !activeChat) return alert("Xabar yoki suhbat tanlanmagan!");
-
-    const messageData = {
-        sender: currentUser,
-        receiver: activeChat,              // guruh bo'lsa guruh nomi, shaxsiy bo'lsa username
-        content: val,
-        chat_type: activeChatType,         // 'private' yoki 'group' — bu muhim!
-        type: type,
-        reply_to: replyToId ? { 
-            id: replyToId, 
-            text: replyToText, 
-            sender: replyToSender 
-        } : null,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    console.log("Yuborilayotgan xabar:", messageData); // debug uchun
-
-    // Serverga yuborish
-    socket.emit('send_message', messageData);
-
-    // Optimistik UI: o'z xabarini darhol ko'rsatish
-    appendMessage({
-        ...messageData,
-        id: 'temp-' + Date.now(),
-        isMe: true
-    });
-
-    inp.value = "";
-    inp.focus();
-    if (replyToId) cancelReply();
-}
-
-function updateHeight() {
-    let vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-
-window.addEventListener('resize', updateHeight);
-window.addEventListener('load', updateHeight);
-updateHeight();
-
-let pressTimer;
-let currentTarget = { name: '', type: '' };
-
-function setupLongPress(element, name, type) {
-    // Mobil va Desktop uchun hodisalar
-    ['touchstart', 'mousedown'].forEach(evt => {
-        element.addEventListener(evt, (e) => {
-            pressTimer = setTimeout(() => {
-                showActionSheet(name, type);
-            }, 700); // 0.7 soniya bosib tursa
-        });
-    });
-
-    ['touchend', 'mouseup', 'mouseleave'].forEach(evt => {
-        element.addEventListener(evt, () => clearTimeout(pressTimer));
-    });
-}
-
-function showActionSheet(name, type) {
-    currentTarget = { name, type };
-    const sheet = document.getElementById('deleteActionSheet');
-    const btnText = document.getElementById('deleteBtnText');
-    const icon = document.getElementById('deleteBtnIcon'); // HTML da ikonka qo'shing
-
-    if (type === 'group') {
-        document.getElementById('deleteTargetName').innerText = "Guruh: " + name;
-        btnText.innerText = "Guruhdan chiqish";
-        icon.className = "fa-solid fa-right-from-bracket";
-    } else {
+    // Delete action sheet
+    function openDeleteActionSheet(name, type) {
+        currentDeleteTarget = { name, type };
+        const sheet = document.getElementById('deleteActionSheet');
         document.getElementById('deleteTargetName').innerText = name;
-        btnText.innerText = "Chatni o'chirish";
-        icon.className = "fa-solid fa-trash-can";
-    }
-    
-    sheet.classList.remove('hidden');
-    if (window.navigator.vibrate) window.navigator.vibrate(50);
-}
-
-function appendMessage(data) {
-    const box = document.getElementById('msgBox');
-    if (!box) return;
-
-    const isMe = data.sender === currentUser;
-    const isGroup = activeChatType === 'group';
-
-    // Multimedia
-    let mediaHTML = "";
-    if (data.type === 'image') {
-        mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
-    } else if (data.type === 'video') {
-        mediaHTML = `<video src="${data.file_data || data.content}" controls class="max-w-full rounded-lg mb-2 shadow-sm"></video>`;
-    } else if (data.type === 'location') {
-        mediaHTML = `
-            <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
-                <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2 font-medium">
-                    <i class="fa-solid fa-map-location-dot"></i> Joylashuvni ko'rish
-                </a>
-            </div>`;
+        document.getElementById('deleteBtnText').innerText = (type === 'chat') ? "Chatni o'chirish" : "Guruhdan chiqish";
+        sheet.classList.remove('hidden');
+        if (window.navigator.vibrate) window.navigator.vibrate(40);
     }
 
-    // Reply
-    let replyMarkup = "";
-    if (data.reply_to) {
-        replyMarkup = `
-            <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80 cursor-pointer" onclick="scrollToMessage('${data.reply_to.id}')">
-                <b class="text-blue-600 block">${data.reply_to.sender}</b>
-                <p class="truncate text-gray-600">${data.reply_to.text}</p>
-            </div>`;
+    function closeDeleteSheet() {
+        document.getElementById('deleteActionSheet').classList.add('hidden');
     }
 
-    // Guruhda yuboruvchi ismi
-    let senderNameHTML = "";
-    if (isGroup && !isMe) {
-        senderNameHTML = `<span class="text-[11px] font-bold text-indigo-500 block mb-1">${data.sender}</span>`;
-    }
-
-    // Matn
-    let textHTML = (data.type !== 'location' && data.content && data.content.trim())
-        ? `<p class="text-sm leading-relaxed">${data.content}</p>`
-        : "";
-
-    const bubbleClass = isMe
-        ? 'bg-blue-600 text-white rounded-tr-none self-end'
-        : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 self-start';
-
-    const container = document.createElement('div');
-    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 px-2 w-full animate-fade-in`;
-
-    container.innerHTML = `
-        <div class="msg-bubble relative max-w-[85%] p-3 rounded-2xl shadow-sm ${bubbleClass}">
-            ${senderNameHTML}
-            ${replyMarkup}
-            <div class="msg-body">
-                ${mediaHTML}
-                ${textHTML}
-            </div>
-            <div class="flex items-center justify-end gap-2 mt-1 text-[10px] opacity-70">
-                <span>${data.timestamp}</span>
-                ${isMe ? '<i class="fa-solid fa-check-double text-xs"></i>' : ''}
-            </div>
-        </div>
-    `;
-
-    box.appendChild(container);
-    box.scrollTop = box.scrollHeight;
-}
-function refreshProfileUI() {
-    const name = localStorage.getItem('username');
-    const bio = localStorage.getItem('user_bio');
-    const savedAvatar = localStorage.getItem('user_avatar');
-
-    // Agarda bazada rasm bo'lsa o'shani, bo'lmasa UI-Avatar ishlatadi
-    const avatarUrl = (savedAvatar && savedAvatar !== "null") 
-        ? (savedAvatar.startsWith('http') ? savedAvatar : `${API}${savedAvatar}`)
-        : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
-
-    document.getElementById('profileDisplayPic').src = avatarUrl;
-    document.getElementById('userAvatar').src = avatarUrl;
-    // Inputlar
-    document.getElementById('editNameInp').value = name;
-    document.getElementById('editBioInp').value = bio === 'Bio hali yozilmagan...' ? '' : bio;
-    
-    // Matnlar
-    document.getElementById('profileNameDisplay').innerText = name;
-    document.getElementById('profilePhoneDisplay').innerText = phone;
-    document.getElementById('displayUsername').innerText = '@' + name.toLowerCase().replace(/\s/g, '_');
-    document.getElementById('displayBio').innerText = bio;
-
-    // Avatar
-    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff&size=128`;
-    document.getElementById('profileDisplayPic').src = avatar;
-    document.getElementById('userAvatar').src = avatar;
-}
-
-
-        // --- CONTEXT MENU ACTIONS ---
-        function showContextMenu(e, msgId) {
-            selectedMsgId = msgId;
-            const menu = document.getElementById('msgContextMenu');
-            menu.style.display = 'block';
-            menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
-            menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
-            document.getElementById('sheetOverlay').classList.add('active');
-        }
-
-        function copyMsg() {
-            const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
-            navigator.clipboard.writeText(txt);
-            closeAllSheets();
-        }
-
-        function startEditMsg() {
-            isEditing = true;
-            const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
-            document.getElementById('msgInp').value = txt;
-            document.getElementById('msgInp').focus();
-            document.getElementById('sendBtnIcon').className = "fa-solid fa-check";
-            closeAllSheets();
-        }
-
-        function deleteMsgServer() {
-            socket.emit('delete_message', { id: selectedMsgId, receiver: activeChat });
-            document.getElementById(`msg-${selectedMsgId}`).remove();
-            closeAllSheets();
-        }
-
-// --- MEDIA & TOOLS ---
-
-let pendingFileData = null;
-let pendingFileType = null;
-
-// 1. Fayl tanlash
-function triggerMediaUpload(type) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    if (type === 'image') input.accept = 'image/*';
-    else if (type === 'video') input.accept = 'video/*';
-    else input.accept = '*/*';
-
-    input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            pendingFileData = event.target.result; // Base64
-            pendingFileType = type;
-            showMediaPreview(pendingFileData, type);
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
-}
-
-const countries = [
-    { name: "Uzbekistan", code: "+998", flag: "🇺🇿" },
-    { name: "Russia", code: "+7", flag: "🇷🇺" },
-    { name: "USA", code: "+1", flag: "🇺🇸" },
-    { name: "Turkey", code: "+90", flag: "🇹🇷" },
-    { name: "Kazakhstan", code: "+7", flag: "🇰🇿" },
-    { name: "Germany", code: "+49", flag: "🇩🇪" },
-    { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
-    { name: "South Korea", code: "+82", flag: "🇰🇷" },
-    { name: "Kyrgyzstan", code: "+996", flag: "🇰🇬" },
-    { name: "Tajikistan", code: "+992", flag: "🇹🇯" }
-];
-
-function openCountryModal() {
-    document.getElementById('countryModal').classList.remove('hidden');
-    renderCountries(countries);
-}
-
-function closeCountryModal() {
-    document.getElementById('countryModal').classList.add('hidden');
-}
-
-function renderCountries(list) {
-    const container = document.getElementById('countryList');
-    container.innerHTML = "";
-    list.forEach(c => {
-        const item = document.createElement('div');
-        item.className = "flex items-center justify-between p-4 border-b hover:bg-gray-50 cursor-pointer transition";
-        item.innerHTML = `
-            <div class="flex items-center gap-4">
-                <span class="text-2xl">${c.flag}</span>
-                <span class="font-medium text-gray-700">${c.name}</span>
-            </div>
-            <span class="text-gray-400 font-bold">${c.code}</span>
-        `;
-        item.onclick = () => {
-            document.getElementById('selectedFlag').innerText = c.flag;
-            document.getElementById('selectedCountryName').innerText = c.name;
-            document.getElementById('phoneCode').value = c.code;
-            closeCountryModal();
-        };
-        container.appendChild(item);
-    });
-}
-
-function filterCountries() {
-    const term = document.getElementById('countrySearch').value.toLowerCase();
-    const filtered = countries.filter(c => c.name.toLowerCase().includes(term));
-    renderCountries(filtered);
-}
-
-// 2. Preview oynasini ochish
-function showMediaPreview(data, type) {
-    const modal = document.getElementById('mediaPreviewModal');
-    const display = document.getElementById('mediaDisplayArea');
-    modal.classList.remove('hidden');
-
-    if (type === 'image') {
-        display.innerHTML = `<img src="${data}" class="max-w-full max-h-[60vh] rounded-lg shadow-2xl">`;
-    } else if (type === 'video') {
-        display.innerHTML = `<video src="${data}" controls class="max-w-full max-h-[60vh] rounded-lg"></video>`;
-    }
-}
-
-function closeMediaPreview() {
-    document.getElementById('mediaPreviewModal').classList.add('hidden');
-    pendingFileData = null;
-}
-
-// 1. Hisob ma'lumotlarini yangilash
-function updateAccountInfo() {
-    const newName = document.getElementById('editNameInp').value;
-    const newBio = document.getElementById('editBioInp').value;
-
-    if (newName.trim()) {
-        localStorage.setItem('username', newName);
-        localStorage.setItem('user_bio', newBio);
-        
-        // UI ni darhol yangilash
-        document.getElementById('profileNameDisplay').innerText = newName;
-        document.getElementById('displayUsername').innerText = '@' + newName.toLowerCase().replace(/\s/g, '_');
-        
-        alert("Ma'lumotlar saqlandi!");
-    }
-}
-
-function clearCache() {
-    if (confirm("Keshni tozalamoqchimisiz? Bu rasmlarni qayta yuklanishiga sabab bo'ladi.")) {
-        document.getElementById('cacheSize').innerText = "0.0 MB";
-        alert("Kesh muvaffaqiyatli tozalandi!");
-    }
-}
-
-// 3. Tasdiqlash va Yuborish
-function confirmAndSendMedia() {
-    if (!pendingFileData) return;
-    
-    const caption = document.getElementById('mediaCaption').value;
-    
-    const data = {
-        sender: currentUser,
-        receiver: activeChat,
-        content: caption || (pendingFileType === 'image' ? "🖼 Rasm" : "📹 Video"),
-        file_data: pendingFileData,
-        type: pendingFileType,
-        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
-        timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-    };
-
-    socket.emit('send_message', data);
-    
-    // Tozalash
-    closeMediaPreview();
-    document.getElementById('mediaCaption').value = "";
-    cancelReply(); // Agar reply bo'lsa
-}
-
-// 4. Location yuborish (Preview shart emas, birdan ketadi)
-function sendLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-            const locData = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude
-            };
-            
-            socket.emit('send_message', {
-                sender: currentUser,
-                receiver: activeChat,
-                type: 'location',
-                content: `Joylashuv: ${locData.lat}, ${locData.lng}`,
-                location: locData // Serverga obyekt sifatida yuboramiz
+    async function executeDelete() {
+        if (!currentDeleteTarget.name) return;
+        try {
+            const res = await fetch(`${API}/api/delete_entity`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: currentUser,
+                    target: currentDeleteTarget.name,
+                    type: currentDeleteTarget.type
+                })
             });
-            closeSheet('mediaSheet');
-        });
-    } else {
-        alert("Geolokatsiya qurilmangizda qo'llab-quvvatlanmaydi.");
-    }
-}
-        function setEntityType(type) {
-            currentEntityType = type;
-            document.getElementById('btnTypeGroup').classList.toggle('bg-white', type === 'group');
-            document.getElementById('btnTypeChannel').classList.toggle('bg-white', type === 'channel');
-        }
-
-        function submitNewEntity() {
-            const name = document.getElementById('entityName').value;
-            socket.emit('create_entity', { type: currentEntityType, name, creator: currentUser });
-            alert(name + " yaratildi!");
-            closeAllSheets();
-        }
-
-                    socket.on("entity_created", (data) => {
-                if (data.type === "group") {
-                    addToGroupList(data.name);
-                } else {
-                    addToChannelList(data.name);
-                }
-            });
-
-        function openUserMenu() {
-            const block = confirm(activeChat + " foydalanuvchini bloklash?");
-            if(block) socket.emit('block_user', { target: activeChat });
-        }
-
-        function initiateCall(type) {
-            alert(type + " qo'ng'iroq signali yuborilmoqda...");
-            socket.emit('call_signal', { to: activeChat, type: type });
-        }
-        // guruh va kanallar qoshish uchun yangi funksiya 
-        let entityType = "group"; // default
-
-        // Socket.io orqali realtime yangilanishni tinglash
-socket.on('update_views', (data) => {
-    // 1. Lenta (Feed) ichidagi sonni yangilash
-    const viewSpan = document.querySelector(`#view-count-${data.post_id}`);
-    if (viewSpan) {
-        viewSpan.innerText = formatViews(data.views);
-    }
-    
-    // 2. Agar modal ochiq bo'lsa, uning ichidagini ham yangilash
-    const modalViewSpan = document.querySelector(`#modal-view-count`);
-    if (modalViewSpan && currentOpenedPostId === data.post_id) {
-        modalViewSpan.innerText = formatViews(data.views) + " ko'rilgan";
-    }
-});
-
-let currentOpenedPostId = null;
-
-// Batafsil tugmasi bosilganda
-async function openNewsDetail(id) {
-    currentOpenedPostId = id;
-    const post = myNews.find(n => n.id === id);
-    
-    // Serverga ko'rildi deb yuborish
-    fetch(`/api/news/view/${id}`, { method: 'POST' });
-
-    const modal = document.getElementById('newsDetailModal');
-    const content = document.getElementById('detailContent');
-
-    content.innerHTML = `
-        <div class="space-y-4">
-            <h2 class="text-2xl font-black text-gray-900 leading-none">${post.title}</h2>
-            <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                <span>${post.date}</span> • <span id="modal-view-count">${post.views} ko'rilgan</span>
-            </div>
-            <div class="h-1 w-12 bg-blue-600 rounded-full"></div>
-            <p class="text-gray-700 leading-relaxed text-base font-medium">${post.fullText}</p>
-        </div>
-    `;
-    modal.classList.remove('hidden');
-}
-
-
-
-function setEntityType(type) {
-    entityType = type;
-
-    document.getElementById("btnTypeGroup").classList.toggle("bg-white", type === "group");
-    document.getElementById("btnTypeGroup").classList.toggle("text-gray-800", type === "group");
-    document.getElementById("btnTypeGroup").classList.toggle("text-gray-500", type !== "group");
-
-    document.getElementById("btnTypeChannel").classList.toggle("bg-white", type === "channel");
-    document.getElementById("btnTypeChannel").classList.toggle("text-gray-800", type === "channel");
-    document.getElementById("btnTypeChannel").classList.toggle("text-gray-500", type !== "channel");
-}
-
-function createEntity() {
-    const name = document.getElementById("entityName").value.trim();
-    if (name.length < 2) {
-        alert("Nomi juda qisqa!");
-        return;
-    }
-
-    // Backendga yuboriladi
-    socket.emit("create_entity", { 
-        type: entityType,
-        name: name 
-    });
-
-    // UIga qo‘shib qo‘yamiz (real vaqtda ko‘rinishi uchun)
-    if (entityType === "group") {
-        addToGroupList(name);
-    } else {
-        addToChannelList(name);
-    }
-
-    closeSheet();
-}
-
-// Frontendga yangi element qo‘shish
-function addToGroupList(name) {
-    const box = document.getElementById("groupsTab");
-    box.innerHTML += `
-        <div class="p-4 bg-white rounded-2xl shadow-sm">
-            <h3 class="text-lg font-bold">${name}</h3>
-            <p class="text-gray-500 text-sm">Yangi guruh</p>
-        </div>
-    `;
-}
-
-function addToChannelList(name) {
-    const box = document.getElementById("channelsTab");
-    box.innerHTML += `
-        <div class="p-4 bg-white rounded-2xl shadow-sm">
-            <h3 class="text-lg font-bold">${name}</h3>
-            <p class="text-gray-500 text-sm">Yangi kanal</p>
-        </div>
-    `;
-}
-
-function createEntity() {
-    const type = currentEntityType; 
-    const name = document.getElementById("entityName").value.trim();
-
-    if (!name) return alert("Nomi bo‘sh bo‘lmasin!");
-
-    socket.emit("create_entity", {
-        type: type,
-        name: name
-    });
-
-    closeSheet('createEntitySheet');
-    document.getElementById("entityName").value = "";
-}
-
-// --- UI HELPERS (YANGILANGAN) ---
-        function openSheet(id) { 
-            document.getElementById(id).classList.add('active'); 
-            document.getElementById('sheetOverlay').classList.add('active'); 
-        }
-
-        function closeSheet(id) { 
-            document.getElementById(id).classList.remove('active'); 
-            document.getElementById('sheetOverlay').classList.remove('active'); 
-        }
-
-        function closeAllSheets() {
-            // Hamma sheetlarni yopish
-            document.querySelectorAll('.ios-sheet').forEach(s => s.classList.remove('active'));
-            // Overlayni yopish
-            document.getElementById('sheetOverlay').classList.remove('active');
-            // Kontekst menyuni yashirish
-            document.getElementById('msgContextMenu').style.display = 'none';
-        }
-
-function handleEnter(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMsg();
-    }
-}
-
-        // 1. CHATNI YOPISH FUNKSIYASI
-function closeChatArea() {
-    document.getElementById('chatArea').classList.add('hidden');
-    document.getElementById('chatArea').style.display = 'none';
-    activeChat = null;
-}
-function showAdminLogin() {
-    const userPhone = localStorage.getItem('user_phone'); // Kirgan foydalanuvchi raqami
-    
-    // 1-darajali tekshiruv: Telefon raqami
-    if (userPhone !== '+998958883851') {
-        alert("Sizda admin huquqi yo'q!");
-        return;
-    }
-
-    // 2-darajali tekshiruv: Root Key
-    const key = prompt("ENTER ROOT_KEY:");
-    if (key === 'serinaqu') {
-        const panel = document.getElementById('adminPanel');
-        panel.classList.remove('hidden');
-        panel.style.display = 'block';
-        loadAdminData();
-        addLog("ADMIN_SESSION_STARTED: Welcome Boss", "success");
-    } else {
-        alert("ACCESS_DENIED: INVALID_KEY");
-    }
-}
-
-// 3. ADMIN PANELNI YOPISH
-function closeAdmin() {
-    const panel = document.getElementById('adminPanel');
-    panel.style.display = 'none';
-    panel.classList.add('hidden');
-}
-
-async function uploadNewAvatar(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('username', localStorage.getItem('username'));
-
-    const res = await fetch(`${API}/api/upload_avatar`, {
-        method: 'POST',
-        body: formData
-    });
-    
-    const result = await res.json();
-    if(result.status === 'success') {
-        localStorage.setItem('user_avatar', result.url);
-        refreshProfileUI();
-        // Socket avtomatik ravishda 'user_update' yuboradi (Serverdagi funksiyaga qarang)
-    }
-}
-
-
-// 4. ADMIN LOG QO'SHISH
-function addLog(msg, type = "info") {
-    const logContainer = document.getElementById('adminLogs');
-    if(!logContainer) return;
-    const time = new Date().toLocaleTimeString();
-    const color = type === "success" ? "text-green-400" : type === "danger" ? "text-red-500" : "text-blue-400";
-    logContainer.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
-    logContainer.scrollTop = logContainer.scrollHeight;
-}
-
-async function saveProfileChanges() {
-    const updatedData = {
-        username: localStorage.getItem('username'),
-        bio: document.getElementById('editBioInp').value,
-        phone: document.getElementById('user_phone') // Agar tahrirlansa
-    };
-
-    const response = await fetch(`${API}/api/update_profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-    });
-
-    if (response.ok) {
-        localStorage.setItem('user_bio', updatedData.bio);
-        alert("Ma'lumotlar saqlandi!");
-        refreshProfileUI();
-    }
-}
-
-// 5. ADMIN DATA YUKLASH
-async function loadAdminData() {
-    try {
-        const response = await fetch(`${API}/api/admin/users`);
-        const users = await response.json();
-        const table = document.getElementById('adminTable');
-        if(!table) return;
-        table.innerHTML = "";
-        
-        users.forEach(u => {
-            const row = `
-                <tr class="hover:bg-green-900/20 transition-colors border-b border-green-900/30">
-                    <td class="p-3 font-bold">${u.name}</td>
-                    <td class="p-3">USER</td>
-                    <td class="p-3">
-                        <span class="w-2 h-2 inline-block rounded-full ${u.status === 'ONLINE' ? 'bg-green-500' : 'bg-gray-600'} mr-2"></span>
-                        ${u.status}
-                    </td>
-                    <td class="p-3 ${u.is_blocked ? 'text-red-500' : 'text-green-500'}">${u.is_blocked ? 'BANNED' : 'CLEAR'}</td>
-                    <td class="p-3 flex gap-2">
-                        <button onclick="toggleBan('${u.name}')" class="bg-red-900/50 border border-red-700 px-2 py-1 rounded text-[10px] hover:bg-red-700">BAN/UNBAN</button>
-                    </td>
-                </tr>`;
-            table.innerHTML += row;
-        });
-        document.getElementById('totalUsersStat').innerText = users.length;
-    } catch(e) { 
-        addLog("DATA_LOAD_FAILED", "danger"); 
-    }
-}
-
-// 6. E'LONNI CHIQARISH (BROADCAST)
-function publishAnnouncement() {
-    const type = document.getElementById('advType').value;
-    const value = document.getElementById('advValue').value;
-    const start = document.getElementById('advStart').value;
-    const end = document.getElementById('advEnd').value;
-
-    if(!value) return alert("E'lon matni yoki linkini kiriting!");
-
-    const config = { type, value, start, end };
-    socket.emit('broadcast_announcement', config);
-    addLog(`BROADCAST_DEPLOYED: ${type}`, "success");
-    alert("E'lon barcha foydalanuvchilarga yuborildi!");
-}
-
-        // TIZIMDAN CHIQISH (To'liq tozalash bilan)
-        function logout() {
-            if(confirm("Tizimdan chiqmoqchimisiz?")) {
-                currentUser = null;
-                activeChat = null;
-                // Sahifani qayta yuklash orqali barcha o'zgaruvchilarni nolga tushiramiz
-                window.location.reload(); 
+            if (!res.ok) throw new Error('Server xatosi');
+            const data = await res.json();
+            if (data.success) {
+                closeDeleteSheet();
+                loadList(currentDeleteTarget.type === 'chat' ? 'chats' : 'groups');
+                console.log(data.message);
+            } else {
+                alert("Xatolik: " + data.message);
             }
+        } catch (e) {
+            console.error("Fetch xatosi:", e);
+            alert("Server bilan ulanishda xato!");
         }
-
-        // PROFILNI SAQLASH TUGMASI UCHUN
-        function saveProfile() {
-            alert("Profil ma'lumotlari muvaffaqiyatli saqlandi!");
-            closeSheet('settingsSheet');
-        }
-        // Foydalanuvchi login qilgandan keyin bu ishga tushadi
-        function onUserLoggedIn() {
-            currentUser = localStorage.getItem('chat_user'); // Agar saqlangan bo'lsa
-            if(currentUser) {
-                document.getElementById('authScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                switchTab('chats'); // Birinchi bo'lib chatlar bo'limi ochiladi
-            }
-        }
-// --- SOCKET REAL-TIME ---
-
-// 1. Ovozli xabarnoma fayli (Istalgan qisqa mp3 linkini qo'yishingiz mumkin)
-const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-
-// SOCKET.ON RECEIVE_MESSAGE (TO‘LIQ YANGILANGAN VERSIYA)
-socket.on('receive_message', (data) => {
-    console.log("Yangi xabar keldi:", data);
-
-    // Ovoz va tebranish (faqat boshqadan kelsa)
-    if (data.sender !== currentUser) {
-        msgSound.play().catch(e => console.error("Ovoz xatosi:", e));
-        if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
-    if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
-        // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (sendMsg da allaqachon qo‘shilgan)
-        if (data.sender === currentUser) {
-            // Vaqtinchalik xabarni yangilash (serverdan kelgan id ni qo‘yish)
-            const tempMsg = document.querySelector(`[id^="container-temp-"]`);
-            if (tempMsg) {
-                tempMsg.id = `container-${data.id}`;
-                const bubble = tempMsg.querySelector('.msg-bubble');
-                if (bubble) bubble.id = `msg-${data.id}`;
-            }
-        } else {
-            // Boshqadan kelgan xabar — yangidan qo‘shish
-            appendMessage(data);
-        }
-
+    // Chat ochish va fetchMessages
+    function openChat(name, type = 'private') {
+        activeChat = name;
+        activeChatType = type;
+        const chatArea = document.getElementById('chatArea');
+        chatArea.style.display = 'flex';
+        chatArea.classList.remove('hidden');
+        document.getElementById('activeName').innerText = name;
+        document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
+        document.getElementById('activeStatus').innerText = type === 'group' ? "Guruh" : "online";
         const msgBox = document.getElementById('msgBox');
-        if (msgBox) {
-            msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
-        }
-    } else {
-        // Boshqa chatda bo‘lsa — bildirishnoma va ro‘yxatni yangilash
-        showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar", data.sender);
+        msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
+        fetchMessages(name, type);
+        closeAllSheets();
     }
 
-    // Har doim chat ro‘yxatini yangilash (kim yozsa tepaga chiqadi)
-    refreshChatListSilently();
-});
-
-async function loadList(tab) {
-    let list;
-    if (tab === 'chats') list = document.getElementById('chatList');
-    else if (tab === 'groups') list = document.getElementById('groupsList');
-    else return;
-
-    if (!list) return;
-
-    list.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
-            <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
-            <div class="h-2 w-20 bg-gray-50 rounded"></div>
-        </div>`;
-
-    try {
-        if (tab === 'chats') {
-            const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-            if (!res.ok) throw new Error(`Chatlar yuklanmadi: ${res.status}`);
-            const contacts = await res.json();
-
-            list.innerHTML = "";
-            if (!contacts || contacts.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 opacity-60">Suhbatlar yo‘q</div>`;
-                return;
+    async function fetchMessages(name, type) {
+        const msgBox = document.getElementById('msgBox');
+        try {
+            let url = type === 'group' ? `${API}/api/group_messages?group_name=${encodeURIComponent(name)}` : `${API}/api/messages?user1=${encodeURIComponent(currentUser)}&user2=${encodeURIComponent(name)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Xabarlar yuklanmadi: ${res.status}`);
+            const messages = await res.json();
+            msgBox.innerHTML = "";
+            if (messages.length === 0) {
+                msgBox.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Xabarlar hali yo‘q</div>';
+            } else {
+                messages.forEach(msg => appendMessage(msg));
+                msgBox.scrollTop = msgBox.scrollHeight;
             }
-            contacts.forEach(contact => {
-                const name = typeof contact === 'object' ? contact.username : contact;
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50";
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-black">${name}</h3>
-                        <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                    </div>`;
-                div.onclick = () => openChat(name, 'private');
-                list.appendChild(div);
-            });
-        } 
-        else if (tab === 'groups') {
-            const res = await fetch(`${API}/api/entities`);
-            if (!res.ok) throw new Error(`Guruhlar yuklanmadi: ${res.status} - ${res.statusText}`);
-            const entities = await res.json();
-
-            list.innerHTML = "";
-            if (!entities || entities.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 opacity-60">Ommaviy guruhlar yo‘q</div>`;
-                return;
-            }
-
-            entities.forEach(ent => {
-                const isGroup = ent.type === 'group';
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50";
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
-                        <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-black">${ent.name}</h3>
-                        <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
-                    </div>`;
-                div.onclick = () => openChat(ent.name, ent.type);
-                list.appendChild(div);
-            });
+        } catch (e) {
+            console.error("Xabar yuklash xatosi:", e);
+            msgBox.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Xabarlar yuklanmadi! Internetni tekshiring.</div>';
         }
-    } catch (e) {
-        console.error("LOAD LIST ERROR:", e);
-        list.innerHTML = `
-            <div class="text-center py-20 text-red-500 font-bold">
-                <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
-                Ulanishda xato<br>
-                <small class="text-xs">${e.message}</small>
-            </div>`;
-    }
-}
-
-function showToast(title, body, senderUsername = null) {
-    // Brauzer bildirishnomasi (fon rejimida)
-    if (Notification.permission === "granted") {
-        new Notification(title, {
-            body: body,
-            icon: 'https://ui-avatars.com/api/?name=SafeChat&background=007aff&color=fff'
-        });
-    } else if (Notification.permission !== "denied") {
-        Notification.requestPermission();
     }
 
-    // iOS-style ekrandagi bildirishnoma (yuqoridan tushadi)
-    const toast = document.createElement('div');
-    toast.id = 'iosNotif';
-    toast.className = "fixed top-4 left-4 right-4 bg-white/90 backdrop-blur-xl z-[9999] rounded-[24px] p-4 shadow-2xl border border-white/20 flex items-center gap-4 animate-slide-down cursor-pointer";
-    toast.innerHTML = `
-        <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-            <i class="fa-solid fa-comment"></i>
-        </div>
-        <div class="flex-1">
-            <h4 class="text-sm font-black text-gray-900">${title}</h4>
-            <p class="text-xs text-gray-500 line-clamp-1">${body}</p>
-        </div>
-        <div class="w-1 h-8 bg-gray-200 rounded-full"></div>
-    `;
-
-    // Agar bildirishnomaga bossangiz — chatga o‘tadi
-    if (senderUsername) {
-        toast.onclick = () => {
-            openChat(senderUsername, 'private');
-            switchTab('chats');
-            toast.remove();
-        };
-    }
-
-    document.body.appendChild(toast);
-
-    // 4 soniyadan keyin yo‘qoladi
-    setTimeout(() => {
-        toast.classList.replace('animate-slide-down', 'animate-slide-up');
-        setTimeout(() => toast.remove(), 500);
-    }, 4000);
-}
-
-// Sahifa yuklanganda bildirishnomaga ruxsat so'rash
-window.addEventListener('load', () => {
-    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
-    }
-});
-
-        let deferredPrompt;
-const installBanner = document.getElementById('installBanner');
-
-// 1. Dastlab banner yashirin bo'lishi kerak (CSS orqali ham yashirish mumkin)
-installBanner.style.display = 'none';
-
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Brauzerning standart oynasini to'xtatib turamiz
-    e.preventDefault();
-    deferredPrompt = e;
-    // Endi biz o'zimizning bannerni ko'rsatsak bo'ladi
-    installBanner.style.display = 'flex';
-});
-
-async function installApp() {
-    if (!deferredPrompt) return;
-    
-    // O'rnatish oynasini ko'rsatish
-    deferredPrompt.prompt();
-    
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-        console.log('Foydalanuvchi ilovani o\'rnatdi');
-    }
-    
-    // Banner bir marta ko'rsatilgach yashiriladi
-    installBanner.style.display = 'none';
-    deferredPrompt = null;
-}
-
-let replyToId = null;
-let replyToText = "";
-let replyToSender = "";
-let selectedMessages = new Set();
-let isSelectionMode = false;
-
-// 1. Tanlash rejimini yoqish
-function toggleSelectMode() {
-    isSelectionMode = true;
-    document.body.classList.add('selection-mode');
-    document.getElementById('selectionBar').classList.remove('hidden');
-    closeMenu();
-}
-
-// 2. Habarni tanlash/bekor qilish
-function toggleMsgSelection(id) {
-    if (!isSelectionMode) return;
-    const el = document.getElementById(`container-${id}`);
-    if (selectedMessages.has(id)) {
-        selectedMessages.delete(id);
-        el.classList.remove('selected');
-    } else {
-        selectedMessages.add(id);
-        el.classList.add('selected');
-    }
-}
-
-function showMenu(e, id, content, isMe) {
-    const menu = document.getElementById('msgContextMenu');
-    const msgElement = document.getElementById(`msg-${id}`);
-    const editBtn = document.getElementById('editBtn');
-    const deleteBtn = document.getElementById('deleteBtn');
-
-    if (!msgElement) return;
-
-    // 1. XAVFSIZLIK: Faqat o'z xabari bo'lsa Tahrirlash va O'chirishni ko'rsatish
-    // isMe argumenti appendMessage'dan keladi (data.sender === currentUser)
-    if (isMe) {
-        editBtn.style.display = "flex";
-        deleteBtn.style.display = "flex";
-    } else {
-        editBtn.style.display = "none";
-        deleteBtn.style.display = "none";
-    }
-
-    // 2. Koordinatalarni olish
-    const rect = msgElement.getBoundingClientRect();
-    menu.style.display = 'block';
-    menu.classList.remove('hidden');
-
-    // 3. POZITSIYA: Xabarning markaziga yaqinroq joylashtirish
-    // Xabarning balandligi o'rtasidan biroz yuqoriroq
-    let top = rect.top + (rect.height / 4); 
-    let left;
-
-    if (isMe) {
-        // Mening xabarim (o'ngda): Menyu xabarning chap burchagiga yaqin chiqadi
-        left = rect.left - (menu.offsetWidth / 2);
-    } else {
-        // Birovning xabari (chapda): Menyu xabarning o'ng burchagiga yaqin chiqadi
-        left = rect.right - (menu.offsetWidth / 2);
-    }
-
-    // 4. EKRAN CHEGARALARI: Menyu ekrandan chiqib ketmasligi uchun
-    const padding = 15; // Ekran chetidan masofa
-    
-    // Gorizontal tekshiruv
-    if (left < padding) left = padding;
-    if (left + menu.offsetWidth > window.innerWidth - padding) {
-        left = window.innerWidth - menu.offsetWidth - padding;
-    }
-
-    // Vertikal tekshiruv
-    if (top < padding) top = padding;
-    if (top + menu.offsetHeight > window.innerHeight - padding) {
-        top = window.innerHeight - menu.offsetHeight - padding;
-    }
-
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
-
-    // 5. MA'LUMOTLARNI SAQLASH
-    selectedMsgId = id;
-    selectedMsgText = content;
-    
-    // Fonni xiralashtirish (Telegram effektini beradi)
-    const msgBox = document.getElementById('msgBox');
-    msgBox.style.filter = "blur(2px)";
-    msgBox.style.transition = "filter 0.2s";
-
-    // Menyu ochilganda xabarni ajratib ko'rsatish (ixtiyoriy)
-    msgElement.style.zIndex = "10001";
-    msgElement.style.position = "relative";
-
-    // Bir marta bosilganda menyuni yopish
-    const autoClose = () => {
-        closeMenu();
-        document.removeEventListener('click', autoClose);
-    };
-    
-// showMenu funksiyasi oxirida mana buni ishlating:
-setTimeout(() => {
-    // click hodisasi faqat bir marta ishlashi uchun {once: true} foydali
-    document.addEventListener('click', closeMenu, { once: true });
-}, 50);
-}
-
-function closeMenu() {
-    const menu = document.getElementById('msgContextMenu');
-    const msgBox = document.getElementById('msgBox');
-    if (!menu) return;
-
-    menu.style.display = 'none';
-    menu.classList.add('hidden');
-
-    if (msgBox) {
-        msgBox.style.filter = "none";
-        msgBox.classList.remove('blur-sm');
-    }
-
-    document.removeEventListener('click', closeMenu);
-}
-
-
-// 3. Swipe to Reply (Surish orqali javob berish)
-function initSwipe(element, msgId, text, sender) {
-    let startX = 0;
-    let currentX = 0;
-    let isSwiping = false;
-
-    element.addEventListener('touchstart', e => {
-        startX = e.touches[0].clientX;
-        element.style.transition = "none"; 
-    }, {passive: true});
-
-    element.addEventListener('touchmove', e => {
-        currentX = e.touches[0].clientX;
-        let diff = currentX - startX; // ENDI: O'ngga surish uchun (current - start)
-
-        if (diff > 0 && diff < 80) { // Faqat o'ngga 80px gacha surish
-            isSwiping = true;
-            element.style.transform = `translateX(${diff}px)`; // Musbat qiymat o'ngga suradi
-            
-            // Ixtiyoriy: Surish paytida reply belgisi (icon) ko'rinishi uchun
-            // element.querySelector('.swipe-indicator').style.opacity = diff / 80;
-        }
-    }, {passive: true});
-
-    element.addEventListener('touchend', () => {
-        element.style.transition = "transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"; 
-        element.style.transform = `translateX(0)`; // Joyiga qaytarish
-
-        // Agar 50px dan ko'proq o'ngga surilgan bo'lsa - Reply!
-        if (isSwiping && (currentX - startX > 50)) {
-            setupReply(msgId, text, sender);
-        }
-        isSwiping = false;
-    });
-}
-
-
-
-// 1. Replyni o'rnatish
-function setupReply(id, text, sender) {
-    replyToId = id;
-    replyToText = text;
-    replyToSender = sender;
-
-    const preview = document.getElementById('replyPreview');
-    preview.innerHTML = `
-        <div class="flex items-center p-2 gap-3">
-            <div class="flex-1 min-w-0">
-                <p class="text-[11px] font-bold text-blue-600">${sender}</p>
-                <p class="text-xs text-gray-600 truncate opacity-80">${text}</p>
-            </div>
-            <i onclick="cancelReply()" class="fa-solid fa-xmark text-gray-400 p-2 cursor-pointer"></i>
-        </div>
-    `;
-    preview.classList.remove('hidden');
-    document.getElementById('msgInp').focus();
-}
-
-// 2. Selection (Tanlash) rejimi
-function toggleSelectMode() {
-    isSelectionMode = true;
-    selectedMessages.clear();
-    document.getElementById('msgBox').classList.add('selection-active');
-    closeMenu();
-}
-
-function toggleMsgSelection(id) {
-    if (!isSelectionMode) return;
-    
-    const container = document.getElementById(`container-${id}`);
-    if (selectedMessages.has(id)) {
-        selectedMessages.delete(id);
-        container.classList.remove('selected-msg');
-    } else {
-        selectedMessages.add(id);
-        container.classList.add('selected-msg');
-    }
-
-    // Panelni ko'rsatish yoki yashirish
-    const bar = document.getElementById('selectionBar');
-    if (selectedMessages.size > 0) {
-        bar.classList.remove('hidden');
-        bar.style.display = 'flex';
-    } else {
-        bar.classList.add('hidden');
-        bar.style.display = 'none';
-    }
-}
-
-function cancelSelection() {
-    isSelectionMode = false;
-    selectedMessages.clear();
-    document.querySelectorAll('.msg-container').forEach(el => el.classList.remove('selected-msg'));
-    document.getElementById('selectionBar').classList.add('hidden');
-    document.getElementById('msgBox').classList.remove('selection-active');
-}
-function cancelReply() {
-    replyToId = null;
-    replyToText = "";
-    replyToSender = "";
-    const preview = document.getElementById('replyPreview');
-    if (preview) preview.classList.add('hidden');
-}
-
-// 5. Forward (Boshqaga yuborish)
-function handleForward() {
-    const forwardText = selectedMsgText;
-    const targetUser = prompt("Kimga yubormoqchisiz? (Username)");
-    if(targetUser) {
-    // To'g'ri misol:
-        socket.emit('send_message', {
+    // sendMsg (to'liq)
+    function sendMsg(type = 'text', content = null) {
+        const inp = document.getElementById('msgInp');
+        const val = content || inp.value.trim();
+        if (!val || !activeChat) return alert("Xabar yoki suhbat tanlanmagan!");
+        const messageData = {
             sender: currentUser,
             receiver: activeChat,
-            content: messageText,
-            type: 'text'
+            content: val,
+            chat_type: activeChatType,
+            type: type,
+            reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        console.log("Yuborilayotgan xabar:", messageData);
+        socket.emit('send_message', messageData);
+        appendMessage({
+            ...messageData,
+            id: 'temp-' + Date.now(),
+            isMe: true
         });
-        alert("Yuborildi!");
+        inp.value = "";
+        inp.focus();
+        if (replyToId) cancelReply();
     }
-    closeMenu();
-}
-function bindContextEvents(element, data) {
+
+    // Update height
+    function updateHeight() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    window.addEventListener('resize', updateHeight);
+    window.addEventListener('load', updateHeight);
+    updateHeight();
+
+    // Long press
     let pressTimer;
-    const isMe = data.sender === currentUser;
+    let currentTarget = { name: '', type: '' };
+    function setupLongPress(element, name, type) {
+        ['touchstart', 'mousedown'].forEach(evt => {
+            element.addEventListener(evt, (e) => {
+                pressTimer = setTimeout(() => {
+                    showActionSheet(name, type);
+                }, 700);
+            });
+        });
+        ['touchend', 'mouseup', 'mouseleave'].forEach(evt => {
+            element.addEventListener(evt, () => clearTimeout(pressTimer));
+        });
+    }
 
-    // --- DESKTOP: O'NG TUGMA ---
-    element.oncontextmenu = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        showMenu(e, data.id, data.content, isMe);
-        return false;
-    };
+    function showActionSheet(name, type) {
+        currentTarget = { name, type };
+        const sheet = document.getElementById('deleteActionSheet');
+        const btnText = document.getElementById('deleteBtnText');
+        const icon = document.getElementById('deleteBtnIcon');
+        if (type === 'group') {
+            document.getElementById('deleteTargetName').innerText = "Guruh: " + name;
+            btnText.innerText = "Guruhdan chiqish";
+            icon.className = "fa-solid fa-right-from-bracket";
+        } else {
+            document.getElementById('deleteTargetName').innerText = name;
+            btnText.innerText = "Chatni o'chirish";
+            icon.className = "fa-solid fa-trash-can";
+        }
+        sheet.classList.remove('hidden');
+        if (window.navigator.vibrate) window.navigator.vibrate(50);
+    }
 
-    // --- MOBILE: UZOQ BOSISH ---
-    element.addEventListener('touchstart', () => {
-        pressTimer = setTimeout(() => {
-            showMenu(null, data.id, data.content, isMe);
-        }, 600);
-    });
+    // Append message
+    function appendMessage(data) {
+        const box = document.getElementById('msgBox');
+        if (!box) return;
+        const isMe = data.sender === currentUser;
+        const isGroup = activeChatType === 'group';
+        let mediaHTML = "";
+        if (data.type === 'image') {
+            mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
+        } else if (data.type === 'video') {
+            mediaHTML = `<video src="${data.file_data || data.content}" controls class="max-w-full rounded-lg mb-2 shadow-sm"></video>`;
+        } else if (data.type === 'location') {
+            mediaHTML = `
+                <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
+                    <a href="${data.content}" target="_blank" class="text-blue-600 text-sm flex items-center gap-2 font-medium">
+                        <i class="fa-solid fa-map-location-dot"></i> Joylashuvni ko'rish
+                    </a>
+                </div>`;
+        }
+        let replyMarkup = "";
+        if (data.reply_to) {
+            replyMarkup = `
+                <div class="bg-black/5 border-l-2 border-blue-500 p-1.5 mb-2 rounded text-[11px] opacity-80 cursor-pointer" onclick="scrollToMessage('${data.reply_to.id}')">
+                    <b class="text-blue-600 block">${data.reply_to.sender}</b>
+                    <p class="truncate text-gray-600">${data.reply_to.text}</p>
+                </div>`;
+        }
+        let senderNameHTML = "";
+        if (isGroup && !isMe) {
+            senderNameHTML = `<span class="text-[11px] font-bold text-indigo-500 block mb-1">${data.sender}</span>`;
+        }
+        let textHTML = (data.type !== 'location' && data.content && data.content.trim())
+            ? `<p class="text-sm leading-relaxed">${data.content}</p>`
+            : "";
+        const bubbleClass = isMe ? 'bg-blue-600 text-white rounded-tr-none self-end' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 self-start';
+        const container = document.createElement('div');
+        container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 px-2 w-full animate-fade-in`;
+        container.innerHTML = `
+            <div class="msg-bubble relative max-w-[85%] p-3 rounded-2xl shadow-sm ${bubbleClass}">
+                ${senderNameHTML}
+                ${replyMarkup}
+                <div class="msg-body">
+                    ${mediaHTML}
+                    ${textHTML}
+                </div>
+                <div class="flex items-center justify-end gap-2 mt-1 text-[10px] opacity-70">
+                    <span>${data.timestamp}</span>
+                    ${isMe ? '<i class="fa-solid fa-check-double text-xs"></i>' : ''}
+                </div>
+            </div>
+        `;
+        box.appendChild(container);
+        box.scrollTop = box.scrollHeight;
+    }
 
-    element.addEventListener('touchend', () => {
-        clearTimeout(pressTimer);
-    });
-}
+    // Profile UI
+    function refreshProfileUI() {
+        const name = localStorage.getItem('username');
+        const bio = localStorage.getItem('user_bio');
+        const savedAvatar = localStorage.getItem('user_avatar');
+        const avatarUrl = (savedAvatar && savedAvatar !== "null") ? (savedAvatar.startsWith('http') ? savedAvatar : `${API}${savedAvatar}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff`;
+        document.getElementById('profileDisplayPic').src = avatarUrl;
+        document.getElementById('userAvatar').src = avatarUrl;
+        document.getElementById('editNameInp').value = name;
+        document.getElementById('editBioInp').value = bio === 'Bio hali yozilmagan...' ? '' : bio;
+        document.getElementById('profileNameDisplay').innerText = name;
+        document.getElementById('profilePhoneDisplay').innerText = localStorage.getItem('user_phone') || '+998 00 000 00 00';
+        document.getElementById('displayUsername').innerText = '@' + name.toLowerCase().replace(/\s/g, '_');
+        document.getElementById('displayBio').innerText = bio;
+        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=007aff&color=fff&size=128`;
+        document.getElementById('profileDisplayPic').src = avatar;
+        document.getElementById('userAvatar').src = avatar;
+    }
 
-/**
- * SAFECHAT CORE JAVASCRIPT
- * 1. Qurilma va Tizim Sozlamalari
- * 2. Foydalanuvchi Interfeysi (UI) Yangilash
- * 3. Profil va Ma'lumotlarni Tahrirlash
- * 4. Xavfsizlik (2FA va PIN)
- * 5. Admin Panel Funksiyalari
- * 6. Foydalanuvchi Profili (View Mode) va Media
- */
+    // Context menu actions
+    function showContextMenu(e, msgId) {
+        selectedMsgId = msgId;
+        const menu = document.getElementById('msgContextMenu');
+        menu.style.display = 'block';
+        menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+        menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
+        document.getElementById('sheetOverlay').classList.add('active');
+    }
 
-// ==========================================
-// 1. QURILMA VA TIZIM SOZLAMALARI
-// ==========================================
+    function copyMsg() {
+        const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
+        navigator.clipboard.writeText(txt);
+        closeAllSheets();
+    }
 
-function updateDeviceInfo() {
-    const ua = navigator.userAgent;
-    let device = "Personal Computer";
+    function startEditMsg() {
+        isEditing = true;
+        const txt = document.getElementById(`msg-${selectedMsgId}`).innerText;
+        document.getElementById('msgInp').value = txt;
+        document.getElementById('msgInp').focus();
+        document.getElementById('sendBtnIcon').className = "fa-solid fa-check";
+        closeAllSheets();
+    }
 
-    if (/Android/i.test(ua)) device = "Android Smartphone";
-    else if (/iPhone/i.test(ua)) device = "Apple iPhone";
-    else if (/iPad/i.test(ua)) device = "Apple iPad";
-    else if (/Windows/i.test(ua)) device = "Windows Kompyuter";
-    else if (/Macintosh/i.test(ua)) device = "MacOS Kompyuter";
+    function deleteMsgServer() {
+        socket.emit('delete_message', { id: selectedMsgId, receiver: activeChat });
+        document.getElementById(`msg-${selectedMsgId}`).remove();
+        closeAllSheets();
+    }
 
-    const deviceEl = document.getElementById("currentDevice");
-    if (deviceEl) deviceEl.innerText = device;
+    // Media tools
+    let pendingFileData = null;
+    let pendingFileType = null;
+    function triggerMediaUpload(type) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        if (type === 'image') input.accept = 'image/*';
+        else if (type === 'video') input.accept = 'video/*';
+        else input.accept = '*/*';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                pendingFileData = event.target.result; // Base64
+                pendingFileType = type;
+                showMediaPreview(pendingFileData, type);
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
 
-    localStorage.setItem("device", device);
-    
-    // Sessions logi (Console uchun)
-    const sessions = [
-        { device: device, time: "Hozir faol", ip: "94.158.xx.xx (Siz)" },
-        { device: "Telegram Desktop / Windows", time: "2 soat oldin", ip: "178.218.xx.xx" }
+    const countries = [
+        { name: "Uzbekistan", code: "+998", flag: "🇺🇿" },
+        { name: "Russia", code: "+7", flag: "🇷🇺" },
+        { name: "USA", code: "+1", flag: "🇺🇸" },
+        { name: "Turkey", code: "+90", flag: "🇹🇷" },
+        { name: "Kazakhstan", code: "+7", flag: "🇰🇿" },
+        { name: "Germany", code: "+49", flag: "🇩🇪" },
+        { name: "United Kingdom", code: "+44", flag: "🇬🇧" },
+        { name: "South Korea", code: "+82", flag: "🇰🇷" },
+        { name: "Kyrgyzstan", code: "+996", flag: "🇰🇬" },
+        { name: "Tajikistan", code: "+992", flag: "🇹🇯" }
     ];
-    console.log("Sessions updated:", sessions);
-}
 
-function toggleDarkMode(checkbox) {
-    if (checkbox.checked) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('theme', 'dark');
-        document.body.style.backgroundColor = '#1c1c1e';
-    } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('theme', 'light');
-        document.body.style.backgroundColor = '#f2f2f7';
-    }
-}
-
-function loadTheme() {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark-mode');
-        document.body.style.backgroundColor = '#1c1c1e';
-    }
-}
-
-// ==========================================
-// 2. FOYDALANUVCHI INTERFEYSI (UI) YANGILASH
-// ==========================================
-
-function updateAllUI() {
-    const user = {
-        name: localStorage.getItem('username') || 'Foydalanuvchi',
-        phone: localStorage.getItem('user_phone') || '+998 00 000 00 00',
-        bio: localStorage.getItem('user_bio') || 'Bio ma\'lumot kiritilmagan',
-        status: localStorage.getItem('userStatus') || 'Status o\'rnatish...',
-        username: (localStorage.getItem('username') || 'user').toLowerCase().replace(/\s/g, ''),
-        twoFA: localStorage.getItem('twoFA'),
-        theme: localStorage.getItem('theme') || 'light',
-        hiddenPin: localStorage.getItem('hiddenPin')
-    };
-
-    const safeUpdate = (id, value, type = 'innerText') => {
-        const el = document.getElementById(id);
-        if (el) el[type] = value;
-    };
-
-    // Matnlar
-    safeUpdate('profileName', user.name);
-    safeUpdate('settingsName', user.name);
-    safeUpdate('profileUsername', '@' + user.username);
-    safeUpdate('settingsUsername', '@' + user.username);
-    safeUpdate('profileStatusDisplay', user.status);
-    safeUpdate('settingsBio', user.bio);
-    safeUpdate('profilePhone', user.phone);
-
-    // Avatar
-    const savedAvatar = localStorage.getItem('userAvatarBase64');
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
-    const finalAvatar = savedAvatar || defaultAvatar;
-    safeUpdate('profileAvatar', finalAvatar, 'src');
-    safeUpdate('userAvatar', finalAvatar, 'src');
-
-    // 2FA Status Label
-    const twoFALabel = document.getElementById('twoFAStatusLabel');
-    if (twoFALabel) {
-        twoFALabel.innerText = user.twoFA ? "ON" : "OFF";
-        twoFALabel.className = user.twoFA ? 
-            "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg border border-green-100" : 
-            "text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg border border-red-100";
+    function openCountryModal() {
+        document.getElementById('countryModal').classList.remove('hidden');
+        renderCountries(countries);
     }
 
-    // Pin Lock Icon
-    const lockIcon = document.getElementById('lockStatusIcon');
-    if (lockIcon) {
-        lockIcon.classList.toggle('text-purple-600', !!user.hiddenPin);
-        lockIcon.classList.toggle('text-gray-300', !user.hiddenPin);
+    function closeCountryModal() {
+        document.getElementById('countryModal').classList.add('hidden');
     }
 
-    // Theme Switcher Sync
-    const themeToggle = document.querySelector('input[onchange="toggleDarkMode(this)"]');
-    if (themeToggle) themeToggle.checked = (user.theme === 'dark');
-}
-
-// ==========================================
-// 3. PROFIL VA MA'LUMOTLARNI TAHRIRLASH
-// ==========================================
-
-async function editValue(type) {
-    let newVal = prompt(`Yangi ${type}ni kiriting:`);
-    if (!newVal || newVal.trim() === "") return alert("Qiymat bo'sh bo‘la olmaydi!");
-
-    if (type === "username" && !newVal.includes(".connect.uz")) {
-        newVal += ".connect.uz";
+    function renderCountries(list) {
+        const container = document.getElementById('countryList');
+        container.innerHTML = "";
+        list.forEach(c => {
+            const item = document.createElement('div');
+            item.className = "flex items-center justify-between p-4 border-b hover:bg-gray-50 cursor-pointer transition";
+            item.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl">${c.flag}</span>
+                    <span class="font-medium text-gray-700">${c.name}</span>
+                </div>
+                <span class="text-gray-400 font-bold">${c.code}</span>
+            `;
+            item.onclick = () => {
+                document.getElementById('selectedFlag').innerText = c.flag;
+                document.getElementById('selectedCountryName').innerText = c.name;
+                document.getElementById('phoneCode').value = c.code;
+                closeCountryModal();
+            };
+            container.appendChild(item);
+        });
     }
 
-    const endpoint = type === "password" ? "/api/update_password" : "/api/update_user";
-    const body = { user: localStorage.getItem('username'), field: type, value: newVal };
+    function filterCountries() {
+        const term = document.getElementById('countrySearch').value.toLowerCase();
+        const filtered = countries.filter(c => c.name.toLowerCase().includes(term));
+        renderCountries(filtered);
+    }
 
-    try {
-        const res = await fetch(endpoint, {
+    function showMediaPreview(data, type) {
+        const modal = document.getElementById('mediaPreviewModal');
+        const display = document.getElementById('mediaDisplayArea');
+        modal.classList.remove('hidden');
+        if (type === 'image') {
+            display.innerHTML = `<img src="${data}" class="max-w-full max-h-[60vh] rounded-lg shadow-2xl">`;
+        } else if (type === 'video') {
+            display.innerHTML = `<video src="${data}" controls class="max-w-full max-h-[60vh] rounded-lg"></video>`;
+        }
+    }
+
+    function closeMediaPreview() {
+        document.getElementById('mediaPreviewModal').classList.add('hidden');
+        pendingFileData = null;
+    }
+
+    // Hisob ma'lumotlarini yangilash
+    function updateAccountInfo() {
+        const newName = document.getElementById('editNameInp').value;
+        const newBio = document.getElementById('editBioInp').value;
+        if (newName.trim()) {
+            localStorage.setItem('username', newName);
+            localStorage.setItem('user_bio', newBio);
+            document.getElementById('profileNameDisplay').innerText = newName;
+            document.getElementById('displayUsername').innerText = '@' + newName.toLowerCase().replace(/\s/g, '_');
+            alert("Ma'lumotlar saqlandi!");
+        }
+    }
+
+    function clearCache() {
+        if (confirm("Keshni tozalamoqchimisiz? Bu rasmlarni qayta yuklanishiga sabab bo'ladi.")) {
+            document.getElementById('cacheSize').innerText = "0.0 MB";
+            alert("Kesh muvaffaqiyatli tozalandi!");
+        }
+    }
+
+    function confirmAndSendMedia() {
+        if (!pendingFileData) return;
+        const caption = document.getElementById('mediaCaption').value;
+        const data = {
+            sender: currentUser,
+            receiver: activeChat,
+            content: caption || (pendingFileType === 'image' ? "🖼 Rasm" : "📹 Video"),
+            file_data: pendingFileData,
+            type: pendingFileType,
+            reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
+            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
+        socket.emit('send_message', data);
+        closeMediaPreview();
+        document.getElementById('mediaCaption').value = "";
+        cancelReply();
+    }
+
+    function sendLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const locData = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                socket.emit('send_message', {
+                    sender: currentUser,
+                    receiver: activeChat,
+                    type: 'location',
+                    content: `Joylashuv: ${locData.lat}, ${locData.lng}`,
+                    location: locData
+                });
+                closeSheet('mediaSheet');
+            });
+        } else {
+            alert("Geolokatsiya qurilmangizda qo'llab-quvvatlanmaydi.");
+        }
+    }
+
+    function setEntityType(type) {
+        entityType = type;
+        document.getElementById("btnTypeGroup").classList.toggle("bg-white", type === "group");
+        document.getElementById("btnTypeGroup").classList.toggle("text-gray-800", type === "group");
+        document.getElementById("btnTypeGroup").classList.toggle("text-gray-500", type !== "group");
+        document.getElementById("btnTypeChannel").classList.toggle("bg-white", type === "channel");
+        document.getElementById("btnTypeChannel").classList.toggle("text-gray-800", type === "channel");
+        document.getElementById("btnTypeChannel").classList.toggle("text-gray-500", type !== "channel");
+    }
+
+    function createEntity() {
+        const name = document.getElementById("entityName").value.trim();
+        if (name.length < 2) {
+            alert("Nomi juda qisqa!");
+            return;
+        }
+        socket.emit("create_entity", {
+            type: entityType,
+            name: name
+        });
+        if (entityType === "group") addToGroupList(name);
+        else addToChannelList(name);
+        closeSheet();
+    }
+
+    function addToGroupList(name) {
+        const box = document.getElementById("groupsTab");
+        box.innerHTML += `
+            <div class="p-4 bg-white rounded-2xl shadow-sm">
+                <h3 class="text-lg font-bold">${name}</h3>
+                <p class="text-gray-500 text-sm">Yangi guruh</p>
+            </div>
+        `;
+    }
+
+    function addToChannelList(name) {
+        const box = document.getElementById("channelsTab");
+        box.innerHTML += `
+            <div class="p-4 bg-white rounded-2xl shadow-sm">
+                <h3 class="text-lg font-bold">${name}</h3>
+                <p class="text-gray-500 text-sm">Yangi kanal</p>
+            </div>
+        `;
+    }
+
+    function createEntity() {
+        const type = currentEntityType;
+        const name = document.getElementById("entityName").value.trim();
+        if (!name) return alert("Nomi bo‘sh bo‘lmasin!");
+        socket.emit("create_entity", {
+            type: type,
+            name: name
+        });
+        closeSheet('createEntitySheet');
+        document.getElementById("entityName").value = "";
+    }
+
+    // UI Helpers
+    function openSheet(id) {
+        document.getElementById(id).classList.add('active');
+        document.getElementById('sheetOverlay').classList.add('active');
+    }
+
+    function closeSheet(id) {
+        document.getElementById(id).classList.remove('active');
+        document.getElementById('sheetOverlay').classList.remove('active');
+    }
+
+    function closeAllSheets() {
+        document.querySelectorAll('.ios-sheet').forEach(s => s.classList.remove('active'));
+        document.getElementById('sheetOverlay').classList.remove('active');
+        document.getElementById('msgContextMenu').style.display = 'none';
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMsg();
+        }
+    }
+
+    function closeChatArea() {
+        document.getElementById('chatArea').classList.add('hidden');
+        document.getElementById('chatArea').style.display = 'none';
+        activeChat = null;
+    }
+
+    // Admin login
+    function showAdminLogin() {
+        const userPhone = localStorage.getItem('user_phone');
+        if (userPhone !== '+998958883851') {
+            alert("Sizda admin huquqi yo'q!");
+            return;
+        }
+        const key = prompt("ENTER ROOT_KEY:");
+        if (key === 'serinaqu') {
+            const panel = document.getElementById('adminPanel');
+            panel.classList.remove('hidden');
+            panel.style.display = 'block';
+            loadAdminData();
+            addLog("ADMIN_SESSION_STARTED: Welcome Boss", "success");
+        } else {
+            alert("ACCESS_DENIED: INVALID_KEY");
+        }
+    }
+
+    function closeAdmin() {
+        const panel = document.getElementById('adminPanel');
+        panel.style.display = 'none';
+        panel.classList.add('hidden');
+    }
+
+    async function uploadNewAvatar(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('username', localStorage.getItem('username'));
+        const res = await fetch(`${API}/api/upload_avatar`, {
+            method: 'POST',
+            body: formData
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            localStorage.setItem('user_avatar', result.url);
+            refreshProfileUI();
+        }
+    }
+
+    function addLog(msg, type = "info") {
+        const logContainer = document.getElementById('adminLogs');
+        if (!logContainer) return;
+        const time = new Date().toLocaleTimeString();
+        const color = type === "success" ? "text-green-400" : type === "danger" ? "text-red-500" : "text-blue-400";
+        logContainer.innerHTML += `<div class="${color}">[${time}] ${msg}</div>`;
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    async function saveProfileChanges() {
+        const updatedData = {
+            username: localStorage.getItem('username'),
+            bio: document.getElementById('editBioInp').value,
+            phone: document.getElementById('user_phone')
+        };
+        const response = await fetch(`${API}/api/update_profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedData)
+        });
+        if (response.ok) {
+            localStorage.setItem('user_bio', updatedData.bio);
+            alert("Ma'lumotlar saqlandi!");
+            refreshProfileUI();
+        }
+    }
+
+    async function loadAdminData() {
+        try {
+            const response = await fetch(`${API}/api/admin/users`);
+            const users = await response.json();
+            const table = document.getElementById('adminTable');
+            if (!table) return;
+            table.innerHTML = "";
+            users.forEach(u => {
+                const row = `
+                    <tr class="hover:bg-green-900/20 transition-colors border-b border-green-900/30">
+                        <td class="p-3 font-bold">${u.name}</td>
+                        <td class="p-3">USER</td>
+                        <td class="p-3">
+                            <span class="w-2 h-2 inline-block rounded-full ${u.status === 'ONLINE' ? 'bg-green-500' : 'bg-gray-600'} mr-2"></span>
+                            ${u.status}
+                        </td>
+                        <td class="p-3 ${u.is_blocked ? 'text-red-500' : 'text-green-500'}">${u.is_blocked ? 'BANNED' : 'CLEAR'}</td>
+                        <td class="p-3 flex gap-2">
+                            <button onclick="toggleBan('${u.name}')" class="bg-red-900/50 border border-red-700 px-2 py-1 rounded text-[10px] hover:bg-red-700">BAN/UNBAN</button>
+                        </td>
+                    </tr>`;
+                table.innerHTML += row;
+            });
+            document.getElementById('totalUsersStat').innerText = users.length;
+        } catch (e) {
+            addLog("DATA_LOAD_FAILED", "danger");
+        }
+    }
+
+    function publishAnnouncement() {
+        const type = document.getElementById('advType').value;
+        const value = document.getElementById('advValue').value;
+        const start = document.getElementById('advStart').value;
+        const end = document.getElementById('advEnd').value;
+        if (!value) return alert("E'lon matni yoki linkini kiriting!");
+        const config = { type, value, start, end };
+        socket.emit('broadcast_announcement', config);
+        addLog(`BROADCAST_DEPLOYED: ${type}`, "success");
+        alert("E'lon barcha foydalanuvchilarga yuborildi!");
+    }
+
+    // Tizimdan chiqish
+    function logout() {
+        if (confirm("Tizimdan chiqmoqchimisiz?")) {
+            currentUser = null;
+            activeChat = null;
+            window.location.reload();
+        }
+    }
+
+    async function logout() {
+        await fetch(`${API}/api/logout`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body)
+            body: JSON.stringify({ username: currentUser })
         });
+        socket.disconnect();
+        localStorage.clear();
+        currentUser = null;
+        location.reload();
+    }
 
-        if (res.ok) {
-            alert("Ma'lumotlar yangilandi!");
-            if (type === "username") localStorage.setItem("username", newVal);
-            location.reload(); 
-        } else {
-            alert("Xatolik yuz berdi!");
+    // Profil saqlash
+    function saveProfile() {
+        alert("Profil ma'lumotlari muvaffaqiyatli saqlandi!");
+        closeSheet('settingsSheet');
+    }
+
+    // User logged in
+    function onUserLoggedIn() {
+        currentUser = localStorage.getItem('chat_user');
+        if (currentUser) {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            switchTab('chats');
         }
-    } catch (err) {
-        alert("Server bilan ulanishda muammo!");
     }
-}
 
-function editField(fieldName) {
-    const keys = { 'Name': 'username', 'Username': 'username', 'Bio': 'user_bio' };
-    const key = keys[fieldName];
-    const currentVal = localStorage.getItem(key) || "";
-    
-    let newVal = prompt(`${fieldName}ni kiriting:`, currentVal);
-    if (newVal !== null) {
-        localStorage.setItem(key, newVal);
-        updateAllUI();
-    }
-}
-
-function openStatusSheet() {
-    const currentStatus = localStorage.getItem("userStatus") || "";
-    const newStatus = prompt("Yangi status kiriting:", currentStatus);
-    if (newStatus !== null) {
-        localStorage.setItem("userStatus", newStatus.trim());
-        updateAllUI();
-    }
-}
-
-function handleAvatarSelection(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            localStorage.setItem('userAvatarBase64', e.target.result);
-            updateAllUI();
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function triggerAvatarUpload() {
-    const input = document.getElementById('avatarInput');
-    if(input) input.click();
-}
-
-// ==========================================
-// 4. XAVFSIZLIK (2FA VA PIN)
-// ==========================================
-
-function setup2FA() {
-    const pass = prompt("Ikki bosqichli himoya parolini yarating (min 4 ta belgi):");
-    if(pass && pass.length >= 4) {
-        localStorage.setItem("twoFA", pass);
-        updateAllUI();
-        alert("2FA faollashtirildi!");
-    }
-}
-
-function openTwoFASheet() {
-    const isEnabled = localStorage.getItem("twoFA");
-    if (isEnabled) {
-        if (confirm("2FA ni o'chirmoqchimisiz?")) {
-            const pass = prompt("Parolni kiriting:");
-            if (pass === isEnabled) {
-                localStorage.removeItem("twoFA");
-                alert("Xavfsizlik o'chirildi.");
+    // Socket real-time
+    const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+    socket.on('receive_message', (data) => {
+        console.log("Yangi xabar keldi:", data);
+        if (data.sender !== currentUser) {
+            msgSound.play().catch(e => console.error("Ovoz xatosi:", e));
+            if (navigator.vibrate) navigator.vibrate(200);
+        }
+        if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
+            if (data.sender === currentUser) {
+                const tempMsg = document.querySelector(`[id^="container-temp-"]`);
+                if (tempMsg) {
+                    tempMsg.id = `container-${data.id}`;
+                    const bubble = tempMsg.querySelector('.msg-bubble');
+                    if (bubble) bubble.id = `msg-${data.id}`;
+                }
             } else {
-                alert("Parol noto'g'ri!");
+                appendMessage(data);
+            }
+            const msgBox = document.getElementById('msgBox');
+            if (msgBox) msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
+        } else {
+            showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar", data.sender);
+        }
+        refreshChatListSilently();
+    });
+
+    function refreshChatListSilently() {
+        // Chat ro'yxatini yangilash logikasi (masalan, loadList('chats') chaqirish)
+    }
+
+    // Install banner
+    const installBanner = document.getElementById('installBanner');
+    installBanner.style.display = 'none';
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBanner.style.display = 'flex';
+    });
+
+    async function installApp() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') console.log('Foydalanuvchi ilovani o\'rnatdi');
+        installBanner.style.display = 'none';
+        deferredPrompt = null;
+    }
+
+    // Reply va selection mode
+    function toggleSelectMode() {
+        isSelectionMode = true;
+        document.body.classList.add('selection-mode');
+        document.getElementById('selectionBar').classList.remove('hidden');
+        closeMenu();
+    }
+
+    function toggleMsgSelection(id) {
+        if (!isSelectionMode) return;
+        const el = document.getElementById(`container-${id}`);
+        if (selectedMessages.has(id)) {
+            selectedMessages.delete(id);
+            el.classList.remove('selected');
+        } else {
+            selectedMessages.add(id);
+            el.classList.add('selected');
+        }
+    }
+
+    function handleForward() {
+        const forwardText = selectedMsgText;
+        const targetUser = prompt("Kimga yubormoqchisiz? (Username)");
+        if (targetUser) {
+            socket.emit('send_message', {
+                sender: currentUser,
+                receiver: targetUser,
+                content: forwardText,
+                type: 'text'
+            });
+            alert("Yuborildi!");
+        }
+        closeMenu();
+    }
+
+    function bindContextEvents(element, data) {
+        let pressTimer;
+        const isMe = data.sender === currentUser;
+        element.oncontextmenu = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showMenu(e, data.id, data.content, isMe);
+            return false;
+        };
+        element.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                showMenu(null, data.id, data.content, isMe);
+            }, 600);
+        });
+        element.addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+        });
+    }
+
+    // SafeChat core
+    function updateDeviceInfo() {
+        const ua = navigator.userAgent;
+        let device = "Personal Computer";
+        if (/Android/i.test(ua)) device = "Android Smartphone";
+        else if (/iPhone/i.test(ua)) device = "Apple iPhone";
+        else if (/iPad/i.test(ua)) device = "Apple iPad";
+        else if (/Windows/i.test(ua)) device = "Windows Kompyuter";
+        else if (/Macintosh/i.test(ua)) device = "MacOS Kompyuter";
+        const deviceEl = document.getElementById("currentDevice");
+        if (deviceEl) deviceEl.innerText = device;
+        localStorage.setItem("device", device);
+        const sessions = [
+            { device: device, time: "Hozir faol", ip: "94.158.xx.xx (Siz)" },
+            { device: "Telegram Desktop / Windows", time: "2 soat oldin", ip: "178.218.xx.xx" }
+        ];
+        console.log("Sessions updated:", sessions);
+    }
+
+    function toggleDarkMode(checkbox) {
+        if (checkbox.checked) {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+            document.body.style.backgroundColor = '#1c1c1e';
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+            document.body.style.backgroundColor = '#f2f2f7';
+        }
+    }
+
+    function loadTheme() {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "dark") {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark-mode');
+            document.body.style.backgroundColor = '#1c1c1e';
+        }
+    }
+
+    function updateAllUI() {
+        const user = {
+            name: localStorage.getItem('username') || 'Foydalanuvchi',
+            phone: localStorage.getItem('user_phone') || '+998 00 000 00 00',
+            bio: localStorage.getItem('user_bio') || 'Bio ma\'lumot kiritilmagan',
+            status: localStorage.getItem('userStatus') || 'Status o\'rnatish...',
+            username: (localStorage.getItem('username') || 'user').toLowerCase().replace(/\s/g, ''),
+            twoFA: localStorage.getItem('twoFA'),
+            theme: localStorage.getItem('theme') || 'light',
+            hiddenPin: localStorage.getItem('hiddenPin')
+        };
+        const safeUpdate = (id, value, type = 'innerText') => {
+            const el = document.getElementById(id);
+            if (el) el[type] = value;
+        };
+        safeUpdate('profileName', user.name);
+        safeUpdate('settingsName', user.name);
+        safeUpdate('profileUsername', '@' + user.username);
+        safeUpdate('settingsUsername', '@' + user.username);
+        safeUpdate('profileStatusDisplay', user.status);
+        safeUpdate('settingsBio', user.bio);
+        safeUpdate('profilePhone', user.phone);
+        const savedAvatar = localStorage.getItem('userAvatarBase64');
+        const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=007aff&color=fff`;
+        const finalAvatar = savedAvatar || defaultAvatar;
+        safeUpdate('profileAvatar', finalAvatar, 'src');
+        safeUpdate('userAvatar', finalAvatar, 'src');
+        const twoFALabel = document.getElementById('twoFAStatusLabel');
+        if (twoFALabel) {
+            twoFALabel.innerText = user.twoFA ? "ON" : "OFF";
+            twoFALabel.className = user.twoFA ? "text-green-500 text-[10px] font-black bg-green-50 px-2 py-1 rounded-lg border border-green-100" : "text-red-500 text-[10px] font-black bg-red-50 px-2 py-1 rounded-lg border border-red-100";
+        }
+        const lockIcon = document.getElementById('lockStatusIcon');
+        if (lockIcon) {
+            lockIcon.classList.toggle('text-purple-600', !!user.hiddenPin);
+            lockIcon.classList.toggle('text-gray-300', !user.hiddenPin);
+        }
+        const themeToggle = document.querySelector('input[onchange="toggleDarkMode(this)"]');
+        if (themeToggle) themeToggle.checked = (user.theme === 'dark');
+    }
+
+    async function editValue(type) {
+        let newVal = prompt(`Yangi ${type}ni kiriting:`);
+        if (!newVal || newVal.trim() === "") return alert("Qiymat bo'sh bo‘la olmaydi!");
+        if (type === "username" && !newVal.includes(".connect.uz")) newVal += ".connect.uz";
+        const endpoint = type === "password" ? "/api/update_password" : "/api/update_user";
+        const body = { user: localStorage.getItem('username'), field: type, value: newVal };
+        try {
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                alert("Ma'lumotlar yangilandi!");
+                if (type === "username") localStorage.setItem("username", newVal);
+                location.reload();
+            } else {
+                alert("Xatolik yuz berdi!");
+            }
+        } catch (err) {
+            alert("Server bilan ulanishda muammo!");
+        }
+    }
+
+    function editField(fieldName) {
+        const keys = { 'Name': 'username', 'Username': 'username', 'Bio': 'user_bio' };
+        const key = keys[fieldName];
+        const currentVal = localStorage.getItem(key) || "";
+        let newVal = prompt(`${fieldName}ni kiriting:`, currentVal);
+        if (newVal !== null) {
+            localStorage.setItem(key, newVal);
+            updateAllUI();
+        }
+    }
+
+    function openStatusSheet() {
+        const currentStatus = localStorage.getItem("userStatus") || "";
+        const newStatus = prompt("Yangi status kiriting:", currentStatus);
+        if (newStatus !== null) {
+            localStorage.setItem("userStatus", newStatus.trim());
+            updateAllUI();
+        }
+    }
+
+    function handleAvatarSelection(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                localStorage.setItem('userAvatarBase64', e.target.result);
+                updateAllUI();
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function triggerAvatarUpload() {
+        const input = document.getElementById('avatarInput');
+        if (input) input.click();
+    }
+
+    // Xavfsizlik
+    function setup2FA() {
+        const pass = prompt("Ikki bosqichli himoya parolini yarating (min 4 ta belgi):");
+        if (pass && pass.length >= 4) {
+            localStorage.setItem("twoFA", pass);
+            updateAllUI();
+            alert("2FA faollashtirildi!");
+        }
+    }
+
+    function openTwoFASheet() {
+        const isEnabled = localStorage.getItem("twoFA");
+        if (isEnabled) {
+            if (confirm("2FA ni o'chirmoqchimisiz?")) {
+                const pass = prompt("Parolni kiriting:");
+                if (pass === isEnabled) {
+                    localStorage.removeItem("twoFA");
+                    alert("Xavfsizlik o'chirildi.");
+                } else {
+                    alert("Parol noto'g'ri!");
+                }
+            }
+        } else {
+            setup2FA();
+        }
+        updateAllUI();
+    }
+
+    function unlockHiddenChats() {
+        const savedPin = localStorage.getItem("hiddenPin");
+        if (!savedPin) {
+            alert("Avval Sozlamalarda PIN-kod o'rnating!");
+            return;
+        }
+        const entered = prompt("PIN kiriting:");
+        if (entered === savedPin) {
+            alert("Xush kelibsiz! Yashirin chatlar ochildi.");
+        } else {
+            alert("PIN noto'g'ri!");
+        }
+    }
+
+    // Admin panel
+    function checkAdminAccess() {
+        const phone = localStorage.getItem('user_phone');
+        const adminBtn = document.getElementById('adminAccessBtn');
+        if ((phone === '958883851' || phone === '+998958883851') && adminBtn) {
+            adminBtn.classList.remove('hidden');
+        }
+    }
+
+    // User profile view
+    let currentViewedUser = null;
+    function renderProfileUI(user) {
+        const safeSet = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+        safeSet('fullProfileName', user.name);
+        safeSet('fullProfileStatus', user.status);
+        safeSet('fullProfilePhone', user.phone);
+        safeSet('fullProfileUsername', user.username);
+        safeSet('fullProfileBio', user.bio);
+        const imgEl = document.getElementById('fullProfileImg');
+        const blurEl = document.getElementById('bgBlurImg');
+        if (imgEl) imgEl.src = user.img;
+        if (blurEl) blurEl.src = user.img;
+    }
+
+    function openUserMenu(userData = null) {
+        if (!userData) {
+            currentViewedUser = {
+                id: document.getElementById('activeChatImg')?.getAttribute('data-user-id'),
+                name: document.getElementById('activeName')?.innerText || "User",
+                img: document.getElementById('activeChatImg')?.src,
+                phone: "+998 90 123 45 67",
+                username: "@" + (document.getElementById('activeName')?.innerText || "user").toLowerCase().replace(/\s/g, ''),
+                bio: "SafeChat Connection a'zosi",
+                status: "online"
+            };
+        } else {
+            currentViewedUser = userData;
+        }
+        renderProfileUI(currentViewedUser);
+        const profileModal = document.getElementById('fullUserProfile');
+        if (profileModal) {
+            profileModal.classList.remove('hidden');
+            profileModal.classList.add('flex');
+        }
+        loadSharedMedia();
+    }
+
+    function loadSharedMedia() {
+        const container = document.getElementById('sharedMediaContent');
+        if (!container) return;
+        container.innerHTML = '';
+        const images = document.querySelectorAll('#msgBox img');
+        images.forEach(img => {
+            const div = document.createElement('div');
+            div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer";
+            div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover" onclick="expandImage('${img.src}')">`;
+            container.appendChild(div);
+        });
+        if (images.length === 0) container.innerHTML = "<p class='text-center text-gray-400 text-xs w-full col-span-3'>Media yo'q</p>";
+    }
+
+    function expandImage(src) {
+        const viewer = document.getElementById('photoViewer');
+        const img = document.getElementById('expandedImg');
+        if (viewer && img) {
+            img.src = src || document.getElementById('fullProfileImg').src;
+            viewer.classList.remove('hidden');
+            viewer.classList.add('flex');
+        }
+    }
+
+    function closePhotoViewer() {
+        document.getElementById('photoViewer')?.classList.add('hidden');
+    }
+
+    function closeFullProfile() {
+        document.getElementById('fullUserProfile')?.classList.add('hidden');
+    }
+
+    function copyInfo(type) {
+        let val = "";
+        if (type === 'phone') val = document.getElementById('fullProfilePhone')?.innerText;
+        else val = document.getElementById('fullProfileUsername')?.innerText;
+        navigator.clipboard.writeText(val).then(() => alert(type + " nusxalandi!"));
+    }
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+        loadTheme();
+        updateDeviceInfo();
+        checkAdminAccess();
+        if (localStorage.getItem('username')) {
+            updateAllUI();
+        }
+    });
+
+    // Admin notification
+    socket.on('receive_admin_notification', (data) => {
+        console.log("Admin e'loni:", data);
+        const announcementHTML = `
+            <div id="globalNotice" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl transform transition-all scale-100 animate-in fade-in zoom-in duration-300">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto text-2xl">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h3 class="text-xl font-black text-center mb-2">${data.title}</h3>
+                    <p class="text-gray-600 text-center mb-8 leading-relaxed">${data.message}</p>
+                    <button onclick="document.getElementById('globalNotice').remove()"
+                            class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors">
+                        Tushundim
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', announcementHTML);
+    });
+
+    function renderAdminUsers(users) {
+        const listBody = document.getElementById('adminUserListV2');
+        listBody.innerHTML = '';
+        users.forEach(u => {
+            const row = document.createElement('tr');
+            row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
+            row.innerHTML = `
+                <td class="px-4 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400">
+                            ${u.name[0].toUpperCase()}
+                        </div>
+                        <span class="font-bold">${u.name}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-4">
+                    <span class="text-xs ${u.status === 'ONLINE' ? 'text-green-400' : 'text-slate-500'} font-bold">
+                        ● ${u.status}
+                    </span>
+                </td>
+                <td class="px-4 py-4 text-slate-400 text-xs">${u.phone || '—'}</td>
+                <td class="px-4 py-4 text-right">
+                    <div class="flex justify-end gap-2">
+                        <button onclick="adminEditUser('${u.name}')" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        <button onclick="toggleBlockUser('${u.name}')" class="w-8 h-8 rounded-lg ${u.is_blocked ? 'bg-green-500' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'} transition-all">
+                            <i class="fa-solid ${u.is_blocked ? 'fa-unlock' : 'fa-ban'} text-xs"></i>
+                        </button>
+                        <button onclick="adminDeleteUser('${u.name}')" class="w-8 h-8 rounded-lg bg-red-900/20 text-red-700 hover:bg-red-700 hover:text-white transition-all">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            listBody.appendChild(row);
+        });
+    }
+
+    window.addEventListener('load', () => {
+        const path = window.location.pathname;
+        if (path.startsWith('/user/')) {
+            const targetUser = path.split('/')[2];
+            if (targetUser) {
+                console.log("Link orqali profil topildi:", targetUser);
+                setTimeout(() => {
+                    openFullProfile(targetUser);
+                }, 1000);
             }
         }
-    } else {
-        setup2FA();
-    }
-    updateAllUI();
-}
-
-function unlockHiddenChats() {
-    const savedPin = localStorage.getItem("hiddenPin");
-    if (!savedPin) {
-        alert("Avval Sozlamalarda PIN-kod o'rnating!");
-        return;
-    }
-    const entered = prompt("PIN kiriting:");
-    if (entered === savedPin) {
-        alert("Xush kelibsiz! Yashirin chatlar ochildi.");
-    } else {
-        alert("PIN noto'g'ri!");
-    }
-}
-
-// ==========================================
-// 5. ADMIN PANEL FUNKSIYALARI
-// ==========================================
-
-function checkAdminAccess() {
-    const phone = localStorage.getItem('user_phone');
-    const adminBtn = document.getElementById('adminAccessBtn');
-    if((phone === '958883851' || phone === '+998958883851') && adminBtn) {
-        adminBtn.classList.remove('hidden');
-    }
-}
-
-function showAdminPanel() {
-    const panel = document.createElement('div');
-    panel.id = "adminOverlay";
-    panel.className = "fixed inset-0 bg-black z-[100] p-6 font-mono text-green-500 overflow-y-auto";
-    panel.innerHTML = `
-        <div class="flex justify-between items-center border-b border-green-900 pb-4 mb-6">
-            <h2 class="text-xl font-bold tracking-tighter">SAFECHAT_CORE_ROOT</h2>
-            <button onclick="document.getElementById('adminOverlay').remove()" class="bg-red-600 text-white px-3 py-1 rounded text-xs">EXIT</button>
-        </div>
-        <div class="space-y-4">
-            <div class="bg-green-950/30 p-4 rounded border border-green-900 text-sm">
-                <span>Server: <b class="text-green-400">ONLINE</b></span> | 
-                <span>Users: <b class="text-green-400" id="stat_total">...</b></span>
-            </div>
-            <table class="w-full text-[10px] text-left">
-                <thead class="bg-green-900 text-black">
-                    <tr><th class="p-2">User</th><th class="p-2">IP</th><th class="p-2">Action</th></tr>
-                </thead>
-                <tbody id="adminUsersList"></tbody>
-            </table>
-        </div>
-    `;
-    document.body.appendChild(panel);
-    loadAdminStats();
-}
-
-async function loadAdminStats() {
-    try {
-        const res = await fetch('/api/admin/stats');
-        const data = await res.json();
-        const totalEl = document.getElementById('stat_total');
-        if(totalEl) totalEl.innerText = data.total;
-    } catch(e) { console.log("Admin stats error"); }
-}
-
-async function adminDeleteUser(username) {
-    if(!confirm(`${username}ni o'chirmoqchimisiz?`)) return;
-    const res = await fetch(`${API}/api/admin/delete_user`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ admin: localStorage.getItem('username'), target: username })
     });
-    if(res.ok) alert("O'chirildi!");
-}
 
-// ==========================================
-// 6. FOYDALANUVCHI PROFILI (VIEW) VA MEDIA
-// ==========================================
-
-let currentViewedUser = null;
-
-function renderProfileUI(user) {
-    const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.innerText = val; };
-    safeSet('fullProfileName', user.name);
-    safeSet('fullProfileStatus', user.status);
-    safeSet('fullProfilePhone', user.phone);
-    safeSet('fullProfileUsername', user.username);
-    safeSet('fullProfileBio', user.bio);
-    
-    const imgEl = document.getElementById('fullProfileImg');
-    const blurEl = document.getElementById('bgBlurImg');
-    if(imgEl) imgEl.src = user.img;
-    if(blurEl) blurEl.src = user.img;
-}
-
-function openUserMenu(userData = null) {
-    if (!userData) {
-        currentViewedUser = {
-            id: document.getElementById('activeChatImg')?.getAttribute('data-user-id'),
-            name: document.getElementById('activeName')?.innerText || "User",
-            img: document.getElementById('activeChatImg')?.src,
-            phone: "+998 90 123 45 67",
-            username: "@" + (document.getElementById('activeName')?.innerText || "user").toLowerCase().replace(/\s/g, ''),
-            bio: "SafeChat Connection a'zosi",
-            status: "online"
-        };
-    } else {
-        currentViewedUser = userData;
-    }
-
-    renderProfileUI(currentViewedUser);
-    const profileModal = document.getElementById('fullUserProfile');
-    if(profileModal) {
-        profileModal.classList.remove('hidden');
-        profileModal.classList.add('flex');
-    }
-    loadSharedMedia();
-}
-
-function loadSharedMedia() {
-    const container = document.getElementById('sharedMediaContent');
-    if(!container) return;
-    container.innerHTML = '';
-    const images = document.querySelectorAll('#msgBox img');
-    
-    images.forEach(img => {
-        const div = document.createElement('div');
-        div.className = "aspect-square rounded-xl overflow-hidden bg-gray-100 cursor-pointer";
-        div.innerHTML = `<img src="${img.src}" class="w-full h-full object-cover" onclick="expandImage('${img.src}')">`;
-        container.appendChild(div);
-    });
-    if(images.length === 0) container.innerHTML = "<p class='text-center text-gray-400 text-xs w-full col-span-3'>Media yo'q</p>";
-}
-
-function expandImage(src) {
-    const viewer = document.getElementById('photoViewer');
-    const img = document.getElementById('expandedImg');
-    if(viewer && img) {
-        img.src = src || document.getElementById('fullProfileImg').src;
-        viewer.classList.remove('hidden');
-        viewer.classList.add('flex');
-    }
-}
-
-function closePhotoViewer() { document.getElementById('photoViewer')?.classList.add('hidden'); }
-function closeFullProfile() { document.getElementById('fullUserProfile')?.classList.add('hidden'); }
-
-function copyInfo(type) {
-    let val = "";
-    if(type === 'phone') val = document.getElementById('fullProfilePhone')?.innerText;
-    else val = document.getElementById('fullProfileUsername')?.innerText;
-
-    navigator.clipboard.writeText(val).then(() => alert(type + " nusxalandi!"));
-}
-
-// ==========================================
-// INITIALIZATION (ISHGA TUSHIRISH)
-// ==========================================
-
-window.addEventListener('DOMContentLoaded', () => {
-    loadTheme();
-    updateDeviceInfo();
-    checkAdminAccess();
-    if (localStorage.getItem('username')) {
-        updateAllUI();
-    }
-});
-/**
- * ADMIN YUBORGAN GLOBAL XABARNI QABUL QILISH
- */
-socket.on('receive_admin_notification', (data) => {
-    console.log("Admin e'loni:", data);
-
-    // 1. Ovozli bildirishnoma (ixtiyoriy)
-    // new Audio('/static/sounds/notification.mp3').play();
-
-    // 2. Ekranda chiroyli Modal/Alert chiqarish
-    const announcementHTML = `
-        <div id="globalNotice" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div class="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl transform transition-all scale-100 animate-in fade-in zoom-in duration-300">
-                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto text-2xl">
-                    <i class="fa-solid fa-bullhorn"></i>
-                </div>
-                <h3 class="text-xl font-black text-center mb-2">${data.title}</h3>
-                <p class="text-gray-600 text-center mb-8 leading-relaxed">${data.message}</p>
-                <button onclick="document.getElementById('globalNotice').remove()" 
-                        class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-colors">
-                    Tushundim
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', announcementHTML);
-});
-
-function renderAdminUsers(users) {
-    const listBody = document.getElementById('adminUserListV2');
-    listBody.innerHTML = '';
-
-    users.forEach(u => {
-        const row = document.createElement('tr');
-        row.className = "hover:bg-white/5 transition-colors border-b border-white/5";
-        row.innerHTML = `
-            <td class="px-4 py-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400">
-                        ${u.name[0].toUpperCase()}
-                    </div>
-                    <span class="font-bold">${u.name}</span>
-                </div>
-            </td>
-            <td class="px-4 py-4">
-                <span class="text-xs ${u.status === 'ONLINE' ? 'text-green-400' : 'text-slate-500'} font-bold">
-                    ● ${u.status}
-                </span>
-            </td>
-            <td class="px-4 py-4 text-slate-400 text-xs">${u.phone || '—'}</td>
-            <td class="px-4 py-4 text-right">
-                <div class="flex justify-end gap-2">
-                    <button onclick="adminEditUser('${u.name}')" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all">
-                        <i class="fa-solid fa-pen-to-square text-xs"></i>
-                    </button>
-                    <button onclick="toggleBlockUser('${u.name}')" class="w-8 h-8 rounded-lg ${u.is_blocked ? 'bg-green-500' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'} transition-all">
-                        <i class="fa-solid ${u.is_blocked ? 'fa-unlock' : 'fa-ban'} text-xs"></i>
-                    </button>
-                    <button onclick="adminDeleteUser('${u.name}')" class="w-8 h-8 rounded-lg bg-red-900/20 text-red-700 hover:bg-red-700 hover:text-white transition-all">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                </div>
-            </td>
-        `;
-        listBody.appendChild(row);
-    });
-}
-
-window.addEventListener('load', () => {
-    const path = window.location.pathname; // Masalan: /user/jasurbek
-    if (path.startsWith('/user/')) {
-        const targetUser = path.split('/')[2]; // 'jasurbek' qismini ajratib olish
-        
-        if (targetUser) {
-            console.log("Link orqali profil topildi:", targetUser);
-            // Biroz kutib (server ulanishi uchun), profilni ochish funksiyasini chaqiramiz
-            setTimeout(() => {
-                openFullProfile(targetUser); 
-            }, 1000);
-        }
-    }
-});
-
-// Agar ilova allaqachon o'rnatilgan bo'lsa, bannerni ko'rsatmaslik
-window.addEventListener('appinstalled', () => {
-    installBanner.style.display = 'none';
-    deferredPrompt = null;
-});
-
-// 1. Notification funksiyasi
     function showIOSNotification(title, message, icon = "fa-comment") {
         const old = document.getElementById('iosNotif');
         if (old) old.remove();
-
         const notif = document.createElement('div');
         notif.id = 'iosNotif';
         notif.className = "fixed top-4 left-4 right-4 bg-white/90 backdrop-blur-xl z-[9999] rounded-[24px] p-4 shadow-2xl border border-white/20 flex items-center gap-4 animate-slide-down cursor-pointer";
@@ -3493,28 +2308,25 @@ window.addEventListener('appinstalled', () => {
             <div class="w-1 h-8 bg-gray-200 rounded-full"></div>
         `;
         document.body.appendChild(notif);
-
         setTimeout(() => {
-            if(notif) {
+            if (notif) {
                 notif.classList.replace('animate-slide-down', 'animate-slide-up');
                 setTimeout(() => notif.remove(), 500);
             }
         }, 4000);
     }
 
-async function logout() {
-  await fetch(`${API}/api/logout`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: currentUser })
-  });
-
-  socket.disconnect();
-  localStorage.clear();
-  currentUser = null;
-  location.reload();
-}
-
-         </script>
+    async function logout() {
+        await fetch(`${API}/api/logout`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: currentUser })
+        });
+        socket.disconnect();
+        localStorage.clear();
+        currentUser = null;
+        location.reload();
+    }
+</script>
 </body>
 </html>
