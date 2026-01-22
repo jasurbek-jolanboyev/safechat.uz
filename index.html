@@ -1755,52 +1755,43 @@ async function executeDelete() {
 
 async function openChat(name, type = 'private') {
     activeChat = name;
-    activeChatType = type; // 'private' yoki 'group' ni saqlab qoladi
-    
+    activeChatType = type;
+
     const chatArea = document.getElementById('chatArea');
-    const chatHeader = document.getElementById('chatHeader'); // HTML da sarlavha qismiga id="chatHeader" bering
-    
-    chatArea.style.display = 'flex'; 
+    chatArea.style.display = 'flex';
     chatArea.classList.remove('hidden');
-    
-    // 2. Suhbatdosh yoki Guruh ma'lumotlarini yangilash
+
+    // Header ma'lumotlarini yangilash
     document.getElementById('activeName').innerText = name;
-    
-    // Dizaynni turiga qarab o'zgartirish
-    if (type === 'group') {
-        // Guruh dizayni (Masalan: Binafsha gradient sarlavha)
-        chatHeader.className = "p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center gap-3 shadow-lg";
-        document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=6366f1&color=fff`;
-        document.getElementById('chatStatus').innerText = "Guruh a'zolari..."; // Online holati o'rniga
-    } else {
-        // Shaxsiy chat dizayni (Standart oq yoki ko'k)
-        chatHeader.className = "p-4 bg-white border-b border-gray-100 flex items-center gap-3 text-gray-800";
-        document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
-        document.getElementById('chatStatus').innerText = "online";
-    }
+    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
+    document.getElementById('activeStatus').innerText = type === 'group' ? "Guruh" : "online";
 
+    // Xabarlar oynasini tozalash va yuklanmoqda deb ko'rsatish
     const msgBox = document.getElementById('msgBox');
-    msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Yuklanmoqda...</div>'; 
+    msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
 
-    // 3. Xabarlarni yuklash (Endpointni turiga qarab tanlash)
     try {
-        let url = type === 'group' 
-            ? `${API}/api/group_messages?group_name=${name}` 
-            : `${API}/api/messages?user1=${currentUser}&user2=${name}`;
-            
+        let url = type === 'group'
+            ? `${API}/api/group_messages?group_name=${encodeURIComponent(name)}`
+            : `${API}/api/messages?user1=${encodeURIComponent(currentUser)}&user2=${encodeURIComponent(name)}`;
+
         const res = await fetch(url);
-        if (res.ok) {
-            const msgs = await res.json();
-            msgBox.innerHTML = "";
-            if(msgs.length === 0) {
-                msgBox.innerHTML = '<div class="text-center py-10 text-gray-300 text-xs">Xabarlar mavjud emas</div>';
-            } else {
-                msgs.forEach(appendMessage);
-            }
+        if (!res.ok) throw new Error('Xabarlar yuklanmadi');
+
+        const messages = await res.json();
+        msgBox.innerHTML = "";
+
+        if (messages.length === 0) {
+            msgBox.innerHTML = '<div class="text-center py-10 text-gray-400 text-sm">Xabarlar hali yo‘q</div>';
+        } else {
+            messages.forEach(msg => appendMessage(msg));
+            msgBox.scrollTop = msgBox.scrollHeight;
         }
-    } catch(e) { 
-        msgBox.innerHTML = '<div class="text-center py-10 text-red-400 text-xs">Yuklashda xato!</div>';
+    } catch (e) {
+        console.error("Xabar yuklash xatosi:", e);
+        msgBox.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Xabarlar yuklanmadi!</div>';
     }
+
     closeAllSheets();
 }
 /////menuni tepaga chiqaradi 
@@ -1816,35 +1807,31 @@ fixMobileHeight();
 function sendMsg(type = 'text', content = null) {
     const inp = document.getElementById('msgInp');
     const val = content || inp.value.trim();
-    
+
     if (!val || !activeChat) return;
 
-    if (isEditing) {
-        socket.emit('edit_message', { 
-            id: selectedMsgId, 
-            content: val, 
-            receiver: activeChat,
-            chat_type: activeChatType // Qo'shildi
-        });
-        // ... (tahrirlashni yakunlash qismi o'zgarishsiz)
-    } else {
-        const data = { 
-            sender: currentUser, 
-            receiver: activeChat, // Shaxsiy bo'lsa username, guruh bo'lsa guruh nomi
-            content: val, 
-            chat_type: activeChatType, // 'private' yoki 'group'
-            reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
-            type: type 
-        };
+    const messageData = {
+        sender: currentUser,
+        receiver: activeChat,
+        content: val,
+        chat_type: activeChatType,
+        type: type,
+        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 
-        socket.emit('send_message', data);
-        if (replyToId) cancelReply();
-    }
-    
-    if (!content) {
-        inp.value = "";
-        inp.focus();
-    }
+    // Serverga yuborish
+    socket.emit('send_message', messageData);
+
+    // UI da darhol ko'rsatish (optimistik yangilash)
+    appendMessage({ ...messageData, isMe: true });
+
+    // Inputni tozalash
+    inp.value = "";
+    inp.focus();
+
+    // Replyni bekor qilish
+    if (replyToId) cancelReply();
 }
 
 function updateHeight() {
@@ -1896,15 +1883,17 @@ function showActionSheet(name, type) {
 
 function appendMessage(data) {
     const box = document.getElementById('msgBox');
+    if (!box) return;
+
     const isMe = data.sender === currentUser;
-    const isGroup = activeChatType === 'group'; // Global o'zgaruvchidan olinadi
-    
+    const isGroup = activeChatType === 'group';
+
     // 1. Multimedia qismi
     let mediaHTML = "";
     if (data.type === 'image') {
         mediaHTML = `<img src="${data.file_data || data.content}" class="max-w-full rounded-lg cursor-pointer mb-2 shadow-sm" onclick="viewImage(this.src)">`;
     } else if (data.type === 'video') {
-        mediaHTML = `<video src="${data.file_data}" controls class="max-w-full rounded-lg mb-2 shadow-sm"></video>`;
+        mediaHTML = `<video src="${data.file_data || data.content}" controls class="max-w-full rounded-lg mb-2 shadow-sm"></video>`;
     } else if (data.type === 'location') {
         mediaHTML = `
             <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 mb-2">
@@ -1924,46 +1913,53 @@ function appendMessage(data) {
             </div>`;
     }
 
-    // 3. Guruhda yuboruvchi ismini ko'rsatish
+    // 3. Guruhda yuboruvchi ismini ko‘rsatish
     let senderNameHTML = "";
     if (isGroup && !isMe) {
         senderNameHTML = `<span class="text-[11px] font-bold text-indigo-500 block mb-1">${data.sender}</span>`;
     }
 
     // 4. Matn qismi
-    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "") 
-                   ? `<p class="text-sm leading-relaxed">${data.content}</p>` 
-                   : "";
+    let textHTML = (data.type !== 'location' && data.content && data.content.trim() !== "")
+        ? `<p class="text-sm leading-relaxed">${data.content}</p>`
+        : "";
 
-    // 5. Konteyner yaratish
+    // 5. Bubble sinfi (o‘ng yoki chap)
+    const bubbleClass = isMe
+        ? 'bg-blue-600 text-white rounded-tr-none self-end'
+        : 'bg-white text-gray-800 rounded-tl-none border border-gray-100 self-start';
+
+    // 6. Konteyner yaratish
     const container = document.createElement('div');
-    container.id = `container-${data.id}`;
-    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-3 px-4 w-full animate-fade-in`;
-    
+    container.id = `container-${data.id || Date.now()}`; // Agar id bo‘lmasa vaqt bo‘yicha yaratamiz
+    container.className = `msg-container flex flex-col ${isMe ? 'items-end' : 'items-start'} mb-4 px-2 w-full animate-fade-in`;
+
     container.innerHTML = `
-        <div class="msg-bubble relative max-w-[85%] p-2.5 rounded-2xl shadow-sm ${
-            isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
-        }" id="msg-${data.id}">
+        <div class="msg-bubble relative max-w-[85%] p-3 rounded-2xl shadow-sm ${bubbleClass}" id="msg-${data.id || Date.now()}">
             ${senderNameHTML}
             ${replyMarkup}
             <div class="msg-body">
                 ${mediaHTML}
                 ${textHTML}
             </div>
-            <div class="flex items-center justify-end gap-1 mt-1 opacity-60">
-                <span class="text-[9px]">${data.timestamp}</span>
-                ${isMe ? '<i class="fa-solid fa-check-double text-[8px]"></i>' : ''}
+            <div class="flex items-center justify-end gap-2 mt-1 text-[10px] opacity-70">
+                <span>${data.timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span>
+                ${isMe ? '<i class="fa-solid fa-check-double text-xs"></i>' : ''}
             </div>
         </div>
     `;
 
     box.appendChild(container);
-    
-    // Hodisalar
+
+    // Hodisalarni bog‘lash
     const bubble = container.querySelector('.msg-bubble');
-    bindContextEvents(bubble, data); 
-    if (typeof initSwipe === "function") initSwipe(bubble, data.id, data.content, data.sender);
-    
+    if (bubble) {
+        bindContextEvents(bubble, data);
+        if (typeof initSwipe === "function") {
+            initSwipe(bubble, data.id, data.content, data.sender);
+        }
+    }
+
     // Avtomatik pastga tushish
     box.scrollTop = box.scrollHeight;
 }
@@ -2361,26 +2357,19 @@ function createEntity() {
             document.getElementById('msgContextMenu').style.display = 'none';
         }
 
-        function handleEnter(e) { 
-            if(e.key === 'Enter') sendMsg(); 
-        }
-        function handleReply() {
-        setupReply(selectedMsgId, selectedMsgText, selectedMsgSender);
-        closeMenu(); // BU MUHIM!
-        }
-
-        // 1. CHATNI YOPISH FUNKSIYASI
-function closeChatArea() { 
-    const chatArea = document.getElementById('chatArea');
-    chatArea.style.display = 'none'; 
-    chatArea.classList.add('hidden'); 
-    chatArea.classList.remove('flex');
-    activeChat = null; 
-    
-    const searchInp = document.querySelector('input[type="search"]');
-    if(searchInp) searchInp.value = "";
+function handleEnter(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMsg();
+    }
 }
 
+        // 1. CHATNI YOPISH FUNKSIYASI
+function closeChatArea() {
+    document.getElementById('chatArea').classList.add('hidden');
+    document.getElementById('chatArea').style.display = 'none';
+    activeChat = null;
+}
 function showAdminLogin() {
     const userPhone = localStorage.getItem('user_phone'); // Kirgan foydalanuvchi raqami
     
@@ -2539,50 +2528,71 @@ const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/235
 socket.on('receive_message', (data) => {
     console.log("Yangi xabar keldi:", data);
 
-    // 1. Ovoz va Titrash (Agar xabar sizdan chiqmagan bo'lsa)
+    // Ovoz va tebranish (faqat o‘z xabarim bo‘lmasa)
     if (data.sender !== currentUser) {
         msgSound.play().catch(e => console.error("Ovoz xatosi:", e));
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // 2. Chat oynasini yangilash
-    // Shart: Agar hozirgi ochiq suhbatdoshimiz xabar yuborgan bo'lsa YOKI biz yuborgan bo'lsak
-    if (activeChat === data.sender || (activeChat === data.receiver && data.sender === currentUser)) {
+    // Agar hozirgi ochiq chat bo‘lsa → xabarni qo‘shish
+    if (activeChat === data.sender || activeChat === data.receiver) {
         appendMessage(data);
-        
-        // Xabarlar oynasini avtomatik pastga tushirish
         const msgBox = document.getElementById('msgBox');
         if (msgBox) {
             msgBox.scrollTo({ top: msgBox.scrollHeight, behavior: 'smooth' });
         }
     } else {
-        // Agar foydalanuvchi boshqa chatda yoki boshqa tabda bo'lsa
+        // Boshqa chatda bo‘lsa bildirishnoma
         showToast(`Yangi xabar: ${data.sender}`, data.content);
     }
 
-    // 3. MUHIM: Har doim chatlar ro'yxatini yangilash (loadList)
-    // Bu xabar yuborgan odamni "Chatlar" bo'limida eng tepaga chiqaradi
-    // Foydalanuvchi qaysi tabda bo'lishidan qat'i nazar, fon rejimida yangilanadi
-    if (typeof loadList === "function") {
-        // Biz faqat ma'lumotni yangilaymiz, tabni o'zgartirmaymiz
-        refreshChatListSilently(); 
-    }
+    // Chat ro‘yxatini yangilash (kim yozsa u tepaga chiqadi)
+    refreshChatListSilently();
 });
 
-// Fon rejimida ro'yxatni yangilash uchun yordamchi funksiya
 async function refreshChatListSilently() {
     const chatList = document.getElementById('chatList');
-    if (!chatList) return;
+    if (!chatList || !currentUser) return;
 
     try {
         const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
+        if (!res.ok) throw new Error("Chatlar ro'yxati yuklanmadi");
+
         const contacts = await res.json();
-        
-        // Faqat "Chatlar" ro'yxati ichini qayta chizamiz
-        // Bu foydalanuvchi ko'rib turgan tabga xalaqit bermaydi
-        renderChatList(contacts); 
+        chatList.innerHTML = ""; // Eski ro'yxatni tozalash
+
+        if (contacts.length === 0) {
+            chatList.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                    <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
+                    <p class="font-bold text-sm">Suhbatlar yo‘q</p>
+                </div>`;
+            return;
+        }
+
+        contacts.forEach(contact => {
+            const name = contact.username || contact;
+            const div = document.createElement('div');
+            div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50 transition";
+            div.innerHTML = `
+                <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-black">${name}</h3>
+                    <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
+                </div>
+            `;
+            div.onclick = () => openChat(name, 'private');
+            div.oncontextmenu = e => {
+                e.preventDefault();
+                openDeleteActionSheet(name, 'chat');
+            };
+            chatList.appendChild(div);
+        });
     } catch (e) {
-        console.log("Ro'yxatni yangilashda xato:", e);
+        console.error("Chat ro'yxatini yangilashda xato:", e);
+        chatList.innerHTML = `<div class="text-center py-10 text-red-500 text-sm">Ro'yxat yuklanmadi</div>`;
     }
 }
 
