@@ -638,16 +638,20 @@ def handle_join(data):
 @socketio.on('send_message')
 def handle_send(data):
     sender = data.get('sender')
-    receiver = data.get('receiver')  # bu guruh nomi yoki shaxsiy chat
+    receiver = data.get('receiver')
     msg_type = data.get('type', 'text')
     content = data.get('content', '')
     reply_to = data.get('reply_to')
+    chat_type = data.get('chat_type')  # 'private' yoki 'group'
+
+    if not sender or not receiver or not content:
+        return
 
     is_group = Entity.query.filter_by(name=receiver, type='group').first() is not None
 
     new_msg = Message(
         sender=sender,
-        receiver=receiver,  # guruh bo‘lsa guruh nomi
+        receiver=receiver,
         content=content,
         msg_type=msg_type,
         reply_info=json.dumps(reply_to) if reply_to else None,
@@ -666,11 +670,11 @@ def handle_send(data):
         'timestamp': new_msg.timestamp.strftime('%H:%M')
     }
 
-    if is_group:
-        # Guruhdagi hamma a'zolarga yuborish
+    print(f"Xabar yuborildi: {message_data}")  # server konsolida ko'rinadi
+
+    if is_group or chat_type == 'group':
         emit('receive_message', message_data, room=receiver, include_self=True)
     else:
-        # Shaxsiy chat
         emit('receive_message', message_data, to=receiver)
         emit('receive_message', message_data, to=sender)
 

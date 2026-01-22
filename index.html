@@ -1768,9 +1768,9 @@ async function addMemberToGroup(groupName, username) {
     }
 }
 
-async function openChat(name, type = 'private') {
+function openChat(name, type = 'private') {
     activeChat = name;
-    activeChatType = type;
+    activeChatType = type;  // 'private' yoki 'group' — bu yerda to'g'ri o'rnatilishi SHART!
 
     const chatArea = document.getElementById('chatArea');
     chatArea.style.display = 'flex';
@@ -1781,17 +1781,22 @@ async function openChat(name, type = 'private') {
     document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
     document.getElementById('activeStatus').innerText = type === 'group' ? "Guruh" : "online";
 
-    // Xabarlar oynasini tozalash va yuklanmoqda deb ko'rsatish
+    // Xabarlar oynasini tozalash
     const msgBox = document.getElementById('msgBox');
     msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
 
+    fetchMessages(name, type);
+    closeAllSheets();
+}
+async function fetchMessages(name, type) {
+    const msgBox = document.getElementById('msgBox');
     try {
-        let url = type === 'group'
+        let url = type === 'group' || type === 'channel'
             ? `${API}/api/group_messages?group_name=${encodeURIComponent(name)}`
             : `${API}/api/messages?user1=${encodeURIComponent(currentUser)}&user2=${encodeURIComponent(name)}`;
 
         const res = await fetch(url);
-        if (!res.ok) throw new Error('Xabarlar yuklanmadi');
+        if (!res.ok) throw new Error(`Xabarlar yuklanmadi: ${res.status}`);
 
         const messages = await res.json();
         msgBox.innerHTML = "";
@@ -1804,10 +1809,8 @@ async function openChat(name, type = 'private') {
         }
     } catch (e) {
         console.error("Xabar yuklash xatosi:", e);
-        msgBox.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Xabarlar yuklanmadi!</div>';
+        msgBox.innerHTML = '<div class="text-center py-10 text-red-500 text-sm">Xabarlar yuklanmadi! Internetni tekshiring.</div>';
     }
-
-    closeAllSheets();
 }
 /////menuni tepaga chiqaradi 
 function fixMobileHeight() {
@@ -1822,34 +1825,36 @@ fixMobileHeight();
 function sendMsg(type = 'text', content = null) {
     const inp = document.getElementById('msgInp');
     const val = content || inp.value.trim();
-
-    if (!val || !activeChat) return;
+    if (!val || !activeChat) return alert("Xabar yoki suhbat tanlanmagan!");
 
     const messageData = {
         sender: currentUser,
-        receiver: activeChat,
+        receiver: activeChat,              // guruh bo'lsa guruh nomi, shaxsiy bo'lsa username
         content: val,
-        chat_type: activeChatType,
+        chat_type: activeChatType,         // 'private' yoki 'group' — bu muhim!
         type: type,
-        reply_to: replyToId ? { id: replyToId, text: replyToText, sender: replyToSender } : null,
+        reply_to: replyToId ? { 
+            id: replyToId, 
+            text: replyToText, 
+            sender: replyToSender 
+        } : null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    // 1. Serverga yuborish
+    console.log("Yuborilayotgan xabar:", messageData); // debug uchun
+
+    // Serverga yuborish
     socket.emit('send_message', messageData);
 
-    // 2. O‘z xabarimni darhol UIga qo‘shish (optimistik)
+    // Optimistik UI: o'z xabarini darhol ko'rsatish
     appendMessage({
         ...messageData,
-        id: 'temp-' + Date.now(),  // vaqtinchalik id
+        id: 'temp-' + Date.now(),
         isMe: true
     });
 
-    // Inputni tozalash
     inp.value = "";
     inp.focus();
-
-    // Replyni bekor qilish
     if (replyToId) cancelReply();
 }
 
@@ -2567,19 +2572,14 @@ socket.on('receive_message', (data) => {
     refreshChatListSilently();
 });
 
-// LOADLIST FUNKSİYASI (TO‘LIQ YANGILANGAN VERSIYA)
 async function loadList(tab) {
     let list;
-    if (tab === 'chats') {
-        list = document.getElementById('chatList');
-    } else if (tab === 'groups') {
-        list = document.getElementById('groupsList');
-    } else {
-        return;
-    }
+    if (tab === 'chats') list = document.getElementById('chatList');
+    else if (tab === 'groups') list = document.getElementById('groupsList');
+    else return;
+
     if (!list) return;
 
-    // Skeleton yuklanmoqda holati
     list.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 animate-pulse">
             <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
@@ -2590,23 +2590,18 @@ async function loadList(tab) {
     try {
         if (tab === 'chats') {
             const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-            if (!res.ok) throw new Error(`Server xatosi: ${res.status}`);
+            if (!res.ok) throw new Error(`Chatlar yuklanmadi: ${res.status}`);
             const contacts = await res.json();
-            list.innerHTML = "";
 
+            list.innerHTML = "";
             if (!contacts || contacts.length === 0) {
-                list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
-                        <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
-                        <p class="font-bold text-sm">Suhbatlar yo‘q</p>
-                    </div>`;
+                list.innerHTML = `<div class="text-center py-20 opacity-60">Suhbatlar yo‘q</div>`;
                 return;
             }
-
             contacts.forEach(contact => {
                 const name = typeof contact === 'object' ? contact.username : contact;
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50 transition";
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50";
                 div.innerHTML = `
                     <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
                         <i class="fa-solid fa-user"></i>
@@ -2614,35 +2609,26 @@ async function loadList(tab) {
                     <div class="flex-1">
                         <h3 class="font-black">${name}</h3>
                         <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                    </div>
-                `;
+                    </div>`;
                 div.onclick = () => openChat(name, 'private');
-                div.oncontextmenu = e => {
-                    e.preventDefault();
-                    openDeleteActionSheet(name, 'chat');
-                };
                 list.appendChild(div);
             });
         } 
         else if (tab === 'groups') {
             const res = await fetch(`${API}/api/entities`);
-            if (!res.ok) throw new Error(`Server xatosi: ${res.status}`);
+            if (!res.ok) throw new Error(`Guruhlar yuklanmadi: ${res.status} - ${res.statusText}`);
             const entities = await res.json();
-            list.innerHTML = "";
 
+            list.innerHTML = "";
             if (!entities || entities.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-20 opacity-60">
-                        <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
-                        <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
-                    </div>`;
+                list.innerHTML = `<div class="text-center py-20 opacity-60">Ommaviy guruhlar yo‘q</div>`;
                 return;
             }
 
             entities.forEach(ent => {
                 const isGroup = ent.type === 'group';
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50 transition";
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50";
                 div.innerHTML = `
                     <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
                         <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
@@ -2650,13 +2636,8 @@ async function loadList(tab) {
                     <div class="flex-1">
                         <h3 class="font-black">${ent.name}</h3>
                         <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
-                    </div>
-                `;
+                    </div>`;
                 div.onclick = () => openChat(ent.name, ent.type);
-                div.oncontextmenu = e => {
-                    e.preventDefault();
-                    openDeleteActionSheet(ent.name, 'group');
-                };
                 list.appendChild(div);
             });
         }
@@ -2665,8 +2646,8 @@ async function loadList(tab) {
         list.innerHTML = `
             <div class="text-center py-20 text-red-500 font-bold">
                 <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
-                Ulanishda xatolik<br>
-                <small class="text-xs opacity-70">Internetni tekshiring yoki keyinroq urinib ko‘ring</small>
+                Ulanishda xato<br>
+                <small class="text-xs">${e.message}</small>
             </div>`;
     }
 }
