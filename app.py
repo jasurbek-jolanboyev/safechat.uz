@@ -107,12 +107,20 @@ def create_entity():
 
 @app.route('/api/entities')
 def get_all_entities():
-    # Barcha ommaviy guruh/kanallarni olish
-    ents = Entity.query.all()
-    return jsonify([{
-        "id": e.id, "name": e.name, "type": e.type, 
-        "member_count": EntityMember.query.filter_by(entity_id=e.id).count()
-    } for e in ents])
+    try:
+        ents = Entity.query.all()
+        result = [{
+            "id": e.id, 
+            "name": e.name, 
+            "type": e.type,
+            "member_count": EntityMember.query.filter_by(entity_id=e.id).count()
+        } for e in ents]
+        
+        print(f"All entities: {result}")  # Log qo'shildi
+        return jsonify(result)
+    except Exception as e:
+        print(f"Entities xatosi: {e}")
+        return jsonify([]), 500
 
 class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -293,23 +301,31 @@ def block_user():
 
     return jsonify({"success": True})
 
-# --- API ENDPOINTLAR ---
 @app.route('/api/recent_chats', methods=['GET'])
 def get_recent_chats():
     username = request.args.get('username')
     if not username:
+        print("Xato: username yo'q")  # Log qo'shildi
         return jsonify([]), 400
-    msgs = Message.query.filter(
-        (Message.sender == username) | (Message.receiver == username)
-    ).order_by(Message.timestamp.desc()).all()
-    contacts = []
-    seen = set()
-    for m in msgs:
-        other_user = m.sender if m.sender != username else m.receiver
-        if other_user not in seen:
-            contacts.append(other_user)
-            seen.add(other_user)
-    return jsonify(contacts)
+    
+    try:
+        msgs = Message.query.filter(
+            (Message.sender == username) | (Message.receiver == username)
+        ).order_by(Message.timestamp.desc()).all()
+        
+        contacts = []
+        seen = set()
+        for m in msgs:
+            other_user = m.sender if m.sender != username else m.receiver
+            if other_user not in seen:
+                contacts.append(other_user)
+                seen.add(other_user)
+        
+        print(f"Recent chats for {username}: {contacts}")  # Log qo'shildi (tekshirish uchun)
+        return jsonify(contacts)
+    except Exception as e:
+        print(f"Recent chats xatosi: {e}")
+        return jsonify([]), 500
 
 @app.route('/api/register', methods=['POST'])
 def register_api():
@@ -814,6 +830,7 @@ def delete_entity():
     username = data.get('username')
     target = data.get('target')
     target_type = data.get('type')
+    
     try:
         if target_type == 'chat':
             Message.query.filter(
@@ -821,7 +838,9 @@ def delete_entity():
                 ((Message.sender == target) & (Message.receiver == username))
             ).delete()
             db.session.commit()
+            print(f"Chat o'chirildi: {username} va {target}")  # Log qo'shildi
             return jsonify({"success": True, "message": "Chat o'chirildi"})
+        
         elif target_type == 'group':
             entity = Entity.query.filter_by(name=target).first()
             if entity:
@@ -830,10 +849,13 @@ def delete_entity():
                     members.remove(username)
                     entity.members = ",".join(members)
                     db.session.commit()
+                    print(f"Guruhdan chiqildi: {username} {target}dan")  # Log qo'shildi
                     return jsonify({"success": True, "message": "Guruhdan chiqdingiz"})
             return jsonify({"success": False, "message": "Guruh topilmadi"}), 404
+    
     except Exception as e:
         db.session.rollback()
+        print(f"Delete xatosi: {e}")  # Log qo'shildi
         return jsonify({"success": False, "message": str(e)}), 500
 
 

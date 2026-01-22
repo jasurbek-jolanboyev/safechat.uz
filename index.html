@@ -1307,7 +1307,6 @@ window.addEventListener('load', renderMyNews);
 
 async function loadList(tab) {
     let list;
-
     if (tab === 'chats') {
         list = document.getElementById('chatList');
     } else if (tab === 'groups') {
@@ -1315,10 +1314,9 @@ async function loadList(tab) {
     } else {
         return;
     }
-
     if (!list) return;
 
-    /* === SKELETON === */
+    /* === SKELETON (yuklanmoqda ko'rinishi) === */
     list.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 animate-pulse">
             <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
@@ -1330,24 +1328,25 @@ async function loadList(tab) {
         /* ================= CHATLAR ================= */
         if (tab === 'chats') {
             const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
+            if (!res.ok) throw new Error(`Chatlar yuklanmadi: ${res.status}`);
             const contacts = await res.json();
-            list.innerHTML = "";
+            console.log("Recent chats yuklandi:", contacts);  // Tekshirish uchun log
 
+            list.innerHTML = "";
             if (!contacts || contacts.length === 0) {
+                // To'g'ri empty state: ikonka + yozuv
                 list.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
                         <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
-                        <p class="font-bold text-sm">Suhbatlar yo‘q</p>
+                        <p class="font-bold text-sm">Suhbatlar hozircha yo‘q</p>
                     </div>`;
                 return;
             }
 
             contacts.forEach(contact => {
                 const name = typeof contact === 'object' ? contact.username : contact;
-
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border";
-
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50";
                 div.innerHTML = `
                     <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
                         <i class="fa-solid fa-user"></i>
@@ -1355,70 +1354,65 @@ async function loadList(tab) {
                     <div class="flex-1">
                         <h3 class="font-black">${name}</h3>
                         <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                    </div>
-                `;
-
-                div.onclick = () => openChat(name);
+                    </div>`;
+                div.onclick = () => openChat(name, 'private');
                 div.oncontextmenu = e => {
                     e.preventDefault();
                     openDeleteActionSheet(name, 'chat');
                 };
-
                 list.appendChild(div);
             });
         }
 
-        /* ================= GROUPS ================= */
-        if (tab === 'groups') {
+        /* ================= GROUPS (Ommaviy) ================= */
+        else if (tab === 'groups') {
             const res = await fetch(`${API}/api/entities`);
+            if (!res.ok) throw new Error(`Guruhlar yuklanmadi: ${res.status} - ${res.statusText}`);
             const entities = await res.json();
-            list.innerHTML = "";
+            console.log("Entities yuklandi:", entities);  // Tekshirish uchun log
 
+            list.innerHTML = "";
             if (!entities || entities.length === 0) {
+                // To'g'ri empty state: ikonka + yozuv
                 list.innerHTML = `
                     <div class="text-center py-20 opacity-60">
                         <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
-                        <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
+                        <p class="font-bold text-sm">Hech qanday guruh/kanal yo‘q</p>
                     </div>`;
                 return;
             }
 
-                entities.forEach(ent => {
-                    const isGroup = ent.type === 'group';
-
-                    const div = document.createElement('div');
-                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer";
-
-                    div.innerHTML = `
-                        <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
-                            <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-black">${ent.name}</h3>
-                            <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
-                        </div>
-                    `;
-
-                    div.onclick = () => openChat(ent.name); // ✅ TO‘G‘RILANDI
-                    div.oncontextmenu = e => {
-                        e.preventDefault();
-                        openDeleteActionSheet(ent.name, 'group');
-                    };
-
-                    list.appendChild(div);
-                });
-
+            entities.forEach(ent => {
+                const isGroup = ent.type === 'group';
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50";
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
+                        <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black">${ent.name}</h3>
+                        <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
+                    </div>`;
+                div.onclick = () => openChat(ent.name, ent.type);
+                div.oncontextmenu = e => {
+                    e.preventDefault();
+                    openDeleteActionSheet(ent.name, 'group');
+                };
+                list.appendChild(div);
+            });
         }
-
     } catch (e) {
         console.error("LOAD LIST ERROR:", e);
+        // To'g'ri xato ko'rinishi: ikonka + batafsil xabar
         list.innerHTML = `
             <div class="text-center py-10 text-red-500 font-bold text-xs">
-                ulanishda xato 
+                <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
+                Server bilan ulanishda xato<br>
+                <small class="text-xs">${e.message}</small>
             </div>`;
     }
 }
-
 
 // QIDIRUV FUNKSIYASI (O'zgarishsiz qoladi, lekin openChat ni to'g'ri chaqiradi)
 const toggleBtn = document.getElementById('toggleSearch');
@@ -1491,38 +1485,33 @@ function closeDeleteSheet() {
     document.getElementById('deleteActionSheet').classList.add('hidden');
 }
 
-// O'chirishni amalga oshirish
 async function executeDelete() {
-    // currentTarget bu yerda {name: '...', type: '...'} shaklida bo'lishi kerak
     if (!currentTarget.name) return;
-
     try {
         const res = await fetch(`${API}/api/delete_entity`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: currentUser, // localStorage.getItem('username')
+                username: currentUser,
                 target: currentTarget.name,
                 type: currentTarget.type
             })
         });
-
-        // Server javob bermasa (masalan 404 yoki 500), res.ok false bo'ladi
-        if (!res.ok) throw new Error('Server xatosi');
-
-        const data = await res.json();
-        
-        if (data.success) {
-            closeDeleteSheet();
-            // Ro'yxatni yangilash
-            loadList(currentTarget.type === 'chat' ? 'chats' : 'groups');
-            // Muvaffaqiyat xabari (ixtiyoriy)
-            console.log(data.message);
+        console.log("Delete natijasi:", await res.json());  // Log qo'shildi
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+                closeDeleteSheet();
+                loadList(currentTarget.type === 'chat' ? 'chats' : 'groups');
+                console.log(data.message);
+            } else {
+                alert("Xatolik: " + data.message);
+            }
         } else {
-            alert("Xatolik: " + data.message);
+            throw new Error('Server xatosi');
         }
     } catch (e) {
-        console.error("Fetch xatosi:", e);
+        console.error("Delete xatosi:", e);
         alert("Server bilan ulanishda xato!");
     }
 }
@@ -2348,7 +2337,7 @@ socket.on('receive_message', (data) => {
     }
 
     // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
-    if (activeChat && (activeChat === data.sender || activeChat === data.receiver || activeChat === data.room)) {
+    if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
         // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (sendMsg da allaqachon qo‘shilgan)
         if (data.sender === currentUser) {
             // Vaqtinchalik xabarni yangilash (serverdan kelgan id ni qo‘yish)
@@ -2375,86 +2364,6 @@ socket.on('receive_message', (data) => {
     // Har doim chat ro‘yxatini yangilash (kim yozsa tepaga chiqadi)
     refreshChatListSilently();
 });
-
-async function loadList(tab) {
-    let list;
-    if (tab === 'chats') list = document.getElementById('chatList');
-    else if (tab === 'groups') list = document.getElementById('groupsList');
-    else return;
-
-    if (!list) return;
-
-    list.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-20 animate-pulse">
-            <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
-            <div class="h-3 w-32 bg-gray-100 rounded mb-2"></div>
-            <div class="h-2 w-20 bg-gray-50 rounded"></div>
-        </div>`;
-
-    try {
-        if (tab === 'chats') {
-            const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
-            if (!res.ok) throw new Error(`Chatlar yuklanmadi: ${res.status}`);
-            const contacts = await res.json();
-
-            list.innerHTML = "";
-            if (!contacts || contacts.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 opacity-60">Suhbatlar yo‘q</div>`;
-                return;
-            }
-            contacts.forEach(contact => {
-                const name = typeof contact === 'object' ? contact.username : contact;
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border hover:bg-gray-50";
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-black">${name}</h3>
-                        <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
-                    </div>`;
-                div.onclick = () => openChat(name, 'private');
-                list.appendChild(div);
-            });
-        } 
-        else if (tab === 'groups') {
-            const res = await fetch(`${API}/api/entities`);
-            if (!res.ok) throw new Error(`Guruhlar yuklanmadi: ${res.status} - ${res.statusText}`);
-            const entities = await res.json();
-
-            list.innerHTML = "";
-            if (!entities || entities.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 opacity-60">Ommaviy guruhlar yo‘q</div>`;
-                return;
-            }
-
-            entities.forEach(ent => {
-                const isGroup = ent.type === 'group';
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer hover:bg-gray-50";
-                div.innerHTML = `
-                    <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
-                        <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="font-black">${ent.name}</h3>
-                        <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
-                    </div>`;
-                div.onclick = () => openChat(ent.name, ent.type);
-                list.appendChild(div);
-            });
-        }
-    } catch (e) {
-        console.error("LOAD LIST ERROR:", e);
-        list.innerHTML = `
-            <div class="text-center py-20 text-red-500 font-bold">
-                <i class="fa-solid fa-exclamation-triangle text-3xl mb-4"></i><br>
-                Ulanishda xato<br>
-                <small class="text-xs">${e.message}</small>
-            </div>`;
-    }
-}
 
 function showToast(title, body, senderUsername = null) {
     // Brauzer bildirishnomasi (fon rejimida)
