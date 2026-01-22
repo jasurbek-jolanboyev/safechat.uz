@@ -366,141 +366,7 @@ def login_api():
         print(f"LOGIN_CRITICAL_ERROR: {e}")
         return jsonify({"message": "Serverda texnik xatolik yuz berdi"}), 500
 
-@app.route('/api/upload_reel', methods=['POST'])
-def upload_reel():
-    if 'files' not in request.files:
-        return jsonify({"success": False, "message": "Hech qanday fayl yuborilmadi"}), 400
 
-    files = request.files.getlist('files')  # Bir nechta faylni qabul qilish
-    caption = request.form.get('caption', '').strip()
-    username = request.form.get('username')
-
-    if not username:
-        return jsonify({"success": False, "message": "Username talab qilinadi"}), 400
-
-    if not files or all(file.filename == '' for file in files):
-        return jsonify({"success": False, "message": "Hech qanday fayl tanlanmagan"}), 400
-
-    uploaded = []
-    errors = []
-
-    for file in files:
-        if file.filename == '':
-            continue
-
-        ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-        if ext not in ALLOWED_EXTENSIONS:
-            errors.append(f"{file.filename}: ruxsat etilmagan format")
-            continue
-
-        # Fayl nomini xavfsiz va noyob qilish
-        unique_suffix = secrets.token_hex(6)
-        filename = secure_filename(f"reel_{username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{unique_suffix}.{ext}")
-        filepath = os.path.join(app.config['REELS_UPLOAD_FOLDER'], filename)
-
-        try:
-            file.save(filepath)
-            reel_url = f"/uploads/reels/{filename}"
-
-            new_reel = Reel(
-                username=username,
-                url=reel_url,
-                caption=caption,
-                created_at=datetime.utcnow()
-            )
-            db.session.add(new_reel)
-            db.session.flush()  # ID ni olish uchun flush
-
-            uploaded.append({
-                "id": new_reel.id,
-                "url": reel_url,
-                "caption": caption,
-                "username": username,
-                "created_at": new_reel.created_at.strftime("%Y-%m-%d %H:%M"),
-                "likes": 0,
-                "views": 0
-            })
-
-        except Exception as e:
-            errors.append(f"{file.filename}: {str(e)}")
-            continue
-
-    if uploaded:
-        db.session.commit()
-
-        # Realtime: yangi yuklangan reel(lar) haqida xabar
-        socketio.emit('new_reel_uploaded', {
-            "reels": uploaded,  # Bir nechta reel ma'lumotlari
-            "count": len(uploaded)
-        }, broadcast=True)
-
-        return jsonify({
-            "success": True,
-            "message": f"{len(uploaded)} ta reel muvaffaqiyatli yuklandi",
-            "uploaded": uploaded,
-            "errors": errors if errors else None
-        })
-
-    db.session.rollback()
-    return jsonify({
-        "success": False,
-        "message": "Hech qanday fayl yuklanmadi",
-        "errors": errors
-    }), 400
-
-# Yangi model maydonlari allaqachon bor deb hisoblaymiz:
-# class Reel(db.Model):
-#     ...
-#     likes = db.Column(db.Integer, default=0)
-#     views = db.Column(db.Integer, default=0)
-
-@socketio.on('reel_like')
-def handle_reel_like(data):
-    reel_id = data.get('reel_id')
-    username = data.get('username')  # kim bosgan
-
-    if not reel_id or not username:
-        return
-
-    reel = Reel.query.get(reel_id)
-    if not reel:
-        return
-
-    # JSON stringdan ro'yxatni olish
-    try:
-        liked_users = json.loads(reel.liked_by or "[]")
-    except:
-        liked_users = []
-
-    # Agar bu foydalanuvchi hali like bosmagan bo'lsa
-    if username not in liked_users:
-        liked_users.append(username)
-        reel.likes += 1
-        reel.liked_by = json.dumps(liked_users)  # yangi ro'yxatni saqlash
-
-        db.session.commit()
-
-        # Barchaga yangilangan ma'lumotni yuborish
-        socketio.emit('reel_liked', {
-            'reel_id': reel_id,
-            'likes': reel.likes,
-            'liked_by': username  # kim bosgani (ixtiyoriy)
-        }, broadcast=True)
-
-# View qo‘shish (video ochilganda)
-@socketio.on('reel_view')
-def handle_reel_view(data):
-    reel_id = data.get('reel_id')
-
-    reel = Reel.query.get(reel_id)
-    if reel:
-        reel.views += 1
-        db.session.commit()
-
-        socketio.emit('reel_viewed', {
-            'reel_id': reel_id,
-            'views': reel.views
-        }, broadcast=True)
 
 # Typing indikatori (chatda yozish boshlanganda)
 @socketio.on('typing_start')
@@ -524,26 +390,6 @@ def handle_typing_stop(data):
         'sender': sender,
         'is_typing': False
     }, room=receiver)
-
-# --- BARCHA REELSLARNI OLISH (YANGI) ---
-@app.route('/api/reels', methods=['GET'])
-def get_reels():
-    try:
-        reels = Reel.query.order_by(Reel.created_at.desc()).limit(20).all()
-        result = []
-        for r in reels:
-            result.append({
-                "id": r.id,
-                "username": r.username,
-                "url": r.url,
-                "caption": r.caption or "",
-                "created_at": r.created_at.strftime("%Y-%m-%d %H:%M"),
-                "likes": r.likes,
-                "views": r.views
-            })
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
 
 # QOLGAN BARCHA ENDPOINTLAR (HECH QAYSI O‘CHIRILMAGAN)
 @app.route('/api/admin/edit_user', methods=['POST'])
@@ -661,7 +507,7 @@ def submit_apply():
 def get_admin_stats():
     total_users = User.query.count()
     total_messages = Message.query.count()
-    total_groups = Entity.query.filter_by(entity_type='group').count()
+    total_groups = Entity.query.filter_by(type='group').count()
     online_now = User.query.filter_by(is_online=True).count()
     return jsonify({
         "total": total_users,
@@ -955,7 +801,6 @@ def get_news_feed():
             "title": post.title,
             "description": post.description,
             "media": post.media_urls,
-            "links": post.links
         })
     return jsonify(output)
 

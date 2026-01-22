@@ -472,9 +472,10 @@ body, html {
         </div>
 
         <!-- GROUP TAB -->
-        <div id="groupsTab" class="tab-content hidden p-4 space-y-2">
-            <div id="groupList" class="space-y-1"></div>
+        <div id="groupsTab" class="tab-content hidden">
+            <div id="groupsList" class="pb-28"></div>
         </div>
+
 
         <!-- PROFILE TAB (TO‘G‘RI JOYDA!) -->
 <div id="newsTab" class="tab-content hidden bg-[#f2f2f7] min-h-screen pb-28 animate-fade-in">
@@ -1499,15 +1500,18 @@ window.addEventListener('load', renderMyNews);
 
 async function loadList(tab) {
     let list;
+
     if (tab === 'chats') {
         list = document.getElementById('chatList');
+    } else if (tab === 'groups') {
+        list = document.getElementById('groupsList');
     } else {
-        list = document.getElementById(`${tab}Tab`);
+        return;
     }
 
     if (!list) return;
 
-    // Yuklanish animatsiyasi (Skeleton screen)
+    /* === SKELETON === */
     list.innerHTML = `
         <div class="flex flex-col items-center justify-center py-20 animate-pulse">
             <div class="w-16 h-16 bg-gray-100 rounded-full mb-4"></div>
@@ -1516,96 +1520,98 @@ async function loadList(tab) {
         </div>`;
 
     try {
+        /* ================= CHATLAR ================= */
         if (tab === 'chats') {
             const res = await fetch(`${API}/api/recent_chats?username=${currentUser}`);
             const contacts = await res.json();
-            list.innerHTML = ""; 
+            list.innerHTML = "";
 
             if (!contacts || contacts.length === 0) {
                 list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center animate-fade-in">
-                        <div class="w-20 h-20 bg-blue-50 rounded-[30px] flex items-center justify-center mb-4">
-                            <i class="fa-solid fa-comments text-3xl text-blue-500"></i>
-                        </div>
-                        <p class="text-gray-800 text-sm font-bold">Suhbatlar hali yo'q</p>
-                        <p class="text-gray-400 text-[11px] px-10">Chatni boshlash uchun kontakt tanlang.</p>
+                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center">
+                        <i class="fa-solid fa-comments text-3xl text-blue-500 mb-4"></i>
+                        <p class="font-bold text-sm">Suhbatlar yo‘q</p>
                     </div>`;
-            } else {
-                contacts.forEach(contact => {
-                    const name = typeof contact === 'object' ? contact.username : contact;
-                    const isOnline = typeof contact === 'object' ? contact.is_online : false;
-                    // loadList('groups') ichidagi entities.forEach qismi
-                    const div = document.createElement('div');
-                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer hover:shadow-md transition-all mb-3 border border-gray-100 mx-4";
-                    div.onclick = () => openChat(ent.name, ent.type); // Bu yerda type yuboriladi
-
-                    div.innerHTML = `
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${ent.theme || 'from-blue-500 to-indigo-600'} flex items-center justify-center text-white shadow-lg">
-                            <i class="fa-solid ${ent.type === 'group' ? 'fa-users' : 'fa-bullhorn'}"></i>
-                        </div>
-                        <div class="flex-1">
-                            <h3 class="font-black text-gray-800">${ent.name}</h3>
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${ent.type}</p>
-                        </div>
-                    `;
-
-                    div.onclick = () => openChat(name);
-                    div.oncontextmenu = (e) => { e.preventDefault(); openDeleteActionSheet(name, 'chat'); };
-                    list.appendChild(div);
-                });
+                return;
             }
-        } else if (tab === 'groups') {
-            const res = await fetch(`${API}/api/entities?username=${currentUser}`);
+
+            contacts.forEach(contact => {
+                const name = typeof contact === 'object' ? contact.username : contact;
+
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer mb-3 mx-4 border";
+
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black">${name}</h3>
+                        <p class="text-[10px] text-gray-400">Shaxsiy chat</p>
+                    </div>
+                `;
+
+                div.onclick = () => openChat(name);
+                div.oncontextmenu = e => {
+                    e.preventDefault();
+                    openDeleteActionSheet(name, 'chat');
+                };
+
+                list.appendChild(div);
+            });
+        }
+
+        /* ================= GROUPS ================= */
+        if (tab === 'groups') {
+            const res = await fetch(`${API}/api/entities`);
             const entities = await res.json();
-            list.innerHTML = ""; 
+            list.innerHTML = "";
 
             if (!entities || entities.length === 0) {
                 list.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-20 opacity-60 text-center animate-fade-in">
-                        <div class="w-20 h-20 bg-orange-50 rounded-[30px] flex items-center justify-center mb-4">
-                            <i class="fa-solid fa-globe text-3xl text-orange-500"></i>
-                        </div>
-                        <p class="text-gray-800 text-sm font-bold">Ommaviy guruhlar yo'q</p>
-                        <p class="text-gray-400 text-[11px] mb-4 px-10">O'zingizning birinchi guruhingizni yarating!</p>
-                        <button onclick="openEntityModal()" class="bg-[#007aff] text-white px-8 py-3 rounded-full text-xs font-black shadow-lg shadow-blue-200 uppercase tracking-wider">YARATISH</button>
+                    <div class="text-center py-20 opacity-60">
+                        <i class="fa-solid fa-globe text-3xl text-orange-500 mb-4"></i>
+                        <p class="font-bold text-sm">Ommaviy guruhlar yo‘q</p>
                     </div>`;
-            } else {
+                return;
+            }
+
                 entities.forEach(ent => {
                     const isGroup = ent.type === 'group';
+
                     const div = document.createElement('div');
-                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl cursor-pointer hover:bg-gray-50 transition-all duration-300 shadow-sm mb-3 active:scale-[0.97] border border-gray-100 mx-4 animate-fade-in";
-                    
+                    div.className = "flex items-center gap-4 p-4 bg-white rounded-3xl mb-3 mx-4 border cursor-pointer";
+
                     div.innerHTML = `
-                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${isGroup ? 'from-blue-500 to-indigo-600' : 'from-purple-500 to-pink-600'} flex items-center justify-center text-white text-2xl shadow-lg relative overflow-hidden">
-                            <div class="absolute inset-0 bg-white/10 opacity-20 transform rotate-12 translate-y-4"></div>
-                            <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'} relative z-10"></i>
+                        <div class="w-12 h-12 rounded-2xl ${isGroup ? 'bg-blue-500' : 'bg-purple-500'} text-white flex items-center justify-center">
+                            <i class="fa-solid ${isGroup ? 'fa-users' : 'fa-bullhorn'}"></i>
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-center mb-1">
-                                <h3 class="font-black text-[15px] text-gray-800 truncate">${ent.name}</h3>
-                                <span class="bg-gray-100 text-[9px] font-black px-2 py-1 rounded-md text-gray-500 uppercase">${isGroup ? 'Guruh' : 'Kanal'}</span>
-                            </div>
-                            <p class="text-[11px] text-gray-400 font-medium">
-                                <i class="fa-solid fa-users text-blue-400 mr-1 text-[9px]"></i>
-                                ${ent.member_count || 0} a'zo • Ko'rish
-                            </p>
-                        </div>
-                        <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
-                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        <div class="flex-1">
+                            <h3 class="font-black">${ent.name}</h3>
+                            <p class="text-[10px] text-gray-400">${ent.member_count || 0} a’zo</p>
                         </div>
                     `;
 
-                    div.onclick = () => openChat(ent.name);
-                    div.oncontextmenu = (e) => { e.preventDefault(); openDeleteActionSheet(ent.name, 'group'); };
+                    div.onclick = () => openChat(ent.name); // ✅ TO‘G‘RILANDI
+                    div.oncontextmenu = e => {
+                        e.preventDefault();
+                        openDeleteActionSheet(ent.name, 'group');
+                    };
+
                     list.appendChild(div);
                 });
-            }
+
         }
+
     } catch (e) {
-        console.error("Xatolik:", e);
-        list.innerHTML = `<div class="text-center py-10 text-red-500 font-bold text-xs">Ulanishda xato!</div>`;
+        console.error("LOAD LIST ERROR:", e);
+        list.innerHTML = `
+            <div class="text-center py-10 text-red-500 font-bold text-xs">
+                ulanishda xato 
+            </div>`;
     }
 }
+
 
 // QIDIRUV FUNKSIYASI (O'zgarishsiz qoladi, lekin openChat ni to'g'ri chaqiradi)
 const toggleBtn = document.getElementById('toggleSearch');
@@ -3367,21 +3373,19 @@ window.addEventListener('appinstalled', () => {
         }, 4000);
     }
 
-    // 2. Logout funksiyasi
-    async function logout() {
-        if (!confirm("Haqiqatdan ham hisobdan chiqmoqchimisiz?")) return;
-        const username = localStorage.getItem("chat_user");
-        try {
-            await fetch('/api/logout', { // API yo'lini to'g'rilang
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: username })
-            });
-        } catch (e) { console.log("Server error"); }
+async function logout() {
+  await fetch(`${API}/api/logout`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: currentUser })
+  });
 
-        localStorage.clear(); 
-        window.location.href = "/"; 
-    }
+  socket.disconnect();
+  localStorage.clear();
+  currentUser = null;
+  location.reload();
+}
+
          </script>
 </body>
 </html>
