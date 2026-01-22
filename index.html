@@ -1820,11 +1820,15 @@ function sendMsg(type = 'text', content = null) {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    // Serverga yuborish
+    // 1. Serverga yuborish
     socket.emit('send_message', messageData);
 
-    // UI da darhol ko'rsatish (optimistik yangilash)
-    appendMessage({ ...messageData, isMe: true });
+    // 2. O‘z xabarimni darhol UIga qo‘shish (optimistik)
+    appendMessage({
+        ...messageData,
+        id: 'temp-' + Date.now(),  // vaqtinchalik id
+        isMe: true
+    });
 
     // Inputni tozalash
     inp.value = "";
@@ -2512,18 +2516,27 @@ const msgSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/235
 socket.on('receive_message', (data) => {
     console.log("Yangi xabar keldi:", data);
 
-    // Ovoz va tebranish (o‘z xabarim bo‘lmasa)
+    // Ovoz va tebranish (faqat boshqadan kelsa)
     if (data.sender !== currentUser) {
         msgSound.play().catch(e => console.error("Ovoz xatosi:", e));
         if (navigator.vibrate) navigator.vibrate(200);
     }
 
-    // Agar hozirgi ochiq chat bo‘lsa — xabarni qo‘shish
+    // Agar hozirgi ochiq chat bo‘lsa
     if (activeChat && (activeChat === data.sender || activeChat === data.receiver)) {
-        appendMessage({
-            ...data,
-            timestamp: data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
+        // O‘z xabarim bo‘lsa — qayta qo‘shmaymiz (chunki sendMsg() da allaqachon qo‘shilgan)
+        if (data.sender === currentUser) {
+            // Faqat vaqtinchalik xabarni yangilash (masalan, serverdan kelgan id ni qo‘yish)
+            const tempMsg = document.querySelector(`[id^="container-temp-"]`);
+            if (tempMsg) {
+                tempMsg.id = `container-${data.id}`;
+                const bubble = tempMsg.querySelector('.msg-bubble');
+                if (bubble) bubble.id = `msg-${data.id}`;
+            }
+        } else {
+            // Boshqadan kelgan xabar — yangidan qo‘shish
+            appendMessage(data);
+        }
 
         const msgBox = document.getElementById('msgBox');
         if (msgBox) {
@@ -2534,7 +2547,7 @@ socket.on('receive_message', (data) => {
         showToast(`Yangi xabar: ${data.sender}`, data.content || "Yangi xabar");
     }
 
-    // Chat ro‘yxatini yangilash (kim yozsa tepaga chiqadi)
+    // Chat ro‘yxatini yangilash
     refreshChatListSilently();
 });
 
@@ -2584,18 +2597,27 @@ async function refreshChatListSilently() {
     }
 }
 
-// Chiroyli bildirishnoma ko'rsatish funksiyasi
 function showToast(title, body) {
     // Brauzer bildirishnomasi
     if (Notification.permission === "granted") {
-        new Notification(title, { 
-            body: body, 
-            icon: 'https://ui-avatars.com/api/?name=SafeChat&background=007aff&color=fff' 
+        new Notification(title, {
+            body: body,
+            icon: 'https://ui-avatars.com/api/?name=SafeChat&background=007aff&color=fff'
         });
     } else if (Notification.permission !== "denied") {
-        // Agar hali ruxsat so'ralmagan bo'lsa
-        Notification.requestPermission();
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                new Notification(title, { body: body, icon: '...' });
+            }
+        });
     }
+
+    // Ekrandagi chiroyli bildirishnoma (ixtiyoriy)
+    const toast = document.createElement('div');
+    toast.className = "fixed top-4 right-4 bg-blue-600 text-white p-4 rounded-xl shadow-lg z-[9999] animate-slide-down";
+    toast.innerHTML = `<strong>${title}</strong><br><small>${body}</small>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
 }
 
 // Sahifa yuklanganda bildirishnomaga ruxsat so'rash
