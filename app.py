@@ -390,6 +390,51 @@ def handle_typing_stop(data):
         'is_typing': False
     }, room=receiver)
 
+@app.route('/api/add_member', methods=['POST'])
+def add_member():
+    data = request.json
+    group_name = data.get('group')
+    username = data.get('username')
+    added_by = data.get('added_by')  # kim qo‘shayotgani
+
+    if not group_name or not username:
+        return jsonify({"status": "error", "message": "Ma'lumot yetarli emas"}), 400
+
+    entity = Entity.query.filter_by(name=group_name, type='group').first()
+    if not entity:
+        return jsonify({"status": "error", "message": "Bunday guruh topilmadi"}), 404
+
+    # Faqat admin qo‘sha oladi (ixtiyoriy tekshiruv)
+    is_admin = EntityMember.query.filter_by(
+        entity_id=entity.id,
+        username=added_by,
+        role='admin'
+    ).first()
+
+    if not is_admin:
+        return jsonify({"status": "error", "message": "Faqat admin a'zo qo‘sha oladi"}), 403
+
+    # Agar allaqachon a'zo bo‘lsa
+    if EntityMember.query.filter_by(entity_id=entity.id, username=username).first():
+        return jsonify({"status": "error", "message": "Bu foydalanuvchi allaqachon guruhda"}), 400
+
+    new_member = EntityMember(
+        entity_id=entity.id,
+        username=username,
+        role='member'
+    )
+    db.session.add(new_member)
+    db.session.commit()
+
+    # Realtime yangilash
+    socketio.emit('member_added', {
+        "group": group_name,
+        "username": username,
+        "added_by": added_by
+    }, room=group_name)
+
+    return jsonify({"status": "success", "message": f"{username} guruhga qo‘shildi"})
+
 # QOLGAN BARCHA ENDPOINTLAR (HECH QAYSI O‘CHIRILMAGAN)
 @app.route('/api/admin/edit_user', methods=['POST'])
 def admin_edit_user():
@@ -592,43 +637,42 @@ def handle_join(data):
 
 @socketio.on('send_message')
 def handle_send(data):
-    try:
-        sender_u = data.get('sender')
-        receiver_u = data.get('receiver')
-        msg_type = data.get('type', 'text')
-        content = data.get('content', '')
-        reply_to = data.get('reply_to')
+    sender = data.get('sender')
+    receiver = data.get('receiver')  # bu guruh nomi yoki shaxsiy chat
+    msg_type = data.get('type', 'text')
+    content = data.get('content', '')
+    reply_to = data.get('reply_to')
 
-        # Bazaga saqlash
-        new_msg = Message(
-            sender=sender_u,
-            receiver=receiver_u,
-            content=content,
-            msg_type=msg_type,
-            reply_info=json.dumps(reply_to) if reply_to else None,
-            timestamp=datetime.utcnow()
-        )
-        db.session.add(new_msg)
-        db.session.commit()
+    is_group = Entity.query.filter_by(name=receiver, type='group').first() is not None
 
-        # To‘g‘ri formatda broadcast qilish
-        message_data = {
-            'id': new_msg.id,
-            'sender': sender_u,
-            'receiver': receiver_u,
-            'content': content,
-            'type': msg_type,
-            'reply_to': reply_to,
-            'timestamp': new_msg.timestamp.strftime('%H:%M')
-        }
+    new_msg = Message(
+        sender=sender,
+        receiver=receiver,  # guruh bo‘lsa guruh nomi
+        content=content,
+        msg_type=msg_type,
+        reply_info=json.dumps(reply_to) if reply_to else None,
+        timestamp=datetime.utcnow()
+    )
+    db.session.add(new_msg)
+    db.session.commit()
 
-        # Qabul qiluvchiga va yuboruvchiga yuborish
-        emit('receive_message', message_data, to=receiver_u)
-        emit('receive_message', message_data, to=sender_u)
+    message_data = {
+        'id': new_msg.id,
+        'sender': sender,
+        'receiver': receiver,
+        'content': content,
+        'type': msg_type,
+        'reply_to': reply_to,
+        'timestamp': new_msg.timestamp.strftime('%H:%M')
+    }
 
-    except Exception as e:
-        print(f"Xabar yuborishda xato: {e}")
-        db.session.rollback()
+    if is_group:
+        # Guruhdagi hamma a'zolarga yuborish
+        emit('receive_message', message_data, room=receiver, include_self=True)
+    else:
+        # Shaxsiy chat
+        emit('receive_message', message_data, to=receiver)
+        emit('receive_message', message_data, to=sender)
 
 @socketio.on('edit_message')
 def handle_edit(data):
@@ -656,22 +700,18 @@ def handle_delete(data):
         print(f"DELETE_ERROR: {e}")
 
 @socketio.on('create_entity')
-@app.route('/api/create_entity', methods=['POST'])
-def create_entity():
-    if request.method == 'POST':
-        data = request.json
-    else:
-        data = request.get_json()
-
+def create_entity_socket(data):
     name = data.get('name')
     etype = data.get('type')
-    username = data.get('username')
+    username = data.get('creator')  # yoki data.get('username')
 
     if not name or not etype or not username:
-        return jsonify({"status": "error", "message": "Barcha maydonlar to‘ldirilishi shart"}), 400
+        emit('entity_error', {"message": "Barcha maydonlar to‘ldirilishi shart"}, to=request.sid)
+        return
 
     if Entity.query.filter_by(name=name).first():
-        return jsonify({"status": "error", "message": "Bu nom band!"}), 400
+        emit('entity_error', {"message": "Bu nom band!"}, to=request.sid)
+        return
 
     try:
         new_entity = Entity(
@@ -680,30 +720,26 @@ def create_entity():
             creator=username
         )
         db.session.add(new_entity)
-        db.session.flush()  # ID ni olish uchun
+        db.session.flush()
 
-        # Creatorni EntityMember ga qo‘shish
         member = EntityMember(
             entity_id=new_entity.id,
             username=username,
-            role='admin'  # Creator admin bo‘ladi
+            role='admin'
         )
         db.session.add(member)
         db.session.commit()
 
-        # Realtime yangilash
-        socketio.emit('entity_created', {
+        emit('entity_created', {
             "name": name,
             "type": etype,
-            "creator": username
+            "creator": username,
+            "id": new_entity.id
         }, broadcast=True)
-
-        return jsonify({"status": "success", "message": f"{etype.capitalize()} yaratildi", "name": name})
 
     except Exception as e:
         db.session.rollback()
-        print(f"Guruh yaratish xatosi: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        emit('entity_error', {"message": str(e)}, to=request.sid)
 
 @socketio.on('add_member')
 def handle_add_member(data):

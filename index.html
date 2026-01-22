@@ -1202,7 +1202,6 @@ async function submitNewEntity() {
         alert("Guruh/Kanal nomini kiriting!");
         return;
     }
-
     if (!username) {
         alert("Avval tizimga kiring!");
         return;
@@ -1214,7 +1213,7 @@ async function submitNewEntity() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name: name,
-                type: selectedEntityType,  // 'group' yoki 'channel'
+                type: selectedEntityType,
                 username: username
             })
         });
@@ -1225,16 +1224,14 @@ async function submitNewEntity() {
             alert(`${selectedEntityType === 'group' ? 'Guruh' : 'Kanal'} "${name}" muvaffaqiyatli yaratildi!`);
             closeEntityModal();
             nameInput.value = "";
-            // Ro‘yxatni yangilash
-            loadList('groups');
-            // Socket orqali realtime yangilash (agar kerak bo‘lsa)
-            socket.emit('entity_created', { name, type: selectedEntityType });
+            loadList('groups'); // Ro‘yxatni yangilash
+            socket.emit('entity_created', { name, type: selectedEntityType, id: data.id });
         } else {
             alert(data.message || "Xatolik yuz berdi!");
         }
     } catch (e) {
         console.error("Guruh yaratish xatosi:", e);
-        alert("Server bilan ulanishda xato! Internetni tekshiring.");
+        alert("Server bilan ulanishda xato!");
     }
 }
 
@@ -1746,6 +1743,28 @@ async function executeDelete() {
     } catch (e) {
         console.error("Fetch xatosi:", e);
         alert("Server bilan ulanishda xato!");
+    }
+}
+
+async function addMemberToGroup(groupName, username) {
+    try {
+        const res = await fetch(`${API}/api/add_member`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                group: groupName,
+                username: username,
+                added_by: currentUser
+            })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            alert(`${username} guruhga qo‘shildi!`);
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert("Xato yuz berdi!");
     }
 }
 
