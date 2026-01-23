@@ -105,22 +105,54 @@ def create_entity():
     db.session.commit()
     return jsonify({"status": "success", "name": name})
 
+@app.route('/api/chats/<username>')
+def get_user_chats(username):
+    # Foydalanuvchi qatnashgan barcha xabarlarni vaqt bo'yicha teskari tartibda olish
+    msgs = Message.query.filter((Message.sender == username) | (Message.receiver == username)).order_by(Message.timestamp.desc()).all()
+    
+    chats = {}
+    for m in msgs:
+        other = m.receiver if m.sender == username else m.sender
+        if other not in chats:
+            u = User.query.filter_by(username=other).first()
+            chats[other] = {
+                "other_user": other,
+                "avatar": u.avatar if u else None,
+                "last_message": m.content,
+                "last_time": m.timestamp.strftime("%H:%M")
+            }
+    return jsonify(list(chats.values()))
+
+@app.route('/api/delete-chat', methods=['POST'])
+def delete_chat():
+    data = request.json
+    me, other = data.get('me'), data.get('other')
+    # Ikkala tomon orasidagi barcha xabarlarni o'chirish
+    Message.query.filter(((Message.sender == me) & (Message.receiver == other)) | 
+                         ((Message.sender == other) & (Message.receiver == me))).delete()
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+# --- OMMAVIY (GURUHLAR) UCHUN ---
 @app.route('/api/entities')
 def get_all_entities():
     try:
         ents = Entity.query.all()
-        result = [{
-            "id": e.id, 
-            "name": e.name, 
-            "type": e.type,
-            "member_count": EntityMember.query.filter_by(entity_id=e.id).count()
-        } for e in ents]
-        
-        print(f"All entities: {result}")  # Log qo'shildi
+        result = []
+        for e in ents:
+            # Har bir guruh uchun a'zolar sonini sanash
+            m_count = EntityMember.query.filter_by(entity_id=e.id).count()
+            result.append({
+                "id": e.id,
+                "name": e.name,
+                "type": e.type,
+                "image": e.image,
+                "theme": e.theme_color or "from-blue-500 to-indigo-600",
+                "member_count": m_count
+            })
         return jsonify(result)
     except Exception as e:
-        print(f"Entities xatosi: {e}")
-        return jsonify([]), 500
+        return jsonify([])
 
 class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
