@@ -1519,32 +1519,41 @@ function openChat(name, type = 'private') {
     activeChatType = type;
 
     const chatArea = document.getElementById('chatArea');
-    chatArea.style.display = 'flex';
     chatArea.classList.remove('hidden');
+    chatArea.style.display = 'flex';
 
     document.getElementById('activeName').innerText = name;
-    document.getElementById('activeChatImg').src = `https://ui-avatars.com/api/?name=${name}&background=007aff&color=fff`;
 
-    const statusEl = document.getElementById('activeStatus');
-    if (statusEl) statusEl.innerText = type === 'group' ? "Guruh" : "online";
-
-    const msgBox = document.getElementById('msgBox');
-    msgBox.innerHTML = '<div class="text-center py-10 animate-pulse text-gray-400 text-xs">Xabarlar yuklanmoqda...</div>';
-
-    fetchMessages(name, type);
-    closeAllSheets();
-
-    // Shaxsiy chat bo'lsa roomga qo'shilish
+    // Xonaga ulanish (Real-time ishlashi uchun eng muhim joyi)
     if (type === 'private') {
-        const room = [currentUser, name].sort().join('_');
         socket.emit('join_private_chat', { 
             user1: currentUser, 
-            user2: name,
-            room: room 
+            user2: name 
         });
-        console.log(`Roomga qo'shildi: ${room}`);
+    } else {
+        socket.emit('join', { username: currentUser }); // Guruhlar uchun
     }
+
+    fetchMessages(name, type);
 }
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+
+    if (!content || !activeChat) return;
+
+    const data = {
+        sender: currentUser,
+        receiver: activeChat,
+        content: content,
+        type: 'text',
+        chat_type: activeChatType // 'private' yoki 'group'
+    };
+
+    socket.emit('send_message', data);
+    input.value = '';
+}
+
 async function fetchMessages(name, type) {
     const msgBox = document.getElementById('msgBox');
     try {
@@ -3044,6 +3053,45 @@ function showAdminPanel() {
     `;
     document.body.appendChild(panel);
     loadAdminStats();
+}
+
+// Xabarni qabul qilish
+socket.on('receive_message', function(data) {
+    // Agar foydalanuvchi hozir shu odam bilan gaplashayotgan bo'lsa, ekranda ko'rsatish
+    if ((data.sender === activeChat || data.receiver === activeChat)) {
+        displayMessage(data); // Xabarni UI ga chiqarish funksiyasi
+        scrollToBottom();
+    } else {
+        // Agar boshqa chatda bo'lsa, bildirishnoma ko'rsatish
+        showIOSNotification(data.sender, data.content);
+    }
+    // Asosiy ekrandagi chatlar ro'yxatini yangilash
+    loadMyChats(); 
+});
+
+// Asosiy ekranda chatlar ro'yxatini yuklash
+async function loadMyChats() {
+    const res = await fetch(`${API}/api/my-chats?username=${currentUser}`);
+    const chats = await res.json();
+    const list = document.getElementById('myChatsList'); // HTML dagi ro'yxat ID si
+    
+    list.innerHTML = '';
+    chats.forEach(chat => {
+        list.innerHTML += `
+            <div onclick="openChat('${chat.username}', 'private')" class="chat-item p-4 border-b flex items-center cursor-pointer hover:bg-gray-100">
+                <div class="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                    ${chat.username[0].toUpperCase()}
+                </div>
+                <div class="ml-4 flex-1">
+                    <div class="flex justify-between">
+                        <span class="font-bold">${chat.username}</span>
+                        <span class="text-xs text-gray-400">${chat.time}</span>
+                    </div>
+                    <div class="text-sm text-gray-500 truncate">${chat.last_message}</div>
+                </div>
+            </div>
+        `;
+    });
 }
 
 async function loadAdminStats() {

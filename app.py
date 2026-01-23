@@ -683,42 +683,44 @@ def join_private_chat(data):
 @socketio.on('join')
 def handle_join(data):
     username = data.get('username')
-    if not username:
-        return
-
+    if not username: return
+    
+    # Foydalanuvchini o'z nomi bilan atalgan xonaga qo'shish (bildirishnomalar uchun)
     join_room(username)
-
+    
+    # Foydalanuvchi a'zo bo'lgan barcha guruhlarga qo'shish
     memberships = EntityMember.query.filter_by(username=username).all()
     for m in memberships:
         entity = Entity.query.get(m.entity_id)
-        if entity:
+        if entity and entity.type == 'group':
             join_room(entity.name)
+            print(f"User {username} joined group: {entity.name}")
 
-    print(f"✅ {username} barcha xonalarga ulandi")
+# Shaxsiy chatga kirganda xonani yaratish
+@socketio.on('join_private_chat')
+def handle_join_private(data):
+    user1 = data.get('user1')
+    user2 = data.get('user2')
+    if user1 and user2:
+        room = '_'.join(sorted([user1, user2]))
+        join_room(room)
+        print(f"✅ {user1} va {user2} xonaga ulandi: {room}")
 
 @socketio.on('send_message')
 def handle_send(data):
     sender = data.get('sender')
     receiver = data.get('receiver')
-    msg_type = data.get('type', 'text')
-    content = data.get('content', '')
-    reply_to = data.get('reply_to')
-    chat_type = data.get('chat_type')  # 'private' yoki 'group' — BU MUHIM!
+    content = data.get('content')
+    chat_type = data.get('chat_type', 'private') # 'private' yoki 'group'
 
-    if not sender or not receiver or not content:
-        print("Xato: yuboruvchi, qabul qiluvchi yoki kontent yo'q")
-        return
+    if not sender or not receiver or not content: return
 
-    # Guruh ekanligini tekshirish
-    is_group = Entity.query.filter_by(name=receiver, type='group').first() is not None
-
-    # Yangi xabarni bazaga saqlash
+    # 1. Bazaga saqlash
     new_msg = Message(
         sender=sender,
         receiver=receiver,
         content=content,
-        msg_type=msg_type,
-        reply_info=json.dumps(reply_to) if reply_to else None,
+        msg_type=data.get('type', 'text'),
         timestamp=datetime.utcnow()
     )
     db.session.add(new_msg)
@@ -729,22 +731,18 @@ def handle_send(data):
         'sender': sender,
         'receiver': receiver,
         'content': content,
-        'type': msg_type,
-        'reply_to': reply_to,
+        'type': new_msg.msg_type,
         'timestamp': new_msg.timestamp.strftime('%H:%M')
     }
 
-    print(f"Xabar yuborildi: {message_data}")  # Server konsolida ko'rinadi
-
-    # Xonani aniqlash va xabarni yuborish
-    if is_group or chat_type == 'group':
-        emit('receive_message', message_data, room=receiver, include_self=True)
-        print(f"Guruh xabari yuborildi: {receiver}")
+    # 2. To'g'ri xonaga yuborish
+    if chat_type == 'group':
+        # Guruhlarda xona nomi guruhning nomi bilan bir xil
+        emit('receive_message', message_data, room=receiver)
     else:
-        # Shaxsiy chat uchun room nomi: sorted user1_user2
+        # Shaxsiy chatda xona nomi: user1_user2
         room = '_'.join(sorted([sender, receiver]))
-        emit('receive_message', message_data, room=room, include_self=True)
-        print(f"Shaxsiy xabar yuborildi: {room}")
+        emit('receive_message', message_data, room=room)
 
 @socketio.on('edit_message')
 def handle_edit(data):
@@ -831,8 +829,34 @@ def handle_call(data):
 def handle_disconnect():
     print("Foydalanuvchi tarmoqdan uzildi")
 
-# Qolgan socket eventlar va route’lar (sizning asl kodingizdagi qolgan qismlar)
-# Masalan:
+# Faol chatlar ro'yxatini olish uchun API
+@app.route('/api/my-chats')
+def get_my_chats():
+    username = request.args.get('username')
+    if not username: return jsonify([])
+
+    # Foydalanuvchi yozishgan barcha kontaktlarni topish
+    sent = db.session.query(Message.receiver).filter(Message.sender == username).distinct().all()
+    received = db.session.query(Message.sender).filter(Message.receiver == username).distinct().all()
+    
+    contacts = list(set([u[0] for u in sent] + [u[0] for u in received]))
+    
+    result = []
+    for contact in contacts:
+        # Oxirgi xabarni olish
+        last_msg = Message.query.filter(
+            ((Message.sender == username) & (Message.receiver == contact)) |
+            ((Message.sender == contact) & (Message.receiver == username))
+        ).order_by(Message.timestamp.desc()).first()
+        
+        result.append({
+            "username": contact,
+            "last_message": last_msg.content if last_msg else "",
+            "time": last_msg.timestamp.strftime('%H:%M') if last_msg else ""
+        })
+    
+    return jsonify(result)
+
 @app.route('/api/search', methods=['GET'])
 def search_entities():
     query = request.args.get('q', '').strip().lower()
